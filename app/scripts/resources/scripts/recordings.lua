@@ -77,6 +77,9 @@
 	local recording_silence_threshold = settings:get('recordings', 'recording_silence_threshold', 'numeric') or 200;
 	local recording_silence_seconds = settings:get('recordings', 'recording_silence_seconds', 'numeric') or 3;
 
+--get the recording id if it has been passed in
+	recording_id = session:getVariable("recording_id");
+
 --set the temp directory
 	temp_dir = settings:get('server', 'temp', 'dir') or nil;
 
@@ -97,7 +100,6 @@
 			if (not default_language) then default_language = 'en'; end
 			if (not default_dialect) then default_dialect = 'us'; end
 			if (not default_voice) then default_voice = 'callie'; end
-			recording_id = session:getVariable("recording_id");
 			recording_prefix = session:getVariable("recording_prefix");
 			recording_name = session:getVariable("recording_name");
 			record_ext = session:getVariable("record_ext");
