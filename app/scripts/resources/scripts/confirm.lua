@@ -76,7 +76,7 @@
 			--prompt for digits
 				if (confirm == "true") then
 					--send to the log
-						--freeswitch.consoleLog("NOTICE", "[confirm] prompt\n");
+						freeswitch.consoleLog("NOTICE", "[confirm] prompt\n");
 					--get the digit
 						min_digits = 1;
 						max_digits = 1;
@@ -91,7 +91,7 @@
 						end
 					--process the response
 						if (digit == "1") then
-							--freeswitch.consoleLog("NOTICE", "[confirm] accept\n");
+							freeswitch.consoleLog("NOTICE", "[confirm] accept\n");
 						elseif (digit == "2") then
 							--freeswitch.consoleLog("NOTICE", "[confirm] reject\n");
 							session:hangup("CALL_REJECTED"); --LOSE_RACE
@@ -99,7 +99,7 @@
 							--freeswitch.consoleLog("NOTICE", "[confirm] voicemail\n");
 							session:hangup("NO_ANSWER");
 						else
-							--freeswitch.consoleLog("NOTICE", "[confirm] no answer\n");
+							freeswitch.consoleLog("NOTICE", "[confirm] no digit\n");
 							session:hangup("NO_ANSWER");
 						end
 				else

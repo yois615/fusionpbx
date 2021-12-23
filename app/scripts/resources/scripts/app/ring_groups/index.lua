@@ -831,7 +831,7 @@
 						else
 							--external number
 								-- have to double destination_delay here due a FS bug requiring a 50% delay value for internal externsions, but not external calls. 
-								destination_delay = destination_delay * 2;
+								--destination_delay = destination_delay * 2;
 
 								route_bridge = 'loopback/'..destination_number;
 								if (extension_toll_allow ~= nil) then

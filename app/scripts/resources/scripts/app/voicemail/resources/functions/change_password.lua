@@ -88,6 +88,22 @@
 								end
 							end	
 						end
+
+					--check that password is not same as extension number
+						if (password == voicemail_id) then
+							password_error_flag = "1";
+							dtmf_digits = '';
+							--freeswitch.consoleLog("notice", "[voicemail] You can't use the extension number as the password\n");
+							session:execute("playback", "phrase:voicemail_password_not_secure");
+							timeouts = 0;
+							if (menu == "tutorial") then
+								change_password(voicemail_id, "tutorial");
+							end
+							if (menu == "advanced") then
+								change_password(voicemail_id, "advanced");
+							end
+						end	
+
 					--password is valid
 						if (password_error_flag ~= "1") then 
 							freeswitch.consoleLog("notice", "[voicemail] Password is valid! \n");

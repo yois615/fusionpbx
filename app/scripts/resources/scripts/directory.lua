@@ -365,7 +365,8 @@
 			--directory[x] = row;
 		--variables
 			effective_caller_id_name = row.effective_caller_id_name;
-			if (row.directory_first_name) then
+			if (row.directory_first_name ~= nil) and (row.directory_first_name ~= "") then
+				freeswitch.consoleLog("notice", "[directory] ERROR: This is our problem " .. row.directory_first_name .. "\n");
 				first_name = row.directory_first_name;
 				last_name = row.directory_last_name;
 			else
