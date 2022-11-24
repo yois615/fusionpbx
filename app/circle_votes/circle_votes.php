@@ -70,23 +70,11 @@
 	$order = $_GET["order"];
 
 
-/*get the count
-	$sql = "select count(bridge_uuid) from v_bridges ";
-	if ($_GET['show'] == "all" && permission_exists('bridge_all')) {
-		if (isset($sql_search)) {
-			$sql .= "where ".$sql_search;
-		}
-	}
-	else {
-		$sql .= "where (domain_uuid = :domain_uuid or domain_uuid is null) ";
-		if (isset($sql_search)) {
-			$sql .= "and ".$sql_search;
-		}
-		$parameters['domain_uuid'] = $domain_uuid;
-	}
+get the count
+	$sql = "select count(vote) from circle_tt_votes ";
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
-*/
+
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
@@ -142,22 +130,14 @@
 	
 	echo th_order_by('Count', $text['label-circle_votes_name'], $order_by, $order);
 	echo th_order_by('Number', $text['label-circle_votes_destination'], $order_by, $order);
-	echo "	<th class='hide-sm-dn'>".$text['label-circle_votes_description']."</th>\n";
 	echo "</tr>\n";
 
 	if (is_array($vote_results) && @sizeof($vote_results) != 0) {
 		$x = 0;
 		foreach ($vote_results as $row) {		
-			echo "<tr class='list-row' href='".$list_row_url."'>\n";
-			echo "	<td>\n";
-			echo "	</td>\n";
-			echo "	<td>".escape($row['bridge_destination'])."</td>\n";
-
-				echo "	<td class='center'>\n";
-				echo $text['label-'.$row['bridge_enabled']];
-			echo "	</td>\n";
-			echo "	<td class='description overflow hide-sm-dn'>".escape($row['bridge_description'])."</td>\n";
-			
+			echo "<tr class='list-row'>\n";
+			echo "	<td>".escape($row['count'])."</td>\n";
+            echo "	<td>".escape($row['vote'])."</td>\n";			
 			echo "</tr>\n";
 			$x++;
 		}
