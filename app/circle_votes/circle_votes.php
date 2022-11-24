@@ -65,7 +65,7 @@
 	$order = $_GET["order"];
 
 
-get the count
+//get the count
 	$sql = "select count(vote) from circle_tt_votes ";
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
