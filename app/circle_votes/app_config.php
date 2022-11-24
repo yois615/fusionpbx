@@ -36,5 +36,11 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'circle_customer';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'customer_id';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'call_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
+		$z++;
 
 ?>
