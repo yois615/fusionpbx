@@ -44,11 +44,11 @@
 	$text = $language->get();
 
 //get the http post data
-	if (is_array($_POST['circle_votes'])) {
+	
 		$action = $_POST['action'];
 		$search = $_POST['search'];
 		$circle_votes = $_POST['circle_votes'];
-	}
+	
 
 //process the http post data by action
 	if ($action == 'delete' && permission_exists('circle_votes_delete')) {
@@ -123,8 +123,8 @@
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
 	
-	echo th_order_by('Count', $text['label-circle_votes_name'], $order_by, $order);
-	echo th_order_by('Number', $text['label-circle_votes_destination'], $order_by, $order);
+	echo th_order_by('count', $text['label-circle_votes_count'], $order_by, $order);
+	echo th_order_by('vote', $text['label-circle_votes_number'], $order_by, $order);
 	echo "</tr>\n";
 
 	if (is_array($vote_results) && @sizeof($vote_results) != 0) {
