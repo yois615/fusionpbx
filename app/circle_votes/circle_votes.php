@@ -97,7 +97,7 @@
 	echo "	<div class='heading'><b>".$text['title-circle-vote']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
 	
-	if (permission_exists('bridge_delete')) {
+	if (permission_exists('circle_votes_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-vote-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
