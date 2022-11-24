@@ -51,16 +51,11 @@
 	}
 
 //process the http post data by action
-	if ($action != '' && is_array($circle_votes) && @sizeof($circle_votes) != 0) {
-		switch ($action) {
-			case 'delete':
-				if (permission_exists('circle_votes_delete')) {
-					$obj = new bridges;
-					$obj->delete($bridges);
-				}
-				break;
-		}
-
+	if ($action == 'delete' && permission_exists('circle_votes_delete')) {
+		$sql = "DELETE FROM circle_tt_votes ";
+	    $database = new database;
+	    $vote_results = $database->select($sql, $parameters, 'all');
+	    unset($sql, $parameters);
 		header('Location: circle_votes.php'.($search != '' ? '?search='.urlencode($search) : null));
 		exit;
 	}
