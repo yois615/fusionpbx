@@ -241,6 +241,14 @@
 			//update the array with additional information
 				if (is_array($result)) {
 					foreach($result as &$row) {
+						// Get Circle Vote info
+						$sql = "select vote from circle_tt_votes WHERE call_uuid = :voicemail_message_uuid ";
+						$parameters['voicemail_message_uuid'] = $row['voicemail_message_uuid'];
+						$database = new database;
+						$vote_result = $database->select($sql, $parameters, 'row');
+						unset($sql, $parameters);
+						$row['circle_vote'] = $vote_result['vote'];
+
 						//set the greeting directory
 						$path = $_SESSION['switch']['voicemail']['dir'].'/default/'.$_SESSION['domain_name'].'/'.$row['voicemail_id'];
 						if (file_exists($path.'/msg_'.$row['voicemail_message_uuid'].'.wav')) {

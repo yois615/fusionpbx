@@ -277,6 +277,8 @@
 				$col_count++;
 				echo th_order_by('message_length', $text['label-message_length'], $order_by, $order, null, "class='hide-xs right pct-15'");
 				$col_count++;
+				echo th_order_by('circle_vote', $text['label-circle_vote'], $order_by, $order, null, "class='hide-xs right pct-15'");
+				$col_count++;
 				if ($_SESSION['voicemail']['storage_type']['text'] != 'base64') {
 					echo "<th class='right pct-15 hide-sm-dn'>".$text['label-message_size']."</th>\n";
 					$col_count++;
@@ -319,6 +321,7 @@
 					}
 					echo "	</td>\n";
 					echo "	<td class='right no-wrap hide-xs' style='".$bold."'>".escape($row['message_length_label'])."</td>\n";
+					echo "	<td class='right no-wrap hide-xs' style='".$bold."'>".escape($row['circle_vote'])."</td>\n";
 					if ($_SESSION['voicemail']['storage_type']['text'] != 'base64') {
 						echo "	<td class='right no-wrap hide-sm-dn' style='".$bold."'>".escape($row['file_size_label'])."</td>\n";
 					}

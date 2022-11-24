@@ -276,6 +276,8 @@ $text['message-password_requirements']['ru-ru'] = "Требования к па�
 $text['message-password_requirements']['sv-se'] = "lösenordskrav ";
 $text['message-password_requirements']['uk-ua'] = "вимоги до паролю";
 
+$text['label-circle_vote']['en-us'] = "Top Ten Vote";
+
 $text['label-numberic_only']['en-us'] = "Only Numbers Allowed";
 $text['label-numberic_only']['en-gb'] = "Only Numbers Allowed";
 $text['label-numberic_only']['ar-eg'] = "";
