@@ -39,6 +39,38 @@
 		exit;
 	}
 
+//define functions
+function array2csv(array &$array) {
+	if (count($array) == 0) {
+		return null;
+	}
+	ob_start();
+	$df = fopen("php://output", 'w');
+	fputcsv($df, array_keys(reset($array)));
+	foreach ($array as $row) {
+		fputcsv($df, $row);
+	}
+	fclose($df);
+	return ob_get_clean();
+}
+
+function download_send_headers($filename) {
+	// disable caching
+	$now = gmdate("D, d M Y H:i:s");
+	header("Expires: Tue, 03 Jul 2001 06:00:00 GMT");
+	header("Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate");
+	header("Last-Modified: {$now} GMT");
+
+	// force download
+	header("Content-Type: application/force-download");
+	header("Content-Type: application/octet-stream");
+	header("Content-Type: application/download");
+
+	// disposition / encoding on response body
+	header("Content-Disposition: attachment;filename={$filename}");
+	header("Content-Transfer-Encoding: binary");
+}
+
 //add multi-lingual support
 	$language = new text;
 	$text = $language->get();
@@ -59,6 +91,18 @@
 		header('Location: circle_votes.php'.($search != '' ? '?search='.urlencode($search) : null));
 		exit;
 	}
+
+	if ($_GET["action"] == "download") {
+		$sql = "select vote,count(vote) FROM circle_tt_votes GROUP BY vote ORDER BY count DESC ";
+		$database = new database;
+		$vote_results = $database->select($sql, null, 'all');
+		unset($sql, $parameters);
+
+		download_send_headers("votes_export_".date("Y-m-d").".csv");
+		echo array2csv($vote_results);
+		exit;
+	}
+
 
 //get order and order by
 	$order_by = $_GET["order_by"];
@@ -96,6 +140,8 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-circle-vote']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
+
+	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download']);
 	
 	if (permission_exists('circle_votes_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-vote-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
