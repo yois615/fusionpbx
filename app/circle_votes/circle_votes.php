@@ -122,7 +122,8 @@ function download_send_headers($filename) {
 	$offset = $rows_per_page * $page;
 
 //get the list
-	$sql = "select vote,count(vote) FROM circle_tt_votes GROUP BY vote ORDER BY count DESC ";
+	$sql = "select vote,count(vote) FROM circle_tt_votes GROUP BY vote ";
+	$sql .= order_by($order_by, $order, 'count', 'desc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
 	$vote_results = $database->select($sql, $parameters, 'all');
