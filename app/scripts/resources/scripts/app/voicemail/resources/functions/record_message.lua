@@ -439,7 +439,11 @@
 									check_password(voicemail_id, password_tries);
 								--send to the main menu
 									timeouts = 0;
-									main_menu();
+									if (voicemail_tutorial == "true") then 
+										tutorial("intro");
+									else
+										main_menu();
+									end
 							else
 								--remote access is false
 								freeswitch.consoleLog("notice", "[voicemail] remote access is disabled.\n");
