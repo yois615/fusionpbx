@@ -142,6 +142,7 @@ function download_send_headers($filename) {
 	echo "	<div class='heading'><b>".$text['title-circle-vote']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
 
+	echo button::create(['type'=>'button','label'=>'Pick random winner','link'=>'circle_vote_winner.php']);
 	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download']);
 	
 	if (permission_exists('circle_votes_delete')) {
