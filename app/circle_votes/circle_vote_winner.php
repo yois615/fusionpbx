@@ -52,7 +52,8 @@
 //get the count
 	$sql = "select count(vote) from circle_tt_votes ";
 	$database = new database;
-	$num_rows = $database->select($sql, $parameters, 'column');
+	$num_votes = $database->select($sql, $parameters, 'column');
+	$num_rows = 1;
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
@@ -62,9 +63,12 @@
 	$offset = $rows_per_page * $page;
 
 //get the list
-	$sql = "select v.vote, v.call_uuid, c.caller_id_name, c.caller_id_number FROM circle_tt_votes v ";
-    $sql .= "INNER JOIN circle_customer c ON v.customer_id = c.customer_id ";
-    $sql .= "ORDER BY random() LIMIT 1 ";
+
+	$sql = "select v.vote, v.call_uuid, c.caller_id_name, c.caller_id_number, vmm.voicemail_uuid, vm.voicemail_id ";
+    $sql .= "FROM circle_tt_votes v INNER JOIN circle_customer c ON v.customer_id = c.customer_id ";
+	$sql .= "INNER JOIN v_voicemail_messages vmm ON v.call_uuid = vmm.voicemail_message_uuid ";
+	$sql .= "INNER JOIN v_voicemails vm ON vmm.voicemail_uuid = vm.voicemail_uuid ";
+	$sql .= "ORDER BY random() LIMIT 1 ";
 	$database = new database;
 	$vote_results = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
@@ -79,8 +83,9 @@
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
-	echo "	<div class='heading'><b>".$text['title-circle-vote']." (".$num_rows.")</b></div>\n";
+	echo "	<div class='heading'><b>Pick a winner (".$num_votes.")</b></div>\n";
 	echo "	<div class='actions'>\n";
+	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_votes.php']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -95,17 +100,26 @@
 	echo th_order_by('caller_id_number', 'Caller ID Number', $order_by, $order);
 	echo th_order_by('caller_id_name', 'Caller ID Name', $order_by, $order);
     echo th_order_by('vote', 'Vote', $order_by, $order);
-    echo th_order_by('call_uuid', 'Call and VM UUID', $order_by, $order);
+    echo "<th class='center shrink'>".$text['label-tools']."</th>\n";
+	//echo th_order_by('call_uuid', 'Call and VM UUID', $order_by, $order);
 	echo "</tr>\n";
 
 	if (is_array($vote_results) && @sizeof($vote_results) != 0) {
 		$x = 0;
-		foreach ($vote_results as $row) {		
+		foreach ($vote_results as $row) {	
+			//playback progress bar
+			echo "<tr class='list-row' id='recording_progress_bar_".escape($row['call_uuid'])."' style='display: none;'><td class='playback_progress_bar_background' style='padding: 0; border: none;' colspan='4'><span class='playback_progress_bar' id='recording_progress_".escape($row['call_uuid'])."'></span></td></tr>\n";
+			echo "<tr style='display: none;'><td></td></tr>\n"; // dummy row to maintain alternating background color	
 			echo "<tr class='list-row'>\n";
 			echo "	<td>".escape($row['caller_id_number'])."</td>\n";
             echo "	<td>".escape($row['caller_id_name'])."</td>\n";
             echo "	<td>".escape($row['vote'])."</td>\n";
-            echo "	<td>".escape($row['call_uuid'])."</td>\n";
+			echo "	<td class='button center no-link no-wrap'>";
+			echo 		"<audio id='recording_audio_".escape($row['call_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['call_uuid'])."')\" onended=\"recording_reset('".escape($row['call_uuid'])."');\" src='/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".urlencode($row['voicemail_uuid'])."&uuid=".urlencode($row['call_uuid'])."&r=".uuid()."'></audio>";
+			echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['call_uuid']),'onclick'=>"recording_play('".escape($row['call_uuid'])."');"]);
+			echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".escape($row['voicemail_uuid'])."&uuid=".escape($row['call_uuid'])."&t=bin&r=".uuid(),'onclick'=>"$(this).closest('tr').children('td').css('font-weight','normal');"]);
+			echo "	</td>\n";
+            
 			echo "</tr>\n";
 			$x++;
 		}
