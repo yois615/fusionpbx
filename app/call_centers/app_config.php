@@ -146,6 +146,22 @@
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "call_center_email_address";
 		//$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++
+		$apps[$x]['permissions'][$y]['name'] = "call_center_callback_view";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "call_center_callback_add";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "call_center_callback_edit";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "call_center_callback_delete";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "call_center_callback_view";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
