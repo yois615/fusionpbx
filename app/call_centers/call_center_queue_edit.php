@@ -341,6 +341,10 @@
 			}
 			$dialplan_xml .= "		<action application=\"set\" data=\"cc_export_vars=call_center_queue_uuid\"/>\n";
 			$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
+			if ($queue_announce_position && is_numeric($queue_announce_frequency)) {
+				$dialplan_xml .= "		<action application=\"set\" data=\"result=\${luarun(app/call_centers/announce-position.lua ";
+				$dialplan_xml .= "\${uuid} ".$call_center_queue_uuid." ".$queue_announce_frequency."})\"/>\n";
+			}
 			if ($queue_time_base_score_sec != '') {
 				$dialplan_xml .= "		<action application=\"set\" data=\"cc_base_score=".$queue_time_base_score_sec."\"/>\n";
 			}
