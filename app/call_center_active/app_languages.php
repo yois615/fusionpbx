@@ -484,6 +484,10 @@ $text['label-queue']['ru-ru'] = "Очередь";
 $text['label-queue']['sv-se'] = "Grupp";
 $text['label-queue']['uk-ua'] = "";
 
+$text['label-queue-pending-callbacks']['en-us'] = "Pending Queue Callbacks";
+
+$text['label-retry_count']['en-us'] = "Retry Count";
+
 $text['label-options']['en-us'] = "Options";
 $text['label-options']['en-gb'] = "Options";
 $text['label-options']['ar-eg'] = "";
