@@ -82,6 +82,9 @@ while (true) do
         end);
         api:executeString("uuid_broadcast " .. caller_uuid .. " ivr/ivr-you_are_number.wav aleg")
         api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. #position_table .. ".wav aleg")
-        --TODO use queue_callback_profile to play annoucnement that you can request callback
+        -- TODO: Waiting for a representitive
+        if (callback_profile ~= nil) then
+            --TODO use queue_callback_profile to play annoucnement that you can request callback
+        end
     end
 end

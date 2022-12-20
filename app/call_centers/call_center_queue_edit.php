@@ -103,6 +103,7 @@
 			$queue_announce_position = $_POST["queue_announce_position"];
 			$queue_announce_sound = $_POST["queue_announce_sound"];
 			$queue_announce_frequency = $_POST["queue_announce_frequency"];
+			$queue_callback_profile = $_POST["queue_callback_profile"];
 			$queue_cc_exit_keys = $_POST["queue_cc_exit_keys"];
 			$queue_description = $_POST["queue_description"];
 
@@ -300,6 +301,7 @@
 			$array['call_center_queues'][0]['queue_announce_position'] = $queue_announce_position;
 			$array['call_center_queues'][0]['queue_announce_sound'] = $queue_announce_sound;
 			$array['call_center_queues'][0]['queue_announce_frequency'] = $queue_announce_frequency;
+			$array['call_center_queues'][0]['queue_callback_profile'] = $queue_callback_profile;
 			$array['call_center_queues'][0]['queue_cc_exit_keys'] = $queue_cc_exit_keys;
 			$array['call_center_queues'][0]['queue_description'] = $queue_description;
 			$array['call_center_queues'][0]['call_center_queue_uuid'] = $call_center_queue_uuid;
@@ -522,6 +524,7 @@
 				$queue_announce_position = $row["queue_announce_position"];
 				$queue_announce_sound = $row["queue_announce_sound"];
 				$queue_announce_frequency = $row["queue_announce_frequency"];
+				$queue_callback_profile = $row["queue_callback_profile"];
 				$queue_cc_exit_keys = $row["queue_cc_exit_keys"];
 				$queue_description = $row["queue_description"];
 			}
@@ -572,6 +575,15 @@
 //get the sounds
 	$sounds = new sounds;
 	$sounds = $sounds->get();
+
+//get the callback profiles
+	$sql = "select profile_name, id from v_call_center_callback_profile ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "order by profile_name asc";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$cbprofiles = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //set default values
 	if (strlen($queue_strategy) == 0) { $queue_strategy = "longest-idle-agent"; }
@@ -1186,6 +1198,27 @@
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "  Callback Profile\n";
+   	echo "</td>\n";
+   	echo "<td class='vtable' align='left'>\n";
+   	echo "  <select class='formfld' name='queue_callback_profile'>\n";
+	echo "	<option value=''></option>\n";
+	foreach ($cbprofiles as $row) {
+		if ($row['id'] == $queue_callback_profile) {
+			echo "    <option value='".escape($row['id'])."' selected='selected'>".escape($row['profile_name'])."</option>\n";
+		}
+		else {
+			echo "    <option value='".escape($row['id'])."'>".escape($row['profile_name'])."</option>\n";
+		}
+	}
+	echo "    </select>\n";
+   	echo "<br />\n";
+   	echo "Select the Queue callback profile or leave blank for none.\n";
+   	echo "</td>\n";
+   	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
