@@ -30,7 +30,7 @@ if caller_uuid == nil or queue_uuid == nil or mseconds == nil then
 end
 
 -- Get the queue_name
-local sql = "SELECT c.queue_name, d.domain_name FROM v_call_center_queues ";
+local sql = "SELECT c.queue_name, c.queue_callback_profile, d.domain_name FROM v_call_center_queues ";
 sql = sql .. "INNER JOIN v_domains ON c.domain_uuid = d.domain_uuid "
 sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
 local params = {
@@ -38,6 +38,7 @@ local params = {
 };
 local queue_details = dbh:query(sql, params, function(row)
     queue_name = row.queue_name .. "@" .. row.domain_name;
+    callback_profile = row.queue_callback_profile;
 end);
 
 while (true) do
@@ -70,8 +71,9 @@ while (true) do
         return
     else
         -- Calculate position including callbacks
-        local sql = "SELECT start_epoch FROM v_call_center_callback_pending "
+        local sql = "SELECT start_epoch FROM v_call_center_callbacks "
         sql = sql .. "WHERE call_center_queue_uuid = :queue_uuid "
+        sql = sql .. "AND status = 'pending' "
         sql = sql .. "AND (:current_time - start_epoch) <= :base_score "
         local params = {queue_uuid = queue_uuid, current_time = os.time(), base_score = position_table[#position_table]};
         dbh:query(sql, params, function(row)
@@ -80,5 +82,6 @@ while (true) do
         end);
         api:executeString("uuid_broadcast " .. caller_uuid .. " ivr/ivr-you_are_number.wav aleg")
         api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. #position_table .. ".wav aleg")
+        --TODO use queue_callback_profile to play annoucnement that you can request callback
     end
 end

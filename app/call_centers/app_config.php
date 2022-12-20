@@ -421,6 +421,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "queue_callback_profile";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "queue_announce_sound";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -507,7 +511,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = "v_call_center_callback";
+		$apps[$x]['db'][$y]['table']['name'] = "v_call_center_callback_profile";
 		$apps[$x]['db'][$y]['table']['parent'] = "";
 		$z=0;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "id";
@@ -570,7 +574,7 @@
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = "v_call_center_callback_pending";
+		$apps[$x]['db'][$y]['table']['name'] = "v_call_center_callbacks";
 		$apps[$x]['db'][$y]['table']['parent'] = "";
 		$z=0;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "id";
@@ -612,6 +616,18 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "caller_id_number";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "retry_count";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "retry_epoch";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "status";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
