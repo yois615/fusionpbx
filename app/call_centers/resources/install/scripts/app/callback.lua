@@ -36,6 +36,7 @@ domain_name = session:getVariable("domain_name");
 caller_id_name = session:getVariable("caller_id_name");
 caller_id_number = session:getVariable("caller_id_number");
 domain_uuid = session:getVariable("domain_uuid");
+uuid = session:getVariable("uuid");
 
 -- include config.lua
 require "resources.functions.config";
@@ -88,21 +89,53 @@ end);
 
 -- Initial callback request
 if (action == "start") then
-    -- Do we force CID?
-    if (callback_force_cid == true) then
-        if (string.len(callback_request_prompt) > 0) then
-            session:streamFile(recordings_dir .."/" .. callback_request_prompt);
-            session:say(caller_id_number, "en", "telephone_number", "iterated");
-            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
-            if (dtmf_digits ~= nil and dtmf_digits == 1) then
-                --TODO put call in table, play confirmation, and hangup
-                -- We need to get the queue join time
-            else
-               session:execute("transfer", queue_extension .. " XML " .. domain_name);
-            end
-
-        end
-
+    
+    if (string.len(callback_request_prompt) > 0) then
+        session:streamFile(recordings_dir .."/" .. callback_request_prompt);
+    else
+        --Play some default annoucnement
     end
+    session:say(caller_id_number, "en", "telephone_number", "iterated");
+    if (callback_force_cid == false) then
+        -- To accept this number press 1, to enter a different number press 2
+        local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]")
+        if (dtmf_digits ~= nil and dtmf_digits == "2") then
+            invalid = 0;
+            while (session:ready() and invalid < 3 and valid == false) do
+                caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "enter_your_number.wav", "", "\\d+");
+                session:setVariable("valid_callback", "${regex ".. caller_id_number .. "|" ..callback_dialplan .. "}")
+                session:getVariable("valid_callback");
+                if (valid_callback == "true") then
+                    valid = true;
+                end
+                invalid = invalid + 1;
+            end
+            if valid == false and (dtmf_digits == nil or dtmf_digits == 2) then
+                session:execute("transfer", queue_extension .. " XML " .. domain_name);
+            end
+        end
+    end
+    local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+        if (dtmf_digits ~= nil and dtmf_digits == "1") then
+            --TODO put call in table, play confirmation, and hangup
+            local joined_epoch = session:getVariable("cc_queue_joined_epoch");
+            sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
+            sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, status) ";
+            sql = sql .. "VALUES (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
+            sql = sql .. "caller_id_number, 0, 'pending' ";
+            local params = {
+                queue_uuid = queue_uuid,
+                domain_uuid = domain_uuid,
+                uuid = uuid,
+                cc_queue_joined_epoch = cc_queue_joined_epoch,
+                caller_id_name = caller_id_name,
+                caller_id_number = caller_id_number                    
+            }
+            dbh:query(sql, params);
+            session:hangup();
+        else
+            session:execute("transfer", queue_extension .. " XML " .. domain_name);
+        end
 end
 -- digit = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "\\d+")
+-- cc_queue_canceled_epoch
