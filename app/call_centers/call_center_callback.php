@@ -31,7 +31,7 @@
 	require_once "resources/paging.php";
 
 //check permisission
-	if (permission_exists('call_center_queue_view')) {
+	if (permission_exists('call_center_callback_view')) {
 		//access granted
 	}
 	else {
@@ -54,20 +54,20 @@
 	if ($action != '' && is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
 		switch ($action) {
 			case 'copy':
-				if (permission_exists('call_center_queue_add')) {
+				if (permission_exists('call_center_callback_add')) {
 					$obj = new call_center;
 					$obj->copy_queues($call_center_queues);
 				}
 				break;
 			case 'delete':
-				if (permission_exists('call_center_queue_delete')) {
+				if (permission_exists('call_center_callback_delete')) {
 					$obj = new call_center;
 					$obj->delete_queues($call_center_queues);
 				}
 				break;
 		}
 
-		header('Location: call_center_queues.php'.($search != '' ? '?search='.urlencode($search) : null));
+		header('Location: call_center_callback.php'.($search != '' ? '?search='.urlencode($search) : null));
 		exit;
 	}
 
@@ -86,7 +86,7 @@
 	}
 
 //get total call center queues count from the database
-	$sql = "select count(*) from v_call_center_queues ";
+	$sql = "select count(*) from v_call_center_callback_profile ";
 	$sql .= "where domain_uuid = :domain_uuid ";
 	if (isset($sql_search)) {
 		$sql .= "and ".$sql_search;
@@ -127,18 +127,13 @@
 	if (permission_exists('call_center_imports')) {
 		echo button::create(['type'=>'button','label'=>$text['button-import'],'icon'=>$_SESSION['theme']['button_icon_import'],'link'=>PROJECT_PATH.'/app/call_center_imports/call_center_imports.php?import_type=call_center_queues']);
 	}
-	if (permission_exists('call_center_callback_view')) {
-		echo button::create(['type'=>'button','label'=>'Callback Profiles','icon'=>'phone-alt','link'=>'call_center_callback.php']);
-	}
-	if (permission_exists('call_center_agent_view')) {
-		echo button::create(['type'=>'button','label'=>$text['button-agents'],'icon'=>'users','link'=>'call_center_agents.php']);
-	}
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'call_center_queues.php']);
 	if (permission_exists('call_center_wallboard')) {
 		echo button::create(['type'=>'button','label'=>$text['button-wallboard'],'icon'=>'th','link'=>PROJECT_PATH.'/app/call_center_wallboard/call_center_wallboard.php']);
 	}
 	$margin_left = permission_exists('call_center_agent_view') || permission_exists('call_center_wallboard') ? 'margin-left: 15px;' : null;
 	if (permission_exists('call_center_queue_add') && (!is_numeric($_SESSION['limit']['call_center_queues']['numeric']) || $num_rows <= $_SESSION['limit']['call_center_queues']['numeric'])) {
-		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','style'=>$margin_left,'link'=>'call_center_queue_edit.php']);
+		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','style'=>$margin_left,'link'=>'call_center_callback_edit.php']);
 		unset($margin_left);
 	}
 	if (permission_exists('call_center_queue_add') && $result && (!is_numeric($_SESSION['limit']['call_center_queues']['numeric']) || $num_rows <= $_SESSION['limit']['call_center_queues']['numeric'])) {
