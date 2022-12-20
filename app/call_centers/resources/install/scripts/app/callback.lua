@@ -3,10 +3,6 @@ Steps:
 function to collect userinfo.  Needs to take channel vars and DB vars
     so that we know who to call back and how to call them
 
-looping function to play back queue position (probably needs another file)
-
-Way to capture channel var cc_exit_key and send to IVR
-
 looping function to monitor queue cc-base-score
     if the top user has a base score lower than my score (using os.time - start_epoch), and caller is not currently in queue, then call back and add to queue with my cc-base-score
         If noone in queue then callback
@@ -24,5 +20,89 @@ function to call back user using gateway and DB vars for caller ID
 
 Need to create table with domain, which queue in, position, entry time, how many attempts to call back
 Need a UI to set up callback options
-Need to allow breakout from queue to request callback
-]]
+
+]] 
+
+api = freeswitch.API()
+action = argv[1]
+queue_uuid = argv[2]
+
+if (action == nil or queue_id == nil) then
+    return;
+end
+
+-- get the variables
+domain_name = session:getVariable("domain_name");
+caller_id_name = session:getVariable("caller_id_name");
+caller_id_number = session:getVariable("caller_id_number");
+domain_uuid = session:getVariable("domain_uuid");
+
+-- include config.lua
+require "resources.functions.config";
+
+-- load libraries
+local Database = require "resources.functions.database";
+dbh = Database.new('system');
+local Settings = require "resources.functions.lazy_settings";
+local file = require "resources.functions.file";
+
+-- get the sounds dir, language, dialect and voice
+local sounds_dir = session:getVariable("sounds_dir");
+local default_language = session:getVariable("default_language") or 'en';
+local default_dialect = session:getVariable("default_dialect") or 'us';
+local default_voice = session:getVariable("default_voice") or 'callie';
+
+-- get the recordings settings
+local settings = Settings.new(db, domain_name, domain_uuid);
+
+-- set the storage type and path
+storage_type = settings:get('recordings', 'storage_type', 'text') or '';
+storage_path = settings:get('recordings', 'storage_path', 'text') or '';
+if (storage_path ~= '') then
+    storage_path = storage_path:gsub("${domain_name}", session:getVariable("domain_name"));
+    storage_path = storage_path:gsub("${domain_uuid}", domain_uuid);
+end
+-- set the recordings directory
+local recordings_dir = recordings_dir .. "/" .. domain_name;
+
+-- Get the callback_profile
+local sql = "SELECT c.queue_extension, p.caller_id_number, p.caller_id_name, p.callback_dialplan, p.callback_request_prompt, "
+sql = sql .. "p. callback_confirm_prompt, p.callback_force_cid, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
+sql = sql .. "FROM v_call_center_queues c INNER JOIN v_call_center_callback_profile p ON c.queue_callback_profile = p.id ";
+sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
+local params = {
+    queue_uuid = queue_uuid
+};
+local queue_details = dbh:query(sql, params, function(row)
+    queue_extension = row.queue_extension;
+    callback_cid_number = row.caller_id_number;
+    callback_cid_name = row.caller_id_name;
+    callback_dialplan = row.callback_dialplan;
+    callback_request_prompt = row.callback_request_prompt;
+    callback_confirm_prompt = row.callback_confirm_prompt;
+    callback_force_cid = row.callback_force_cid;
+    callback_retries = row.callback_retries;
+    callback_timeout = row.callback_timeout;
+    callback_retry_delay = row.callback_retry_delay;
+end);
+
+-- Initial callback request
+if (action == "start") then
+    -- Do we force CID?
+    if (callback_force_cid == true) then
+        if (string.len(callback_request_prompt) > 0) then
+            session:streamFile(recordings_dir .."/" .. callback_request_prompt);
+            session:say(caller_id_number, "en", "telephone_number", "iterated");
+            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+            if (dtmf_digits ~= nil and dtmf_digits == 1) then
+                --TODO put call in table, play confirmation, and hangup
+                -- We need to get the queue join time
+            else
+               session:execute("transfer", queue_extension .. " XML " .. domain_name);
+            end
+
+        end
+
+    end
+end
+-- digit = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "\\d+")

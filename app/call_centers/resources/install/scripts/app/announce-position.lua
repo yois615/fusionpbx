@@ -1,6 +1,6 @@
 -- callcenter-announce-position.lua
 -- Announce queue position to a member in a given mod_callcenter queue.
--- Arguments are, in order: caller uuid, queue_name, interval (in milliseconds).
+-- Arguments are, in order: caller uuid, queue_extension, interval (in milliseconds).
 -- Usage: <action application="set" data="result=${luarun(callcenter-announce-position.lua ${uuid} ${queue_uuid} 30000)}"/>
 api = freeswitch.API()
 caller_uuid = argv[1]
@@ -29,15 +29,15 @@ if caller_uuid == nil or queue_uuid == nil or mseconds == nil then
     return
 end
 
--- Get the queue_name
-local sql = "SELECT c.queue_name, c.queue_callback_profile, d.domain_name FROM v_call_center_queues ";
+-- Get the queue_extension
+local sql = "SELECT c.queue_extension, c.queue_callback_profile, d.domain_name FROM v_call_center_queues ";
 sql = sql .. "INNER JOIN v_domains ON c.domain_uuid = d.domain_uuid "
 sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
 local params = {
     queue_uuid = queue_uuid
 };
 local queue_details = dbh:query(sql, params, function(row)
-    queue_name = row.queue_name .. "@" .. row.domain_name;
+    queue_extension = row.queue_extension .. "@" .. row.domain_name;
     callback_profile = row.queue_callback_profile;
 end);
 
@@ -45,7 +45,7 @@ while (true) do
     -- Pause between announcements
     freeswitch.msleep(mseconds)
     local position_table = {};
-    members = api:executeString("callcenter_config queue list members " .. queue_name)
+    members = api:executeString("callcenter_config queue list members " .. queue_extension)
     exists = false
 
     for line in members:gmatch("[^\r\n]+") do
