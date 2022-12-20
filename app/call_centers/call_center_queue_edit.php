@@ -381,12 +381,12 @@
 				$dialplan_xml .= "	</condition>\n";
 			}
 
-			$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".$queue_extension."$\">\n";
 			if ($destination->valid($queue_timeout_app.':'.$queue_timeout_data)) {
+				$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".$queue_extension."$\">\n";
 				$dialplan_xml .= "		<action application=\"".$queue_timeout_app."\" data=\"".$queue_timeout_data."\"/>\n";
+				$dialplan_xml .= "	</condition>\n";
+				$dialplan_xml .= "</extension>\n";
 			}
-			
-			$dialplan_xml .= "</extension>\n";
 
 		//build the dialplan array
 			$array['dialplans'][0]["domain_uuid"] = $_SESSION['domain_uuid'];
