@@ -539,6 +539,10 @@
 	
 							//delete the checked rows
 								if (is_array($array) && @sizeof($array) != 0) {
+
+									//grant temporary permissions
+										$p = new permissions;
+										$p->add('call_center_callback_profile_delete', 'temp');
 	
 									//execute delete
 										$database = new database;
@@ -546,6 +550,9 @@
 										$database->app_uuid = $this->app_uuid;
 										$database->delete($array);
 										unset($array);
+
+									//revoke temporary permissions
+										$p->delete('call_center_callback_profile_delete', 'temp');
 	
 									//set message
 										message::add($text['message-delete']);

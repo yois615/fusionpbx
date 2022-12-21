@@ -47,7 +47,7 @@
 	if (is_array($_POST['call_center_callback_profiles'])) {
 		$action = $_POST['action'];
 		$search = $_POST['search'];
-		$call_center_queues = $_POST['call_center_callback_profiles'];
+		$call_center_callback_profiles = $_POST['call_center_callback_profiles'];
 	}
 
 //process the http post data by action
@@ -56,7 +56,7 @@
 			case 'delete':
 				if (permission_exists('call_center_callback_delete')) {
 					$obj = new call_center;
-					$obj->delete_callbacks($call_center_queues);
+					$obj->delete_callbacks($call_center_callback_profiles);
 				}
 				break;
 		}
