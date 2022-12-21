@@ -81,10 +81,10 @@
 
 		//check for all required data
 			$msg = '';
-			if (strlen($profile_name) == 0) { $msg .= $text['message-required']." ".$text['label-agent_name']."<br>\n"; }
-			if (strlen($callback_force_cid) == 0) { $msg .= $text['message-required']." ".$text['label-agent_type']."<br>\n"; }
-			if (strlen($callback_retries) == 0) { $msg .= $text['message-required']." ".$text['label-agent_call_timeout']."<br>\n"; }
-			if (strlen($callback_retry_delay) == 0) { $msg .= $text['message-required']." ".$text['label-agent_contact']."<br>\n"; }
+			if (strlen($profile_name) == 0) { $msg .= $text['message-required']." ".$text['label-profile_name']."<br>\n"; }
+			if (strlen($callback_force_cid) == 0) { $msg .= $text['message-required']." ".$text['label-force_cid']."<br>\n"; }
+			if (strlen($callback_retries) == 0) { $msg .= $text['message-required']." ".$text['label-retries']."<br>\n"; }
+			if (strlen($callback_retry_delay) == 0) { $msg .= $text['message-required']." ".$text['label-retry_delay']."<br>\n"; }
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -188,10 +188,10 @@
 
 //show the header
 	if ($action == "add") {
-		$document['title'] = $text['title-call_center_agent_add'];
+		$document['title'] = $text['title-call_center_callback_add'];
 	}
 	if ($action == "update") {
-		$document['title'] = $text['title-call_center_agent_edit'];
+		$document['title'] = $text['title-call_center_callback_edit'];
 	}
 	require_once "resources/header.php";
 
@@ -205,10 +205,10 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'>";
 	if ($action == "add") {
-		echo "<b>".$text['header-call_center_agent_add']."</b>";
+		echo "<b>".$text['header-call_center_callback_add']."</b>";
 	}
 	if ($action == "update") {
-		echo "<b>".$text['header-call_center_agent_edit']."</b>";
+		echo "<b>".$text['header-call_center_callback_edit']."</b>";
 	}
 	echo 	"</div>\n";
 	echo "	<div class='actions'>\n";
@@ -230,39 +230,60 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	// Up to here
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-type']."\n";
+	echo "	".$text['label-description']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='agent_type' maxlength='255' value=\"".escape($agent_type)."\" pattern='^(callback|uuid-standby)$'>\n";
+	echo "	<input class='formfld' type='text' name='profile_description' maxlength='255' value=\"".escape($profile_description)."\">\n";
 	echo "<br />\n";
 	echo $text['description-type']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
+	
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-caller_id_name']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <input class='formfld' type='text' name='caller_id_name' maxlength='255' value=\"".escape($caller_id_name)."\">\n";
+	echo "<br />\n";
+	echo $text['description-caller_id_name']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-call_timeout']."\n";
+	echo "	".$text['label-caller_id_number']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_call_timeout' maxlength='255' min='1' step='1' value='".escape($agent_call_timeout)."'>\n";
+	echo "  <input class='formfld' type='number' name='caller_id_number' maxlength='16' min='1' step='1' value='".escape($caller_id_number)."'>\n";
 	echo "<br />\n";
-	echo $text['description-call_timeout']."\n";
+	echo $text['description-caller_id_number']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-callback_dialplan']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <input class='formfld' type='text' name='callback_dialplan' maxlength='255' value=\"".escape($callbacl_dialplan)."\">\n";
+	echo "<br />\n";
+	echo $text['description-callback_dialplan']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	echo "	<tr>";
-	echo "		<td class='vncell' valign='top'>".$text['label-username']."</td>";
+	echo "		<td class='vncell' valign='top'>".$text['label-callback_request_prompt']."</td>";
 	echo "		<td class='vtable' align='left'>";
-	echo "<select name='queue_greeting' class='formfld' style='width: 200px;' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
+	echo "<select name='callback_request_prompt' class='formfld' style='width: 200px;' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
 	echo "	<option value=''></option>\n";
 	foreach($sounds as $key => $value) {
 		echo "<optgroup label=".$text['label-'.$key].">\n";
 		$selected = false;
 		foreach($value as $row) {
-			if ($queue_greeting == $row["value"]) { 
+			if ($callback_request_prompt == $row["value"]) { 
 				$selected = true;
 				echo "	<option value='".escape($row["value"])."' selected='selected'>".escape($row["name"])."</option>\n";
 			}
@@ -273,155 +294,94 @@
 		echo "</optgroup>\n";
 	}
 	if (if_group("superadmin")) {
-		if (!$selected && strlen($queue_greeting) > 0) {
-			echo "	<option value='".escape($queue_greeting)."' selected='selected'>".escape($queue_greeting)."</option>\n";
+		if (!$selected && strlen($callback_request_prompt) > 0) {
+			echo "	<option value='".escape($callback_request_prompt)."' selected='selected'>".escape($callback_request_prompt)."</option>\n";
 		}
 		unset($selected);
 	}
 	echo "	</select>\n";
 	unset($users);
 	echo "			<br>\n";
-	echo "			".$text['description-users']."\n";
+	echo "			".$text['description-callback_request_prompt']."\n";
+	echo "		</td>";
+	echo "	</tr>";
+
+	echo "	<tr>";
+	echo "		<td class='vncell' valign='top'>".$text['label-callback_confirm_prompt']."</td>";
+	echo "		<td class='vtable' align='left'>";
+	echo "<select name='callback_confirm_prompt' class='formfld' style='width: 200px;' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
+	echo "	<option value=''></option>\n";
+	foreach($sounds as $key => $value) {
+		echo "<optgroup label=".$text['label-'.$key].">\n";
+		$selected = false;
+		foreach($value as $row) {
+			if ($callback_confirm_prompt == $row["value"]) { 
+				$selected = true;
+				echo "	<option value='".escape($row["value"])."' selected='selected'>".escape($row["name"])."</option>\n";
+			}
+			else {
+				echo "	<option value='".escape($row["value"])."'>".escape($row["name"])."</option>\n";
+			}
+		}
+		echo "</optgroup>\n";
+	}
+	if (if_group("superadmin")) {
+		if (!$selected && strlen($callback_confirm_prompt) > 0) {
+			echo "	<option value='".escape($callback_confirm_prompt)."' selected='selected'>".escape($callback_confirm_prompt)."</option>\n";
+		}
+		unset($selected);
+	}
+	echo "	</select>\n";
+	unset($users);
+	echo "			<br>\n";
+	echo "			".$text['description-callback_confirm_prompt']."\n";
 	echo "		</td>";
 	echo "	</tr>";
 
 	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-agent_id']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_id' id='agent_id' maxlength='255' min='1' step='1' value='".escape($agent_id)."'>\n";
-	echo "	<div style='display: none;' id='duplicate_agent_id_response'></div>\n";
-	echo "<br />\n";
-	echo $text['description-agent_id']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-agent_password']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='password' name='agent_password' autocomplete='off' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!\$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='255' min='1' step='1' value='".escape($agent_password)."'>\n";
-	echo "<br />\n";
-	echo $text['description-agent_password']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-contact']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo $destination->select('user_contact', 'agent_contact', $agent_contact);
-	echo "<br />\n";
-	echo $text['description-contact']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-status']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='agent_status'>\n";
-	echo "	<option value=''></option>\n";
-	if ($agent_status == "Logged Out") {
-		echo "	<option value='Logged Out' SELECTED >".$text['option-logged_out']."</option>\n";
-	}
-	else {
-		echo "	<option value='Logged Out'>".$text['option-logged_out']."</option>\n";
-	}
-	if ($agent_status == "Available") {
-		echo "	<option value='Available' SELECTED >".$text['option-available']."</option>\n";
-	}
-	else {
-		echo "	<option value='Available'>".$text['option-available']."</option>\n";
-	}
-	if ($agent_status == "Available (On Demand)") {
-		echo "	<option value='Available (On Demand)' SELECTED >".$text['option-available_on_demand']."</option>\n";
-	}
-	else {
-		echo "	<option value='Available (On Demand)'>".$text['option-available_on_demand']."</option>\n";
-	}
-	if ($agent_status == "On Break") {
-		echo "	<option value='On Break' SELECTED >".$text['option-on_break']."</option>\n";
-	}
-	else {
-		echo "	<option value='On Break'>".$text['option-on_break']."</option>\n";
-	}
-	echo "	</select>\n";
-	echo "<br />\n";
-	echo $text['description-status']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-no_answer_delay_time']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_no_answer_delay_time' maxlength='255' min='0' step='1' value='".escape($agent_no_answer_delay_time)."'>\n";
-	echo "<br />\n";
-	echo $text['description-no_answer_delay_time']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-max_no_answer']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_max_no_answer' maxlength='255' min='0' step='1' value='".escape($agent_max_no_answer)."'>\n";
-	echo "<br />\n";
-	echo $text['description-max_no_answer']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-wrap_up_time']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_wrap_up_time' maxlength='255' min='0' step='1' value='".escape($agent_wrap_up_time)."'>\n";
-	echo "<br />\n";
-	echo $text['description-wrap_up_time']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-reject_delay_time']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_reject_delay_time' maxlength='255' min='0' step='1' value='".escape($agent_reject_delay_time)."'>\n";
-	echo "<br />\n";
-	echo $text['description-reject_delay_time']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-busy_delay_time']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_busy_delay_time' maxlength='255' min='1' step='1' value='".escape($agent_busy_delay_time)."'>\n";
-	echo "<br />\n";
-	echo $text['description-busy_delay_time']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-record_template']."\n";
+	echo "	".$text['label-callback_force_cid']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='agent_record'>\n";
-	echo "	<option value='true' ".($agent_record == "true" ?  "selected='selected'" : '')." >".$text['option-true']."</option>\n";
-	echo "	<option value='false' ".($agent_record != "true" ?  "selected='selected'" : '').">".$text['option-false']."</option>\n";
+	echo "	<select class='formfld' name='callback_force_cid'>\n";
+	echo "	<option value='true' ".($callback_force_cid == "true" ?  "selected='selected'" : '')." >".$text['option-true']."</option>\n";
+	echo "	<option value='false' ".($callback_force_cid != "true" ?  "selected='selected'" : '').">".$text['option-false']."</option>\n";
 	echo "	</select>\n";
 	echo "<br />\n";
-	echo $text['description-record_template']."\n";
+	echo $text['description-callback_force_cid']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-callback_retries']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <input class='formfld' type='number' name='callback_retries' max='10' min='0' step='1' value='".escape($callback_retries)."'>\n";
+	echo "<br />\n";
+	echo $text['description-callback_retries']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-callback_timeout']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <input class='formfld' type='number' name='callback_timeout' max='60' min='10' step='1' value='".escape($callback_timeout)."'>\n";
+	echo "<br />\n";
+	echo $text['description-callback_timeout']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-callback_retry_delay']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <input class='formfld' type='number' name='callback_retry_delay' max='3600' min='60' step='1' value='".escape($callback_retry_delay)."'>\n";
+	echo "<br />\n";
+	echo $text['description-callback_retry_delay']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
