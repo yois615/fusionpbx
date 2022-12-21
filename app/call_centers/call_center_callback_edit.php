@@ -195,15 +195,9 @@
 	}
 	require_once "resources/header.php";
 
-//get the list of users for this domain
-	$sql = "select * from v_users ";
-	$sql .= "where domain_uuid = :domain_uuid ";
-	$sql .= "and user_enabled = 'true' ";
-	$sql .= "order by username asc ";
-	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$database = new database;
-	$users = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters);
+//get the sounds
+	$sounds = new sounds;
+	$sounds = $sounds->get();
 
 //show the content
 	echo "<form method='post' name='frm' id='frm' >\n";
@@ -262,17 +256,29 @@
 	echo "	<tr>";
 	echo "		<td class='vncell' valign='top'>".$text['label-username']."</td>";
 	echo "		<td class='vtable' align='left'>";
-	echo "			<select name=\"user_uuid\" class='formfld' style='width: auto;'>\n";
-	echo "			<option value=\"\"></option>\n";
-	foreach($users as $field) {
-		if ($user_uuid == $field['user_uuid']) {
-			echo "			<option value='".escape($field['user_uuid'])."' selected='selected'>".escape($field['username'])."</option>\n";
+	echo "<select name='queue_greeting' class='formfld' style='width: 200px;' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
+	echo "	<option value=''></option>\n";
+	foreach($sounds as $key => $value) {
+		echo "<optgroup label=".$text['label-'.$key].">\n";
+		$selected = false;
+		foreach($value as $row) {
+			if ($queue_greeting == $row["value"]) { 
+				$selected = true;
+				echo "	<option value='".escape($row["value"])."' selected='selected'>".escape($row["name"])."</option>\n";
+			}
+			else {
+				echo "	<option value='".escape($row["value"])."'>".escape($row["name"])."</option>\n";
+			}
 		}
-		else {
-			echo "			<option value='".escape($field['user_uuid'])."' $selected>".escape($field['username'])."</option>\n";
-		}
+		echo "</optgroup>\n";
 	}
-	echo "			</select>";
+	if (if_group("superadmin")) {
+		if (!$selected && strlen($queue_greeting) > 0) {
+			echo "	<option value='".escape($queue_greeting)."' selected='selected'>".escape($queue_greeting)."</option>\n";
+		}
+		unset($selected);
+	}
+	echo "	</select>\n";
 	unset($users);
 	echo "			<br>\n";
 	echo "			".$text['description-users']."\n";
