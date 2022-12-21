@@ -91,7 +91,11 @@ end);
 if (action == "start") then
     
     if (string.len(callback_request_prompt) > 0) then
+        if (file_exists(recordings_dir .."/" .. callback_request_prompt)) then
         session:streamFile(recordings_dir .."/" .. callback_request_prompt);
+        else
+            session:streamFile(callback_request_prompt);
+        end
     else
         --Play some default annoucnement
     end
