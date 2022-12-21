@@ -46,7 +46,7 @@
 //action add or update
 	if (is_uuid($_REQUEST["id"])) {
 		$action = "update";
-		$call_center_queue_callback_uuid = $_REQUEST["id"];
+		$call_center_callback_profile_uuid = $_REQUEST["id"];
 	}
 	else {
 		$action = "add";
@@ -54,7 +54,7 @@
 
 //get http post variables and set them to php variables
 	if (is_array($_POST)) {
-		$call_center_queue_callback_uuid = $_POST["call_center_queue_callback_uuid"];
+		$call_center_callback_profile_uuid = $_POST["call_center_callback_profile_uuid"];
 		$profile_name = $_POST["profile_name"];
 		$profile_description = $_POST["profile_description"];
 		$caller_id_name = $_POST["caller_id_name"];
@@ -98,14 +98,14 @@
 				return;
 			}
 
-		//add the call_center_queue_callback_uuid
-			if (strlen($call_center_queue_callback_uuid) == 0) {
-				$call_center_queue_callback_uuid = uuid();
+		//add the call_center_callback_profile_uuid
+			if (strlen($call_center_callback_profile_uuid) == 0) {
+				$call_center_callback_profile_uuid = uuid();
 			}
 
 		//prepare the array
 			$array['call_center_callback_profile'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
-			$array['call_center_callback_profile'][0]['call_center_queue_callback_uuid'] = $call_center_queue_callback_uuid;
+			$array['call_center_callback_profile'][0]['call_center_callback_profile_uuid'] = $call_center_callback_profile_uuid;
 			$array['call_center_callback_profile'][0]['profile_name'] = $profile_name;
 			$array['call_center_callback_profile'][0]['profile_description'] = $profile_description;
 			$array['call_center_callback_profile'][0]['caller_id_name'] = $caller_id_name;
@@ -118,12 +118,21 @@
 			$array['call_center_callback_profile'][0]['callback_timeout'] = $callback_timeout;
 			$array['call_center_callback_profile'][0]['callback_retry_delay'] = $callback_retry_delay;
 
+		//grant temporary permissions
+			$p = new permissions;
+			$p->add('call_center_callback_profile_add', 'temp');
+			$p->add('call_center_callback_profile_edit', 'temp');
+
 		//save to the data
 			$database = new database;
 			$database->app_name = 'call_center';
 			$database->app_uuid = '95788e50-9500-079e-2807-fd530b0ea370';
 			$database->save($array);
 			//$message = $database->message;
+
+		//revoke temporary permissions
+			$p->delete('call_center_callback_profile_add', 'temp');
+			$p->delete('call_center_callback_profile_edit', 'temp');
 
 		//syncrhonize configuration
 			save_call_center_xml();
@@ -150,16 +159,16 @@
 
 //pre-populate the form
 	if (is_uuid($_GET["id"]) && $_POST["persistformvar"] != "true") {
-		$call_center_queue_callback_uuid = $_GET["id"];
+		$call_center_callback_profile_uuid = $_GET["id"];
 		$sql = "select * from v_call_center_callback_profile ";
 		$sql .= "where domain_uuid = :domain_uuid ";
-		$sql .= "and call_center_queue_callback_uuid = :call_center_queue_callback_uuid ";
+		$sql .= "and call_center_callback_profile_uuid = :call_center_callback_profile_uuid ";
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$parameters['call_center_queue_callback_uuid'] = $call_center_queue_callback_uuid;
+		$parameters['call_center_callback_profile_uuid'] = $call_center_callback_profile_uuid;
 		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && @sizeof($row) != 0) {
-			$call_center_queue_callback_uuid = $row["call_center_queue_callback_uuid"];
+			$call_center_callback_profile_uuid = $row["call_center_callback_profile_uuid"];
 			$profile_name = $row["profile_name"];
 			$profile_description = $row["profile_description"];
 			$caller_id_name = $row["caller_id_name"];
@@ -176,7 +185,7 @@
 	}
 
 //set default values
-	if (strlen($callback_dialplan) == 0) { $callback_dialplan = "^1?([2-9](?!11)[0-9]{2})([2-9](?!11)[0-9]{2})([0-9]{4})$"; }
+	if (strlen($callback_dialplan) == 0) { $callback_dialplan = '^1?([2-9](?!11)[0-9]{2})([2-9](?!11)[0-9]{2})([0-9]{4})$'; }
 	if (strlen($callback_force_cid) == 0) { $callback_force_cid = "false"; }
 	if (strlen($callback_retries) == 0) { $callback_retries = "2"; }
 	if (strlen($callback_timeout) == 0) { $callback_timeout = "30"; }
@@ -268,7 +277,7 @@
 	echo "	".$text['label-callback_dialplan']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='callback_dialplan' maxlength='255' value=\"".escape($callbacl_dialplan)."\">\n";
+	echo "  <input class='formfld' type='text' name='callback_dialplan' maxlength='255' value=\"".escape($callback_dialplan)."\">\n";
 	echo "<br />\n";
 	echo $text['description-callback_dialplan']."\n";
 	echo "</td>\n";
@@ -389,7 +398,7 @@
 	echo "<br /><br />";
 
 	if ($action == "update") {
-		echo "<input type='hidden' name='call_center_queue_callback_uuid' value='".escape($call_center_queue_callback_uuid)."'>\n";
+		echo "<input type='hidden' name='call_center_callback_profile_uuid' value='".escape($call_center_callback_profile_uuid)."'>\n";
 	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 

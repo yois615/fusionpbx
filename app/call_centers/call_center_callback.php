@@ -173,13 +173,13 @@
 		$x = 0;
 		foreach($result as $row) {
 			if (permission_exists('call_center_callback_edit')) {
-				$list_row_url = "call_center_callback_edit.php?id=".urlencode($row['call_center_queue_callback_uuid']);
+				$list_row_url = "call_center_callback_edit.php?id=".urlencode($row['call_center_callback_profile_uuid']);
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
 			if (permission_exists('call_center_callback_add') || permission_exists('call_center_callback_delete')) {
 				echo "	<td class='checkbox'>\n";
 				echo "		<input type='checkbox' name='call_center_callback_profiles[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-				echo "		<input type='hidden' name='call_center_callback_profiles[$x][uuid]' value='".escape($row['call_center_queue_callback_uuid'])."' />\n";
+				echo "		<input type='hidden' name='call_center_callback_profiles[$x][uuid]' value='".escape($row['call_center_callback_profile_uuid'])."' />\n";
 				echo "	</td>\n";
 			}
 			echo "	<td>";

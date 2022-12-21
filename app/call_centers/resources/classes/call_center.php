@@ -515,9 +515,9 @@
 	
 							//get necessary call block details
 								if (is_array($uuids) && @sizeof($uuids) != 0) {
-									$sql = "select call_center_queue_callback_uuid as uuid, profile_name from v_call_center_callback_profile ";
+									$sql = "select call_center_callback_profile_uuid as uuid, profile_name from v_call_center_callback_profile ";
 									$sql .= "where domain_uuid = :domain_uuid ";
-									$sql .= "and call_center_queue_callback_uuid in (".implode(', ', $uuids).") ";
+									$sql .= "and call_center_callback_profile_uuid in (".implode(', ', $uuids).") ";
 									$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 									$database = new database;
 									$rows = $database->select($sql, $parameters, 'all');
@@ -532,7 +532,7 @@
 							//build the delete array
 								$x = 0;
 								foreach ($callback_profile_names as $callback_profile_uuid => $callback_profile_name) {
-									$array[$this->table][$x]['call_center_queue_callback_uuid'] = $callback_profile_uuid;
+									$array[$this->table][$x]['call_center_callback_profile_uuid'] = $callback_profile_uuid;
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
 									$x++;
 								}
