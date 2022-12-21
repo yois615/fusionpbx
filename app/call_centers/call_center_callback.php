@@ -44,25 +44,19 @@
 	$text = $language->get();
 
 //get posted data
-	if (is_array($_POST['call_center_queues'])) {
+	if (is_array($_POST['call_center_callback_profiles'])) {
 		$action = $_POST['action'];
 		$search = $_POST['search'];
-		$call_center_queues = $_POST['call_center_queues'];
+		$call_center_queues = $_POST['call_center_callback_profiles'];
 	}
 
 //process the http post data by action
-	if ($action != '' && is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
+	if ($action != '' && is_array($call_center_callback_profiles) && @sizeof($call_center_callback_profiles) != 0) {
 		switch ($action) {
-			case 'copy':
-				if (permission_exists('call_center_callback_add')) {
-					$obj = new call_center;
-					$obj->copy_queues($call_center_queues);
-				}
-				break;
 			case 'delete':
 				if (permission_exists('call_center_callback_delete')) {
 					$obj = new call_center;
-					$obj->delete_queues($call_center_queues);
+					$obj->delete_callbacks($call_center_queues);
 				}
 				break;
 		}
@@ -79,8 +73,7 @@
 	$search = strtolower($_GET["search"]);
 	if (strlen($search) > 0) {
 		$sql_search = " (";
-		$sql_search .= "lower(queue_name) like :search ";
-		$sql_search .= "or lower(queue_description) like :search ";
+		$sql_search .= "lower(profile_name) like :search ";
 		$sql_search .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
@@ -106,7 +99,7 @@
 
 //get the list
 	$sql = str_replace('count(*)', '*', $sql);
-	$sql .= order_by($order_by, $order, 'queue_name', 'asc');
+	$sql .= order_by($order_by, $order, 'profile_name', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
 	$result = $database->select($sql, $parameters, 'all');
@@ -117,30 +110,22 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //includes and title
-	$document['title'] = $text['title-call_center_queues'];
+	$document['title'] = $text['title-call_center_callback'];
 	require_once "resources/header.php";
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
-	echo "	<div class='heading'><b>".$text['header-call_center_queues']." (".$num_rows.")</b></div>\n";
+	echo "	<div class='heading'><b>".$text['header-call_center_callback']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
-	if (permission_exists('call_center_imports')) {
-		echo button::create(['type'=>'button','label'=>$text['button-import'],'icon'=>$_SESSION['theme']['button_icon_import'],'link'=>PROJECT_PATH.'/app/call_center_imports/call_center_imports.php?import_type=call_center_queues']);
-	}
+	
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'call_center_queues.php']);
-	if (permission_exists('call_center_wallboard')) {
-		echo button::create(['type'=>'button','label'=>$text['button-wallboard'],'icon'=>'th','link'=>PROJECT_PATH.'/app/call_center_wallboard/call_center_wallboard.php']);
-	}
-	$margin_left = permission_exists('call_center_agent_view') || permission_exists('call_center_wallboard') ? 'margin-left: 15px;' : null;
-	if (permission_exists('call_center_queue_add') && (!is_numeric($_SESSION['limit']['call_center_queues']['numeric']) || $num_rows <= $_SESSION['limit']['call_center_queues']['numeric'])) {
+	
+	$margin_left = permission_exists('call_center_callback_view') ? 'margin-left: 15px;' : null;
+	if (permission_exists('call_center_callback_add')) {
 		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','style'=>$margin_left,'link'=>'call_center_callback_edit.php']);
 		unset($margin_left);
 	}
-	if (permission_exists('call_center_queue_add') && $result && (!is_numeric($_SESSION['limit']['call_center_queues']['numeric']) || $num_rows <= $_SESSION['limit']['call_center_queues']['numeric'])) {
-		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','style'=>$margin_left,'onclick'=>"modal_open('modal-copy','btn_copy');"]);
-		unset($margin_left);
-	}
-	if (permission_exists('call_center_queue_delete') && $result) {
+	if (permission_exists('call_center_callback_delete') && $result) {
 		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>$margin_left,'onclick'=>"modal_open('modal-delete','btn_delete');"]);
 		unset($margin_left);
 	}
@@ -156,14 +141,14 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	if (permission_exists('call_center_queue_add') && $result && (!is_numeric($_SESSION['limit']['call_center_queues']['numeric']) || $num_rows <= $_SESSION['limit']['call_center_queues']['numeric'])) {
+	if (permission_exists('call_center_callback_add') && $result) {
 		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
 	}
-	if (permission_exists('call_center_queue_delete') && $result) {
+	if (permission_exists('call_center_callback_delete') && $result) {
 		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
 	}
 
-	echo $text['description-call_center_queues']."\n";
+	echo $text['header-call_center_callback']."\n";
 	echo "<br /><br />\n";
 
 	echo "<form id='form_list' method='post'>\n";
@@ -172,28 +157,14 @@
 
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
-	if (permission_exists('call_center_queue_add') || permission_exists('call_center_queue_delete')) {
+	if (permission_exists('call_center_callback_add') || permission_exists('call_center_callback_delete')) {
 		echo "	<th class='checkbox'>\n";
 		echo "		<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($result ?: "style='visibility: hidden;'").">\n";
 		echo "	</th>\n";
 	}
-	echo th_order_by('queue_name', $text['label-queue_name'], $order_by, $order);
-	echo th_order_by('queue_extension', $text['label-extension'], $order_by, $order);
-	echo th_order_by('queue_strategy', $text['label-strategy'], $order_by, $order);
-	//echo th_order_by('queue_moh_sound', $text['label-music_on_hold'], $order_by, $order);
-	//echo th_order_by('queue_record_template', $text['label-record_template'], $order_by, $order);
-	//echo th_order_by('queue_time_base_score', $text['label-time_base_score'], $order_by, $order);
-	//echo th_order_by('queue_time_base_score_sec', $text['label-time_base_score_sec'], $order_by, $order);
-	//echo th_order_by('queue_max_wait_time', $text['label-max_wait_time'], $order_by, $order);
-	//echo th_order_by('queue_max_wait_time_with_no_agent', $text['label-max_wait_time_with_no_agent'], $order_by, $order);
-	echo th_order_by('queue_tier_rules_apply', $text['label-tier_rules_apply'], $order_by, $order);
-	//echo th_order_by('queue_tier_rule_wait_second', $text['label-tier_rule_wait_second'], $order_by, $order);
-	//echo th_order_by('queue_tier_rule_no_agent_no_wait', $text['label-tier_rule_no_agent_no_wait'], $order_by, $order);
-	//echo th_order_by('queue_discard_abandoned_after', $text['label-discard_abandoned_after'], $order_by, $order);
-	//echo th_order_by('queue_abandoned_resume_allowed', $text['label-abandoned_resume_allowed'], $order_by, $order);
-	//echo th_order_by('queue_tier_rule_wait_multiply_level', $text['label-tier_rule_wait_multiply_level'], $order_by, $order);
-	echo th_order_by('queue_description', $text['label-description'], $order_by, $order, null, "class='hide-sm-dn'");
-	if (permission_exists('call_center_queue_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
+	echo th_order_by('profile_name', $text['label-queue_name'], $order_by, $order);
+	echo th_order_by('profile_description', $text['label-description'], $order_by, $order, null, "class='hide-sm-dn'");
+	if (permission_exists('call_center_callback_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 		echo "	<td class='action-button'>&nbsp;</td>\n";
 	}
 	echo "</tr>\n";
@@ -201,40 +172,26 @@
 	if (is_array($result)) {
 		$x = 0;
 		foreach($result as $row) {
-			if (permission_exists('call_center_queue_edit')) {
-				$list_row_url = "call_center_queue_edit.php?id=".urlencode($row['call_center_queue_uuid']);
+			if (permission_exists('call_center_callback_edit')) {
+				$list_row_url = "call_center_callback_edit.php?id=".urlencode($row['call_center_queue_callback_uuid']);
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
-			if (permission_exists('call_center_queue_add') || permission_exists('call_center_queue_delete')) {
+			if (permission_exists('call_center_callback_add') || permission_exists('call_center_callback_delete')) {
 				echo "	<td class='checkbox'>\n";
-				echo "		<input type='checkbox' name='call_center_queues[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-				echo "		<input type='hidden' name='call_center_queues[$x][uuid]' value='".escape($row['call_center_queue_uuid'])."' />\n";
+				echo "		<input type='checkbox' name='call_center_callback_profiles[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
+				echo "		<input type='hidden' name='call_center_callback_profiles[$x][uuid]' value='".escape($row['call_center_queue_callback_uuid'])."' />\n";
 				echo "	</td>\n";
 			}
 			echo "	<td>";
-			if (permission_exists('call_center_queue_edit')) {
-				echo "	<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['queue_name'])."</a>";
+			if (permission_exists('call_center_callback_edit')) {
+				echo "	<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['profile_name'])."</a>";
 			}
 			else {
-				echo "	".escape($row[queue_name]);
+				echo "	".escape($row[profile_name]);
 			}
 			echo "	</td>\n";
-			echo "	<td>".escape($row['queue_extension'])."</td>\n";
-			echo "	<td>".escape($row['queue_strategy'])."</td>\n";
-			//echo "	<td>".escape($row[queue_moh_sound])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_record_template])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_time_base_score])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_time_base_score_sec])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_max_wait_time])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_max_wait_time_with_no_agent])."&nbsp;</td>\n";
-			echo "	<td>".ucwords(escape($row['queue_tier_rules_apply']))."</td>\n";
-			//echo "	<td>".escape($row[queue_tier_rule_wait_second])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_tier_rule_no_agent_no_wait])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_discard_abandoned_after])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_abandoned_resume_allowed])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row[queue_tier_rule_wait_multiply_level])."&nbsp;</td>\n";
-			echo "	<td class='description overflow hide-sm-dn'>".escape($row['queue_description'])."</td>\n";
-			if (permission_exists('call_center_queue_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
+			echo "	<td class='description overflow hide-sm-dn'>".escape($row['profile_description'])."</td>\n";
+			if (permission_exists('call_center_callback_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 				echo "	<td class='action-button'>";
 				echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$_SESSION['theme']['button_icon_edit'],'link'=>$list_row_url]);
 				echo "	</td>\n";
