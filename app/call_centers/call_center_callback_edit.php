@@ -55,21 +55,17 @@
 //get http post variables and set them to php variables
 	if (is_array($_POST)) {
 		$call_center_queue_callback_uuid = $_POST["call_center_queue_callback_uuid"];
-		$user_uuid = $_POST["user_uuid"];
-		$agent_name = $_POST["agent_name"];
-		$agent_type = $_POST["agent_type"];
-		$agent_call_timeout = $_POST["agent_call_timeout"];
-		$agent_id = $_POST["agent_id"];
-		$agent_password = $_POST["agent_password"];
-		$agent_status = $_POST["agent_status"];
-		$agent_contact = $_POST["agent_contact"];
-		$agent_no_answer_delay_time = $_POST["agent_no_answer_delay_time"];
-		$agent_max_no_answer = $_POST["agent_max_no_answer"];
-		$agent_wrap_up_time = $_POST["agent_wrap_up_time"];
-		$agent_reject_delay_time = $_POST["agent_reject_delay_time"];
-		$agent_busy_delay_time = $_POST["agent_busy_delay_time"];
-		$agent_record = $_POST["agent_record"];
-		//$agent_logout = $_POST["agent_logout"];
+		$profile_name = $_POST["profile_name"];
+		$profile_description = $_POST["profile_description"];
+		$caller_id_name = $_POST["caller_id_name"];
+		$caller_id_number = $_POST["caller_id_number"];
+		$callback_dialplan = $_POST["callback_dialplan"];
+		$callback_request_prompt = $_POST["callback_request_prompt"];
+		$callback_confirm_prompt = $_POST["callback_confirm_prompt"];
+		$callback_force_cid = $_POST["callback_force_cid"];
+		$callback_retries = $_POST["callback_retries"];
+		$callback_timeout = $_POST["callback_timeout"];
+		$callback_retry_delay = $_POST["callback_retry_delay"];
 	}
 
 //process the user data and save it to the database
@@ -79,28 +75,16 @@
 			$token = new token;
 			if (!$token->validate($_SERVER['PHP_SELF'])) {
 				message::add($text['message-invalid_token'],'negative');
-				header('Location: call_center_agents.php');
+				header('Location: call_center_callback.php');
 				exit;
 			}
 
 		//check for all required data
 			$msg = '';
-			//if (strlen($call_center_agent_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-call_center_agent_uuid']."<br>\n"; }
-			//if (strlen($domain_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-domain_uuid']."<br>\n"; }
-			//if (strlen($user_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-user_uuid']."<br>\n"; }
-			if (strlen($agent_name) == 0) { $msg .= $text['message-required']." ".$text['label-agent_name']."<br>\n"; }
-			if (strlen($agent_type) == 0) { $msg .= $text['message-required']." ".$text['label-agent_type']."<br>\n"; }
-			if (strlen($agent_call_timeout) == 0) { $msg .= $text['message-required']." ".$text['label-agent_call_timeout']."<br>\n"; }
-			//if (strlen($agent_id) == 0) { $msg .= $text['message-required']." ".$text['label-agent_id']."<br>\n"; }
-			//if (strlen($agent_password) == 0) { $msg .= $text['message-required']." ".$text['label-agent_password']."<br>\n"; }
-			//if (strlen($agent_status) == 0) { $msg .= $text['message-required']." ".$text['label-agent_status']."<br>\n"; }
-			if (strlen($agent_contact) == 0) { $msg .= $text['message-required']." ".$text['label-agent_contact']."<br>\n"; }
-			if (strlen($agent_no_answer_delay_time) == 0) { $msg .= $text['message-required']." ".$text['label-agent_no_answer_delay_time']."<br>\n"; }
-			if (strlen($agent_max_no_answer) == 0) { $msg .= $text['message-required']." ".$text['label-agent_max_no_answer']."<br>\n"; }
-			if (strlen($agent_wrap_up_time) == 0) { $msg .= $text['message-required']." ".$text['label-agent_wrap_up_time']."<br>\n"; }
-			if (strlen($agent_reject_delay_time) == 0) { $msg .= $text['message-required']." ".$text['label-agent_reject_delay_time']."<br>\n"; }
-			if (strlen($agent_busy_delay_time) == 0) { $msg .= $text['message-required']." ".$text['label-agent_busy_delay_time']."<br>\n"; }
-			//if (strlen($agent_logout) == 0) { $msg .= $text['message-required']." ".$text['label-agent_logout']."<br>\n"; }
+			if (strlen($profile_name) == 0) { $msg .= $text['message-required']." ".$text['label-agent_name']."<br>\n"; }
+			if (strlen($callback_force_cid) == 0) { $msg .= $text['message-required']." ".$text['label-agent_type']."<br>\n"; }
+			if (strlen($callback_retries) == 0) { $msg .= $text['message-required']." ".$text['label-agent_call_timeout']."<br>\n"; }
+			if (strlen($callback_retry_delay) == 0) { $msg .= $text['message-required']." ".$text['label-agent_contact']."<br>\n"; }
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -119,43 +103,20 @@
 				$call_center_queue_callback_uuid = uuid();
 			}
 
-		//get the users array
-			$sql = "select * from v_users ";
-			$sql .= "where domain_uuid = :domain_uuid ";
-			$sql .= "order by username asc ";
-			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-			$database = new database;
-			$users = $database->select($sql, $parameters, 'all');
-			unset($sql, $parameters);
-
-		//change the contact string to loopback - Not recommended added for backwards comptability causes multiple problems
-			if ($_SESSION['call_center']['agent_contact_method']['text'] == 'loopback') {
-				$agent_contact = str_replace("user/", "loopback/", $agent_contact);
-				$agent_contact = str_replace("@", "/", $agent_contact);
-			}
-
 		//prepare the array
 			$array['call_center_callback_profile'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
-			$array['call_center_agents'][0]['call_center_agent_uuid'] = $call_center_agent_uuid;
-			$array['call_center_agents'][0]['agent_name'] = $agent_name;
-			$array['call_center_agents'][0]['agent_type'] = $agent_type;
-			$array['call_center_agents'][0]['agent_call_timeout'] = $agent_call_timeout;
-			$array['call_center_agents'][0]['user_uuid'] = $user_uuid;
-			$array['call_center_agents'][0]['agent_id'] = $agent_id;
-			$array['call_center_agents'][0]['agent_password'] = $agent_password;
-			$array['call_center_agents'][0]['agent_contact'] = $agent_contact;
-			$array['call_center_agents'][0]['agent_status'] = $agent_status;
-			$array['call_center_agents'][0]['agent_no_answer_delay_time'] = $agent_no_answer_delay_time;
-			$array['call_center_agents'][0]['agent_max_no_answer'] = $agent_max_no_answer;
-			$array['call_center_agents'][0]['agent_wrap_up_time'] = $agent_wrap_up_time;
-			$array['call_center_agents'][0]['agent_reject_delay_time'] = $agent_reject_delay_time;
-			$array['call_center_agents'][0]['agent_busy_delay_time'] = $agent_busy_delay_time;
-			$array['call_center_agents'][0]['agent_record'] = $agent_record;
-			if (is_uuid($user_uuid)) {
-				$array['users'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
-				$array['users'][0]['user_uuid'] = $user_uuid;
-				$array['users'][0]['user_status'] = $agent_status;
-			}
+			$array['call_center_callback_profile'][0]['call_center_queue_callback_uuid'] = $call_center_queue_callback_uuid;
+			$array['call_center_callback_profile'][0]['profile_name'] = $profile_name;
+			$array['call_center_callback_profile'][0]['profile_description'] = $profile_description;
+			$array['call_center_callback_profile'][0]['caller_id_name'] = $caller_id_name;
+			$array['call_center_callback_profile'][0]['caller_id_number'] = $caller_id_number;
+			$array['call_center_callback_profile'][0]['callback_dialplan'] = $callback_dialplan;
+			$array['call_center_callback_profile'][0]['callback_request_prompt'] = $callback_request_prompt;
+			$array['call_center_callback_profile'][0]['callback_confirm_prompt'] = $callback_confirm_prompt;
+			$array['call_center_callback_profile'][0]['callback_force_cid'] = $callback_force_cid;
+			$array['call_center_callback_profile'][0]['callback_retries'] = $callback_retries;
+			$array['call_center_callback_profile'][0]['callback_timeout'] = $callback_timeout;
+			$array['call_center_callback_profile'][0]['callback_retry_delay'] = $callback_retry_delay;
 
 		//save to the data
 			$database = new database;
@@ -171,71 +132,6 @@
 			$cache = new cache;
 			$cache->delete('configuration:callcenter.conf');
 
-	//get and then set the complete agent_contact with the call_timeout and when necessary confirm
-		//if you change this variable, also change resources/switch.php
-		$confirm = "group_confirm_file=custom/press_1_to_accept_this_call.wav,group_confirm_key=1,group_confirm_read_timeout=2000,leg_timeout=".$agent_call_timeout;
-		if(strstr($agent_contact, '}') === FALSE) {
-			//not found
-			if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
-				//add the call_timeout
-				$agent_contact = "{call_timeout=".$agent_call_timeout.",sip_invite_domain=".$_SESSION['domain_name']."}".$agent_contact;
-			}
-			else {
-				//add the call_timeout and confirm
-				$agent_contact = "{".$confirm.",call_timeout=".$agent_call_timeout.",sip_invite_domain=".$_SESSION['domain_name']."}".$agent_contact;
-			}
-		}
-		else {
-			$position = strrpos($agent_contact, "}");
-			$first = substr($agent_contact, 0, $position);
-			$last = substr($agent_contact, $position);
-			//add call_timeout and sip_invite_domain, only if missing
-			$call_timeout = (stristr($agent_contact, 'call_timeout') === FALSE) ? ',call_timeout='.$agent_call_timeout : null;
-			$sip_invite_domain = (stristr($agent_contact, 'sip_invite_domain') === FALSE) ? ',sip_invite_domain='.$_SESSION['domain_name'] : null;
-			//compose
-			if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
-				$agent_contact = $first.$sip_invite_domain.$call_timeout.$last;
-			}
-			else {
-				$agent_contact = $first.','.$confirm.$sip_invite_domain.$call_timeout.$last;
-			}
-		}
-
-	//add the agent
-		//setup the event socket connection
-			$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
-		//add the agent using event socket
-			if ($fp) {
-				//add the agent
-					$cmd = "api callcenter_config agent add ".$call_center_agent_uuid." ".$agent_type;
-					$response = event_socket_request($fp, $cmd);
-					usleep(200);
-				//agent set contact
-					$cmd = "api callcenter_config agent set contact ".$call_center_agent_uuid." ".$agent_contact;
-					$response = event_socket_request($fp, $cmd);
-					usleep(200);
-				//agent set status
-					$cmd = "api callcenter_config agent set status ".$call_center_agent_uuid." '".$agent_status."'";
-					$response = event_socket_request($fp, $cmd);
-					usleep(200);
-				//agent set reject_delay_time
-					$cmd = "api callcenter_config agent set reject_delay_time ".$call_center_agent_uuid." ".$agent_reject_delay_time;
-					$response = event_socket_request($fp, $cmd);
-					usleep(200);
-				//agent set busy_delay_time
-					$cmd = "api callcenter_config agent set busy_delay_time ".$call_center_agent_uuid." ".$agent_busy_delay_time;
-					$response = event_socket_request($fp, $cmd);
-				//agent set no_answer_delay_time
-					$cmd = "api callcenter_config agent set no_answer_delay_time ".$call_center_agent_uuid." ".$agent_no_answer_delay_time;
-					$response = event_socket_request($fp, $cmd);
-				//agent set max_no_answer
-					$cmd = "api callcenter_config agent set max_no_answer ".$call_center_agent_uuid." ".$agent_max_no_answer;
-					$response = event_socket_request($fp, $cmd);
-				//agent set wrap_up_time
-					$cmd = "api callcenter_config agent set wrap_up_time ".$call_center_agent_uuid." ".$agent_wrap_up_time;
-					$response = event_socket_request($fp, $cmd);
-			}
-
 		//redirect the user
 			if (isset($action)) {
 				if ($action == "add") {
@@ -244,17 +140,17 @@
 				if ($action == "update") {
 					message::add($text['message-update']);
 				}
-				header("Location: call_center_agents.php");
+				header("Location: call_center_callback.php");
 				return;
 			}
-	} //(is_array($_POST) && strlen($_POST["persistformvar"]) == 0)
+	}
 
 //initialize the destinations object
 	$destination = new destinations;
 
 //pre-populate the form
 	if (is_uuid($_GET["id"]) && $_POST["persistformvar"] != "true") {
-		$call_center_agent_uuid = $_GET["id"];
+		$call_center_queue_callback_uuid = $_GET["id"];
 		$sql = "select * from v_call_center_callback_profile ";
 		$sql .= "where domain_uuid = :domain_uuid ";
 		$sql .= "and call_center_queue_callback_uuid = :call_center_queue_callback_uuid ";
@@ -264,34 +160,28 @@
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && @sizeof($row) != 0) {
 			$call_center_queue_callback_uuid = $row["call_center_queue_callback_uuid"];
-			$user_uuid = $row["user_uuid"];
-			$agent_name = $row["agent_name"];
-			$agent_type = $row["agent_type"];
-			$agent_call_timeout = $row["agent_call_timeout"];
-			$agent_id = $row["agent_id"];
-			$agent_password = $row["agent_password"];
-			$agent_status = $row["agent_status"];
-			$agent_contact = $row["agent_contact"];
-			$agent_no_answer_delay_time = $row["agent_no_answer_delay_time"];
-			$agent_max_no_answer = $row["agent_max_no_answer"];
-			$agent_wrap_up_time = $row["agent_wrap_up_time"];
-			$agent_reject_delay_time = $row["agent_reject_delay_time"];
-			$agent_busy_delay_time = $row["agent_busy_delay_time"];
-			$agent_record = $row["agent_record"];
-			//$agent_logout = $row["agent_logout"];
+			$profile_name = $row["profile_name"];
+			$profile_description = $row["profile_description"];
+			$caller_id_name = $row["caller_id_name"];
+			$caller_id_number = $row["caller_id_number"];
+			$callback_dialplan = $row["callback_dialplan"];
+			$callback_request_prompt = $row["callback_request_prompt"];
+			$callback_confirm_prompt = $row["callback_confirm_prompt"];
+			$callback_force_cid = $row["callback_force_cid"];
+			$callback_retries = $row["callback_retries"];
+			$callback_timeout = $row["callback_timeout"];
+			$callback_retry_delay = $row["callback_retry_delay"];
 		}
 		unset($sql, $parameters, $row);
 	}
 
 //set default values
-	if (strlen($agent_type) == 0) { $agent_type = "callback"; }
-	if (strlen($agent_call_timeout) == 0) { $agent_call_timeout = "20"; }
-	if (strlen($agent_max_no_answer) == 0) { $agent_max_no_answer = "0"; }
-	if (strlen($agent_wrap_up_time) == 0) { $agent_wrap_up_time = "10"; }
-	if (strlen($agent_no_answer_delay_time) == 0) { $agent_no_answer_delay_time = "30"; }
-	if (strlen($agent_reject_delay_time) == 0) { $agent_reject_delay_time = "90"; }
-	if (strlen($agent_busy_delay_time) == 0) { $agent_busy_delay_time = "90"; }
-
+	if (strlen($callback_dialplan) == 0) { $callback_dialplan = "^1?([2-9](?!11)[0-9]{2})([2-9](?!11)[0-9]{2})([0-9]{4})$"; }
+	if (strlen($callback_force_cid) == 0) { $callback_force_cid = "false"; }
+	if (strlen($callback_retries) == 0) { $callback_retries = "2"; }
+	if (strlen($callback_timeout) == 0) { $callback_timeout = "30"; }
+	if (strlen($callback_retry_delay) == 0) { $callback_retry_delay = "300"; }
+	
 //create token
 	$object = new token;
 	$token = $object->create($_SERVER['PHP_SELF']);
@@ -315,35 +205,8 @@
 	$users = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
-//javascript to check for duplicates
-	?>
-	<script language="javascript">
-		function check_duplicates() {
-			//check agent id
-				var agent_id = document.getElementById('agent_id').value;
-				$("#duplicate_agent_id_response").load("call_center_agent_edit.php?check=duplicate&agent_id="+agent_id+"&agent_uuid=<?php echo escape($call_center_agent_uuid); ?>", function() {
-					var duplicate_agent_id = false;
-					if ($("#duplicate_agent_id_response").html() != '') {
-						$('#agent_id').addClass('formfld_highlight_bad');
-						display_message($("#duplicate_agent_id_response").html(), 'negative'<?php if (if_group("superadmin")) { echo ', 3000'; } ?>);
-						duplicate_agent_id = true;
-					}
-					else {
-						$("#duplicate_agent_id_response").html('');
-						$('#agent_id').removeClass('formfld_highlight_bad');
-						duplicate_agent_id = false;
-					}
-
-					if (duplicate_agent_id == false) {
-						document.getElementById('frm').submit();
-					}
-				});
-		}
-	</script>
-
-<?php
 //show the content
-	echo "<form method='post' name='frm' id='frm' onsubmit='check_duplicates(); return false;'>\n";
+	echo "<form method='post' name='frm' id='frm' >\n";
 
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'>";
@@ -364,30 +227,16 @@
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
 	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-agent_name']."\n";
+	echo "	".$text['label-profile_name']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='agent_name' maxlength='255' value=\"".escape($agent_name)."\" />\n";
-	/*
-	echo "<select id=\"agent_name\" name=\"agent_name\" class='formfld'>\n";
-	echo "<option value=\"\"></option>\n";
-	if (is_array($users)) {
-		foreach($users as $field) {
-			if ($field[username] == $agent_name) {
-				echo "<option value='".escape($field[username])."' selected='selected'>".escape($field[username])."</option>\n";
-			}
-			else {
-				echo "<option value='".escape($field[username])."'>".escape($field[username])."</option>\n";
-			}
-		}
-	}
-	echo "</select>";
-	*/
+	echo "	<input class='formfld' type='text' name='profile_name' maxlength='255' value=\"".escape($profile_name)."\" />\n";
 	echo "<br />\n";
-	echo $text['description-agent_name']."\n";
+	echo $text['description-profile_name']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
+	// Up to here
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-type']."\n";
