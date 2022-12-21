@@ -148,7 +148,7 @@ $text['title-call_center_queue_add']['ru-ru'] = "Очередь Колл-цен�
 $text['title-call_center_queue_add']['sv-se'] = "Call Center Kö";
 $text['title-call_center_queue_add']['uk-ua'] = "Черга кол-центра";
 
-$text['title-call_center_callback']['en-us'] = "Call Center Callback Profiles"
+$text['title-call_center_callback']['en-us'] = "Call Center Callback Profiles";
 
 $text['title-call_center_agents']['en-us'] = "Call Center Agents";
 $text['title-call_center_agents']['en-gb'] = "Call Center Agents";
@@ -1851,7 +1851,7 @@ $text['header-call_center_tier_edit']['ru-ru'] = "Компетенция Кол�
 $text['header-call_center_tier_edit']['sv-se'] = "Call Center Kunskap";
 $text['header-call_center_tier_edit']['uk-ua'] = "";
 
-$text['header-call_center_callback']['en-us'] = "Callback Profiles"
+$text['header-call_center_callback']['en-us'] = "Callback Profiles";
 
 $text['header-call_center_queues']['en-us'] = "Call Center Queues";
 $text['header-call_center_queues']['en-gb'] = "Call Center Queues";
