@@ -101,10 +101,10 @@ if (action == "start") then
         local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]")
         if (dtmf_digits ~= nil and dtmf_digits == "2") then
             invalid = 0;
+            valid = false;
             while (session:ready() and invalid < 3 and valid == false) do
                 caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "enter_your_number.wav", "", "\\d+");
-                session:setVariable("valid_callback", "${regex ".. caller_id_number .. "|" ..callback_dialplan .. "}")
-                session:getVariable("valid_callback");
+                local valid_callback = api:execute("regex", caller_id_number .. "|" .. callback_dialplan);
                 if (valid_callback == "true") then
                     valid = true;
                 end
@@ -112,6 +112,7 @@ if (action == "start") then
             end
             if valid == false and (dtmf_digits == nil or dtmf_digits == 2) then
                 session:execute("transfer", queue_extension .. " XML " .. domain_name);
+                return;
             end
         end
     end

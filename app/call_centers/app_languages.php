@@ -1620,6 +1620,23 @@ $text['label-exit_keys']['ru-ru'] = "";
 $text['label-exit_keys']['sv-se'] = "Knapp för att lämna";
 $text['label-exit_keys']['uk-ua'] = "";
 
+$text['label-callback_profile_name']['en-us'] = "Profile Name";
+
+$text['label-callback_dialplan']['en-us'] = "Callback Dialplan";
+
+$text['label-callback_request_prompt']['en-us'] = "Callback Request Prompt";
+
+$text['label-callback_confirm_prompt']['en-us'] = "Callback Confirm Prompt";
+
+$text['label-callback_force_cid']['en-us'] = "Force Caller ID";
+
+$text['label-callback_retries']['en-us'] = "Retries";
+
+$text['label-callback_timeout']['en-us'] = "Timeout";
+
+$text['label-callback_retry_delay']['en-us'] = "Retry Delay";
+
+
 $text['description-exit_keys']['en-us'] = "Keys to quit the current queue waiting.";
 $text['description-exit_keys']['en-gb'] = "Keys to quit the current queue waiting.";
 $text['description-exit_keys']['ar-eg'] = "";
@@ -2945,6 +2962,30 @@ $text['description-abandoned_resume_allowed']['ro-ro'] = "";
 $text['description-abandoned_resume_allowed']['ru-ru'] = "Установите возможность восстанавливать вызов, покинувший очередь.";
 $text['description-abandoned_resume_allowed']['sv-se'] = "Välj 'Ej Besvarat Återtagning' till sann/falsk.";
 $text['description-abandoned_resume_allowed']['uk-ua'] = "";
+
+
+$text['description-callback_profile_name']['en-us'] = "Enter a name for this callback profile";
+
+$text['description-callback_profile_description']['en-us'] = "(Optional) Enter a description for this callback profile";
+
+$text['description-caller_id_name']['en-us'] = "The outbound Caller ID name to use for callback";
+
+$text['description-caller_id_number']['en-us'] = "The outbound Caller ID number to use for callback";
+
+$text['description-callback_dialplan']['en-us'] = "Regular expression to validate user's requested callback number";
+
+$text['description-callback_request_prompt']['en-us'] = "Prompt to play when user breaks out of queue to request callback";
+
+$text['description-callback_confirm_prompt']['en-us'] = "Prompt to play user upon callback to re-enter queue";
+
+$text['description-callback_force_cid']['en-us'] = "Force callback to caller's Caller ID number";
+
+$text['description-callback_retries']['en-us'] = "How many times to retry callback if no answer";
+
+$text['description-callback_timeout']['en-us'] = "How long user has (in seconds) to accept callback before hangup";
+
+$text['description-callback_retry_delay']['en-us'] = "How long to wait (in seconds) before retrying callback";
+
 
 $text['confirm-copy']['en-us'] = "Do you really want to copy this?";
 $text['confirm-copy']['en-gb'] = "Do you really want to copy this?";

@@ -81,10 +81,10 @@
 
 		//check for all required data
 			$msg = '';
-			if (strlen($profile_name) == 0) { $msg .= $text['message-required']." ".$text['label-profile_name']."<br>\n"; }
-			if (strlen($callback_force_cid) == 0) { $msg .= $text['message-required']." ".$text['label-force_cid']."<br>\n"; }
-			if (strlen($callback_retries) == 0) { $msg .= $text['message-required']." ".$text['label-retries']."<br>\n"; }
-			if (strlen($callback_retry_delay) == 0) { $msg .= $text['message-required']." ".$text['label-retry_delay']."<br>\n"; }
+			if (strlen($profile_name) == 0) { $msg .= $text['message-required']." ".$text['label-callback_profile_name']."<br>\n"; }
+			if (strlen($callback_force_cid) == 0) { $msg .= $text['message-required']." ".$text['label-callback_force_cid']."<br>\n"; }
+			if (strlen($callback_retries) == 0) { $msg .= $text['message-required']." ".$text['label-callback_retries']."<br>\n"; }
+			if (strlen($callback_retry_delay) == 0) { $msg .= $text['message-required']." ".$text['label-callback_retry_delay']."<br>\n"; }
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -230,12 +230,12 @@
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
 	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-profile_name']."\n";
+	echo "	".$text['label-callback_profile_name']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
 	echo "	<input class='formfld' type='text' name='profile_name' maxlength='255' value=\"".escape($profile_name)."\" />\n";
 	echo "<br />\n";
-	echo $text['description-profile_name']."\n";
+	echo $text['description-callback_profile_name']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -246,7 +246,7 @@
 	echo "<td class='vtable' align='left'>\n";
 	echo "	<input class='formfld' type='text' name='profile_description' maxlength='255' value=\"".escape($profile_description)."\">\n";
 	echo "<br />\n";
-	echo $text['description-type']."\n";
+	echo $text['description-callback_profile_description']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 	
