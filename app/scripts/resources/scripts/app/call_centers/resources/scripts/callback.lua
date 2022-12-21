@@ -140,3 +140,7 @@ if (action == "start") then
 end
 -- digit = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "\\d+")
 -- cc_queue_canceled_epoch
+
+if action == "event" then
+    -- Process all the callbacks and originate calls
+end
