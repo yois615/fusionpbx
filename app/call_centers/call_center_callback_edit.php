@@ -419,24 +419,11 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	/*
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-agent_logout']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='agent_logout' maxlength='255' value='".escape($agent_logout)."'>\n";
-	echo "<br />\n";
-	echo $text['description-agent_logout']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-	*/
-
 	echo "</table>";
 	echo "<br /><br />";
 
 	if ($action == "update") {
-		echo "<input type='hidden' name='call_center_agent_uuid' value='".escape($call_center_agent_uuid)."'>\n";
+		echo "<input type='hidden' name='call_center_queue_callback_uuid' value='".escape($call_center_queue_callback_uuid)."'>\n";
 	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 
