@@ -243,9 +243,9 @@ if action == "event" then
                             end
                             if (r.dialplan_detail_tag == "condition") then
                                 if (r.dialplan_detail_type == "destination_number") then
-                                    if (api:execute("regex", "m:~"..callback_cid_number.."~"..r.dialplan_detail_data) == "true") then
+                                    if (api:execute("regex", "m:~"..callback.caller_id_number.."~"..r.dialplan_detail_data) == "true") then
                                         --get the regex result
-                                        destination_result = trim(api:execute("regex", "m:~"..callback_cid_number.."~"..r.dialplan_detail_data.."~$1"));
+                                        destination_result = trim(api:execute("regex", "m:~"..callback.caller_id_number.."~"..r.dialplan_detail_data.."~$1"));
                                         regex_match = true
                                     end
                                 end
@@ -256,7 +256,7 @@ if action == "event" then
                                     dialplan_detail_data = r.dialplan_detail_data:gsub("$1", destination_result);
                                     --if the session is set then process the actions
                                     if (y == 0) then
-                                        square = "[direction=outbound,origination_caller_id_number="..bleg_number..",outbound_caller_id_number="..bleg_number..",call_timeout=30,context="..context..",sip_invite_domain="..context..",domain_name="..context..",domain="..context..",accountcode="..accountcode..",domain_uuid="..domain_uuid..",";
+                                        square = "[direction=outbound,origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",context="..context..",sip_invite_domain="..context..",domain_name="..context..",domain="..context..",accountcode="..accountcode..",domain_uuid="..domain_uuid..",";
                                     end
                                     if (r.dialplan_detail_type == "set") then
                                         if (dialplan_detail_data == "sip_h_X-accountcode=${accountcode}") then
@@ -281,16 +281,16 @@ if action == "event" then
                             previous_dialplan_uuid = r.dialplan_uuid;
                         end
 
-                        freeswitch.consoleLog("info", "[disa.callback] dial_string " .. dial_string .. "\n");
+                        freeswitch.consoleLog("info", "[queue_callback] dial_string " .. dial_string .. "\n");
 
                         session1 = freeswitch.Session(dial_string);
                         session1:execute("export", "domain_uuid="..domain_uuid);
-                        freeswitch.consoleLog("info", "[disa.callback] calling " .. callback_cid_number .. "\n");
+                        freeswitch.consoleLog("info", "[queue_callback] calling " .. callback.caller_id_number .. "\n");
                         freeswitch.msleep(2000);
 
                         while (session1:ready() and not session1:answered()) do
                             if os.time() > t_started + callback_timeout then
-                                freeswitch.consoleLog("info", "[queue_callback] timed out for " .. callback_cid_number .. "\n");
+                                freeswitch.consoleLog("info", "[queue_callback] timed out for " .. callback.caller_id_number .. "\n");
                                 session1:hangup();
                                 -- TODO update table
                                 return;
@@ -301,8 +301,17 @@ if action == "event" then
                         end
 
                         -- Play confirmation prompt
+                        if session1:ready() and session1:answered() then
+                            session1:answer();
+                            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+                            sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+                                "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
                         -- Update table with response (declined, rejoined, timeout)
                         -- Join to queue with correct base score
+                        else
+                            -- Update table that timeout
+                        end
+
                         break;
                     else
                         -- we need to break here otherwise we always get callback if anyone is holding less
