@@ -21,13 +21,13 @@ function to call back user using gateway and DB vars for caller ID
 Need to create table with domain, which queue in, position, entry time, how many attempts to call back
 Need a UI to set up callback options
 
-]] 
+]]
 
 api = freeswitch.API()
 action = argv[1]
 queue_uuid = argv[2]
 
-if (action == nil or queue_id == nil) then
+if (action == nil or queue_uuid == nil) then
     return;
 end
 
@@ -74,7 +74,7 @@ sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
 local params = {
     queue_uuid = queue_uuid
 };
-local queue_details = dbh:query(sql, params, function(row)
+dbh:query(sql, params, function(row)
     queue_extension = row.queue_extension;
     callback_cid_number = row.caller_id_number;
     callback_cid_name = row.caller_id_name;
@@ -89,20 +89,22 @@ end);
 
 -- Initial callback request
 if (action == "start") then
-    
+
     if (string.len(callback_request_prompt) > 0) then
-        if (file_exists(recordings_dir .."/" .. callback_request_prompt)) then
-        session:streamFile(recordings_dir .."/" .. callback_request_prompt);
+        if (file_exists(recordings_dir .. "/" .. callback_request_prompt)) then
+            session:streamFile(recordings_dir .. "/" .. callback_request_prompt);
         else
             session:streamFile(callback_request_prompt);
         end
     else
-        --Play some default annoucnement
+        -- Play some default annoucnement
     end
     session:say(caller_id_number, "en", "telephone_number", "iterated");
     if (callback_force_cid == false) then
         -- To accept this number press 1, to enter a different number press 2
-        local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]")
+        local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+            sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+                "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]")
         if (dtmf_digits ~= nil and dtmf_digits == "2") then
             invalid = 0;
             valid = false;
@@ -120,31 +122,97 @@ if (action == "start") then
             end
         end
     end
-    local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
-        if (dtmf_digits ~= nil and dtmf_digits == "1") then
-            --TODO put call in table, play confirmation, and hangup
-            local joined_epoch = session:getVariable("cc_queue_joined_epoch");
-            sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
-            sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, status) ";
-            sql = sql .. "VALUES (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
-            sql = sql .. "caller_id_number, 0, 'pending' ";
-            local params = {
-                queue_uuid = queue_uuid,
-                domain_uuid = domain_uuid,
-                uuid = uuid,
-                cc_queue_joined_epoch = cc_queue_joined_epoch,
-                caller_id_name = caller_id_name,
-                caller_id_number = caller_id_number                    
-            }
-            dbh:query(sql, params);
-            session:hangup();
-        else
-            session:execute("transfer", queue_extension .. " XML " .. domain_name);
-        end
+    local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+        sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+            "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+    if (dtmf_digits ~= nil and dtmf_digits == "1") then
+        -- TODO put call in table, play confirmation, and hangup
+        local joined_epoch = session:getVariable("cc_queue_joined_epoch");
+        sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
+        sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, status) ";
+        sql = sql .. "VALUES (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
+        sql = sql .. "caller_id_number, 0, 'pending' ";
+        local params = {
+            queue_uuid = queue_uuid,
+            domain_uuid = domain_uuid,
+            uuid = uuid,
+            cc_queue_joined_epoch = cc_queue_joined_epoch,
+            caller_id_name = caller_id_name,
+            caller_id_number = caller_id_number
+        }
+        dbh:query(sql, params);
+        session:hangup();
+    else
+        session:execute("transfer", queue_extension .. " XML " .. domain_name);
+    end
 end
 -- digit = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "\\d+")
 -- cc_queue_canceled_epoch
 
 if action == "event" then
-    -- Process all the callbacks and originate calls
+    -- Get all pending callbacks and queue uuid
+    pending_callbacks = {};
+    local sql = "SELECT * FROM v_call_center_callbacks ORDER BY start_epoch ASC";
+    dbh:query(sql, nil, function(row)
+        table.insert(pending_callbacks, row);
+    end);
+    -- For each
+    for i, callback in ipairs(pending_callbacks) do
+        -- get queue details
+        -- Get the callback_profile
+        local sql = "SELECT c.queue_extension, d.domain_name, p.caller_id_number, p.caller_id_name, "
+        sql = sql .. "p. callback_confirm_prompt, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
+        sql = sql .. "FROM v_call_center_queues c INNER JOIN v_call_center_callback_profile p ON c.queue_callback_profile = p.id ";
+        sql = sql .. "INNER JOIN v_domains d ON p.domain_uuid = d.domain_uuid "
+        sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
+        local params = {
+            queue_uuid = callback.call_center_queue_uuid
+        };
+        dbh:query(sql, params, function(row)
+            queue_extension = row.queue_extension;
+            callback_cid_number = row.caller_id_number;
+            callback_cid_name = row.caller_id_name;
+            callback_confirm_prompt = row.callback_confirm_prompt;
+            callback_retries = row.callback_retries;
+            callback_timeout = row.callback_timeout;
+            callback_retry_delay = row.callback_retry_delay;
+            domain_name = row.domain_name;
+        end);
+
+        -- Check member list of queue
+        local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
+        members = trim(api:executeString(cmd));
+        -- Check longest hold time and compare to longest callback
+        for line in members:gmatch("[^\r\n]+") do
+            if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
+                -- Members have a position when their state is Waiting or Trying
+                if string.find(line, "instance_id") == nil then --This is not the header row
+                    local line_delimit = {}
+                    for w in (line .. "|"):gmatch("([^|]*)|") do
+                        table.insert(line_delimit, w)
+                    end
+                    if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
+                        -- This callback is next in line
+                        -- Originate the call
+                        -- Play confirmation prompt
+                        -- Update table with response (declined, rejoined, timeout)
+                        -- Join to queue with correct base score
+                        break;
+                    else
+                        -- we need to break here otherwise we always get callback if anyone is holding less
+                        break;
+                    end
+
+                end
+                if string.find(line, callback.caller_id_number, 1, true) ~= nil then
+                    -- Member exists in queue already, they must have called back
+                    -- remove this entry from the table;
+                    exists = true                
+                    -- We can break out of for
+                    break
+                end
+            end
+
+        end
+    end
 end
