@@ -100,31 +100,38 @@ if (action == "start") then
         -- Play some default annoucnement
     end
     session:say(caller_id_number, "en", "telephone_number", "iterated");
-    if (callback_force_cid == false) then
-        -- To accept this number press 1, to enter a different number press 2
-        local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
-            sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-                "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]")
-        if (dtmf_digits ~= nil and dtmf_digits == "2") then
-            invalid = 0;
-            valid = false;
-            while (session:ready() and invalid < 3 and valid == false) do
-                caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "enter_your_number.wav", "", "\\d+");
-                local valid_callback = api:execute("regex", caller_id_number .. "|" .. callback_dialplan);
-                if (valid_callback == "true") then
-                    valid = true;
+    -- To accept this number press 1, to enter a different number press 2
+    local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+    sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+        "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+    if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
+        session:execute("transfer", queue_extension .. " XML " .. domain_name);
+    end
+    if (callback_force_cid == false and dtmf_digits == "2") then
+        invalid = 0;
+        local accepted = false
+        while (session:ready() and invalid < 3 and accepted == false) do
+            local valid_callback = false;
+            caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "enter_your_number.wav", "", "\\d+");
+            valid_callback = api:execute("regex", "m:|" .. caller_id_number .. "|" .. callback_dialplan);
+            if (valid_callback == true) then
+                session:say(caller_id_number, "en", "telephone_number", "iterated");
+                -- To accept this number press 1, to enter a different number press 2
+                local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+                sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+                    "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+                if dtmf_digits == "1" then
+                    accepted = true
                 end
-                invalid = invalid + 1;
             end
-            if valid == false and (dtmf_digits == nil or dtmf_digits == 2) then
+            invalid = invalid + 1;
+            if invalid == 3 then
                 session:execute("transfer", queue_extension .. " XML " .. domain_name);
                 return;
             end
         end
     end
-    local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
-        sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-            "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+
     if (dtmf_digits ~= nil and dtmf_digits == "1") then
         -- TODO put call in table, play confirmation, and hangup
         local joined_epoch = session:getVariable("cc_queue_joined_epoch");
@@ -150,9 +157,10 @@ end
 -- cc_queue_canceled_epoch
 
 if action == "event" then
-    -- Get all pending callbacks and queue uuid
+    -- Get longest pending callback for each queue uuid
     pending_callbacks = {};
-    local sql = "SELECT * FROM v_call_center_callbacks ORDER BY start_epoch ASC";
+    local sql = "SELECT DISTINCT ON (call_center_queue_uuid) * FROM v_call_center_callbacks ";
+    sql = sql .. "WHERE status = 'pending' ORDER BY start_epoch ASC";
     dbh:query(sql, nil, function(row)
         table.insert(pending_callbacks, row);
     end);
@@ -183,6 +191,7 @@ if action == "event" then
         local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
         members = trim(api:executeString(cmd));
         -- Check longest hold time and compare to longest callback
+        -- TODO also need to handle for no callers in queue
         for line in members:gmatch("[^\r\n]+") do
             if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
                 -- Members have a position when their state is Waiting or Trying
@@ -192,8 +201,105 @@ if action == "event" then
                         table.insert(line_delimit, w)
                     end
                     if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
-                        -- This callback is next in line
-                        -- Originate the call
+                    -- This callback is next in line
+                    -- Originate the call - get outbound dialplan
+                        local sql = [[select * from v_dialplans as d, v_dialplan_details as s
+                        where (d.domain_uuid = :domain_uuid or d.domain_uuid is null)
+                        and d.app_uuid = '8c914ec3-9fc0-8ab5-4cda-6c9288bdc9a3'
+                        and d.dialplan_enabled = 'true'
+                        and d.dialplan_uuid = s.dialplan_uuid
+                        order by
+                        d.dialplan_order asc,
+                        d.dialplan_name asc,
+                        d.dialplan_uuid asc,
+                        s.dialplan_detail_group asc,
+                        CASE s.dialplan_detail_tag
+                        WHEN 'condition' THEN 1
+                        WHEN 'action' THEN 2
+                        WHEN 'anti-action' THEN 3
+                        ELSE 100 END,
+                        s.dialplan_detail_order asc ]]
+                        local params = {domain_uuid = callback.domain_uuid};
+                        if (debug["sql"]) then
+                            freeswitch.consoleLog("notice", "[queue_callback] sql for dialplans:" .. sql .. "; params: " .. json.encode(params) .. "\n");
+                        end
+                        dialplans = {};
+                        x = 1;
+                        dbh:query(sql, params, function(row)
+                            dialplans[x] = row;
+                            x = x + 1;
+                        end);
+
+                        y = 0;
+                        previous_dialplan_uuid = '';
+                        for k, r in pairs(dialplans) do
+                            if (y > 0) then
+                                if (previous_dialplan_uuid ~= r.dialplan_uuid) then
+                                    regex_match = false;
+                                    bridge_match = false;
+                                    square = square .. "]";
+                                    y = 0;
+                                end
+                            end
+                            if (r.dialplan_detail_tag == "condition") then
+                                if (r.dialplan_detail_type == "destination_number") then
+                                    if (api:execute("regex", "m:~"..callback_cid_number.."~"..r.dialplan_detail_data) == "true") then
+                                        --get the regex result
+                                        destination_result = trim(api:execute("regex", "m:~"..callback_cid_number.."~"..r.dialplan_detail_data.."~$1"));
+                                        regex_match = true
+                                    end
+                                end
+                            end
+                            if (r.dialplan_detail_tag == "action") then
+                                if (regex_match) then
+                                    --replace $1
+                                    dialplan_detail_data = r.dialplan_detail_data:gsub("$1", destination_result);
+                                    --if the session is set then process the actions
+                                    if (y == 0) then
+                                        square = "[direction=outbound,origination_caller_id_number="..bleg_number..",outbound_caller_id_number="..bleg_number..",call_timeout=30,context="..context..",sip_invite_domain="..context..",domain_name="..context..",domain="..context..",accountcode="..accountcode..",domain_uuid="..domain_uuid..",";
+                                    end
+                                    if (r.dialplan_detail_type == "set") then
+                                        if (dialplan_detail_data == "sip_h_X-accountcode=${accountcode}") then
+                                            square = square .. "sip_h_X-accountcode="..accountcode..",";
+                                        elseif (dialplan_detail_data == "effective_caller_id_name=${outbound_caller_id_name}") then
+                                        elseif (dialplan_detail_data == "effective_caller_id_number=${outbound_caller_id_number}") then
+                                        else
+                                            square = square .. dialplan_detail_data..",";
+                                        end
+                                    elseif (r.dialplan_detail_type == "bridge") then
+                                        if (bridge_match) then
+                                            dial_string = dial_string .. "," .. square .."]"..dialplan_detail_data;
+                                            square = "[";
+                                        else
+                                            dial_string = square .."]"..dialplan_detail_data;
+                                        end
+                                        bridge_match = true;
+                                    end
+                                y = y + 1;
+                                end
+                            end
+                            previous_dialplan_uuid = r.dialplan_uuid;
+                        end
+
+                        freeswitch.consoleLog("info", "[disa.callback] dial_string " .. dial_string .. "\n");
+
+                        session1 = freeswitch.Session(dial_string);
+                        session1:execute("export", "domain_uuid="..domain_uuid);
+                        freeswitch.consoleLog("info", "[disa.callback] calling " .. callback_cid_number .. "\n");
+                        freeswitch.msleep(2000);
+
+                        while (session1:ready() and not session1:answered()) do
+                            if os.time() > t_started + callback_timeout then
+                                freeswitch.consoleLog("info", "[queue_callback] timed out for " .. callback_cid_number .. "\n");
+                                session1:hangup();
+                                -- TODO update table
+                                return;
+                            else
+                                --freeswitch.consoleLog("info", "[disa.callback] session is not yet answered for " .. callback_cid_number .. "\n");
+                                freeswitch.msleep(500);
+                            end
+                        end
+
                         -- Play confirmation prompt
                         -- Update table with response (declined, rejoined, timeout)
                         -- Join to queue with correct base score
@@ -202,17 +308,8 @@ if action == "event" then
                         -- we need to break here otherwise we always get callback if anyone is holding less
                         break;
                     end
-
-                end
-                if string.find(line, callback.caller_id_number, 1, true) ~= nil then
-                    -- Member exists in queue already, they must have called back
-                    -- remove this entry from the table;
-                    exists = true                
-                    -- We can break out of for
-                    break
                 end
             end
-
         end
     end
 end
