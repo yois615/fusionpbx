@@ -359,8 +359,21 @@ if action == "service" then
         end
     end
 
+    --define the run file
+	run_file = scripts_dir .. "/run/queue-callback-daemon.tmp";
+
+    --used to stop the lua service
+	local file = assert(io.open(run_file, "w"));
+	file:write("remove this file to stop the script");
+
 
     while(true) do
+
+            --exit the loop when the file does not exist
+			if (not file_exists(run_file)) then
+				freeswitch.consoleLog("NOTICE", "queue_callback" .. run_file.." not found\n");
+				break;
+			end
     
     -- Get longest pending callback for each queue uuid
     pending_callbacks = {};
