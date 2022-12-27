@@ -68,6 +68,9 @@ end
 -- set the recordings directory
 local recordings_dir = recordings_dir .. "/" .. domain_name;
 
+-- Get when joined queue
+local joined_epoch = session:getVariable("cc_queue_joined_epoch");
+
 -- Get the callback_profile
 local sql = "SELECT c.queue_extension, p.caller_id_number, p.caller_id_name, p.callback_dialplan, p.callback_request_prompt, "
 sql = sql .. "p.callback_confirm_prompt, p.callback_force_cid, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
@@ -104,6 +107,7 @@ end);
     sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
         "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
     if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
+        session:setVariable("cc_base_score", os.time() - joined_epoch);
         session:transfer(queue_extension, "XML", domain_name);
     end
     if (callback_force_cid == false and dtmf_digits == "2") then
@@ -125,6 +129,7 @@ end);
             end
             invalid = invalid + 1;
             if invalid == 3 then
+                session:setVariable("cc_base_score", os.time() - joined_epoch);
                 session:execute("transfer", queue_extension .. " XML " .. domain_name);
                 return;
             end
@@ -141,7 +146,6 @@ end);
     end
 
     if (dtmf_digits ~= nil and dtmf_digits == "1") then
-        local joined_epoch = session:getVariable("cc_queue_joined_epoch");
         sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
         sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, ";
         sql = sql .. "next_retry_epoch, status, confirm_prompt) ";
@@ -163,6 +167,7 @@ end);
         --TODO play confirmation
         session:hangup();
     else
+        session:setVariable("cc_base_score", os.time() - joined_epoch);
         session:execute("transfer", queue_extension .. " XML " .. domain_name);
     end
 end
