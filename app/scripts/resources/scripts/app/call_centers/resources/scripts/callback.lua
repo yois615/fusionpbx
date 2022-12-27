@@ -141,12 +141,12 @@ end);
     end
 
     if (dtmf_digits ~= nil and dtmf_digits == "1") then
-        -- TODO put call in table, play confirmation, and hangup
         local joined_epoch = session:getVariable("cc_queue_joined_epoch");
         sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
-        sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, status, confirm_prompt) ";
+        sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, ";
+        sql = sql .. "next_retry_epoch, status, confirm_prompt) ";
         sql = sql .. "SELECT (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
-        sql = sql .. "caller_id_number, 0, 'pending', :confirm_prompt";
+        sql = sql .. "caller_id_number, 0, 0, 'pending', :confirm_prompt";
         -- Cannot request another callback in the same queue
         sql = sql .. "WHERE NOT EXISTS (SELECT caller_id_number, call_center_queue_uuid FROM v_call_center_callbacks "
         sql = sql .. "WHERE caller_id_number = :caller_id_number AND call_center_queue_uuid = :queue_uuid and status = 'pending' "
@@ -160,6 +160,7 @@ end);
             confirm_prompt = confirm_prompt_path
         }
         dbh:query(sql, params);
+        --TODO play confirmation
         session:hangup();
     else
         session:execute("transfer", queue_extension .. " XML " .. domain_name);
@@ -168,12 +169,194 @@ end
 -- digit = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-accept_reject_voicemail.wav", "", "\\d+")
 -- cc_queue_canceled_epoch
 
-if action == "event" then
+if action == "service" then
+
+    local function start_queue_callback(callback)
+        -- Originate the call - get outbound dialplan
+        local sql = [[select * from v_dialplans as d, v_dialplan_details as s
+        where (d.domain_uuid = :domain_uuid or d.domain_uuid is null)
+        and d.app_uuid = '8c914ec3-9fc0-8ab5-4cda-6c9288bdc9a3'
+        and d.dialplan_enabled = 'true'
+        and d.dialplan_uuid = s.dialplan_uuid
+        order by
+        d.dialplan_order asc,
+        d.dialplan_name asc,
+        d.dialplan_uuid asc,
+        s.dialplan_detail_group asc,
+        CASE s.dialplan_detail_tag
+        WHEN 'condition' THEN 1
+        WHEN 'action' THEN 2
+        WHEN 'anti-action' THEN 3
+        ELSE 100 END,
+        s.dialplan_detail_order asc ]]
+        local params = {domain_uuid = callback.domain_uuid};
+        if (debug["sql"]) then
+            freeswitch.consoleLog("notice", "[queue_callback] sql for dialplans:" .. sql .. "; params: " .. json.encode(params) .. "\n");
+        end
+        dialplans = {};
+        x = 1;
+        dbh:query(sql, params, function(row)
+            dialplans[x] = row;
+            x = x + 1;
+        end);
+
+        y = 0;
+        previous_dialplan_uuid = '';
+        for k, r in pairs(dialplans) do
+            if (y > 0) then
+                if (previous_dialplan_uuid ~= r.dialplan_uuid) then
+                    regex_match = false;
+                    bridge_match = false;
+                    square = square .. "]";
+                    y = 0;
+                end
+            end
+            if (r.dialplan_detail_tag == "condition") then
+                if (r.dialplan_detail_type == "destination_number") then
+                    if (api:execute("regex", "m:~"..callback.caller_id_number.."~"..r.dialplan_detail_data) == "true") then
+                        --get the regex result
+                        destination_result = trim(api:execute("regex", "m:~"..callback.caller_id_number.."~"..r.dialplan_detail_data.."~$1"));
+                        regex_match = true
+                    end
+                end
+            end
+            if (r.dialplan_detail_tag == "action") then
+                if (regex_match) then
+                    --replace $1
+                    dialplan_detail_data = r.dialplan_detail_data:gsub("$1", destination_result);
+                    --if the session is set then process the actions
+                    if (y == 0) then
+                        square = "[direction=outbound,origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",context="..context..",sip_invite_domain="..context..",domain_name="..context..",domain="..context..",accountcode="..accountcode..",domain_uuid="..domain_uuid..",";
+                    end
+                    if (r.dialplan_detail_type == "set") then
+                        if (dialplan_detail_data == "sip_h_X-accountcode=${accountcode}") then
+                            square = square .. "sip_h_X-accountcode="..accountcode..",";
+                        elseif (dialplan_detail_data == "effective_caller_id_name=${outbound_caller_id_name}") then
+                        elseif (dialplan_detail_data == "effective_caller_id_number=${outbound_caller_id_number}") then
+                        else
+                            square = square .. dialplan_detail_data..",";
+                        end
+                    elseif (r.dialplan_detail_type == "bridge") then
+                        if (bridge_match) then
+                            dial_string = dial_string .. "," .. square .."]"..dialplan_detail_data;
+                            square = "[";
+                        else
+                            dial_string = square .."]"..dialplan_detail_data;
+                        end
+                        bridge_match = true;
+                    end
+                y = y + 1;
+                end
+            end
+            previous_dialplan_uuid = r.dialplan_uuid;
+        end
+
+        freeswitch.consoleLog("info", "[queue_callback] dial_string " .. dial_string .. "\n");
+
+        session1 = freeswitch.Session(dial_string);
+        session1:execute("export", "domain_uuid="..domain_uuid);
+        freeswitch.consoleLog("info", "[queue_callback] calling " .. callback.caller_id_number .. "\n");
+        freeswitch.msleep(2000);
+
+        while (session1:ready() and not session1:answered()) do
+            if os.time() > t_started + callback_timeout then
+                freeswitch.consoleLog("info", "[queue_callback] timed out for " .. callback.caller_id_number .. "\n");
+                -- Table is updated later in the next else block
+                session1:hangup();
+                break;
+            else
+                --freeswitch.consoleLog("info", "[disa.callback] session is not yet answered for " .. callback_cid_number .. "\n");
+                freeswitch.msleep(500);
+            end
+        end
+
+        -- Play confirmation prompt
+        if session1:ready() and session1:answered() then
+            session1:answer();
+
+            -- get the sounds dir, language, dialect and voice
+            local sounds_dir = session1:getVariable("sounds_dir");
+            local default_language = session1:getVariable("default_language") or 'en';
+            local default_dialect = session1:getVariable("default_dialect") or 'us';
+            local default_voice = session1:getVariable("default_voice") or 'callie';
+
+            -- get the recordings settings
+            local settings = Settings.new(db, domain_name, domain_uuid);
+
+            -- set the storage type and path
+            storage_type = settings:get('recordings', 'storage_type', 'text') or '';
+            storage_path = settings:get('recordings', 'storage_path', 'text') or '';
+            if (storage_path ~= '') then
+                storage_path = storage_path:gsub("${domain_name}", session:getVariable("domain_name"));
+                storage_path = storage_path:gsub("${domain_uuid}", domain_uuid);
+            end
+            -- set the recordings directory
+            local recordings_dir = recordings_dir .. "/" .. domain_name;
+
+            if (string.length(callback_confirm_prompt) > 0) then
+                    if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
+                        callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
+                    end
+            else
+                callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+                    "/ivr/ivr-accept_reject_voicemail.wav"
+            end
+            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", callback_confirm_prompt, "", "[12]");
+            if dtmf_digits == "1" then
+                -- Update table with complete status
+                local sql = "UPDATE v_call_center_callbacks SET status = 'complete', completed_epoch = :now ";
+                sql = sql .. "WHERE call_uuid = :call_uuid"
+                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                -- Check if still listed as abandoned, if so don't modify base score
+                -- Above probably not necessary: https://github.com/signalwire/freeswitch/blob/master/src/mod/applications/mod_callcenter/mod_callcenter.c#L3108
+                -- Join to queue with correct base score
+                session1:setVariable("cc_base_score", os.time() - callback.start_epoch);
+                session1:transfer(queue_extension, "XML", domain_name);
+            elseif dtmf_digits == "2" then
+                -- Update table with declined status
+                local sql = "UPDATE v_call_center_callbacks SET status = 'declined', completed_epoch = :now ";
+                sql = sql .. "WHERE call_uuid = :call_uuid"
+                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                session1:hangup();
+            else
+                if callback.retry_count < callback_retries then
+                    local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now, ";
+                    sql = sql .. "next_retry_epoch = :next_retry WHERE call_uuid = :call_uuid"
+                    dbh:query(sql, {now = os.time(), 
+                                    retry_count = callback.retry_count + 1,
+                                    next_retry = os.time() + callback_retry_delay});
+                else
+                    local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
+                    sql = sql .. "WHERE call_uuid = :call_uuid"
+                    dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                end
+            session1:hangup();
+            end
+        else
+            -- Update table that timeout
+            if callback.retry_count < callback_retries then
+                local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now, ";
+                    sql = sql .. "next_retry_epoch = :next_retry WHERE call_uuid = :call_uuid"
+                    dbh:query(sql, {now = os.time(), 
+                                    retry_count = callback.retry_count + 1,
+                                    next_retry = os.time() + callback_retry_delay});
+            else
+                local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
+                sql = sql .. "WHERE call_uuid = :call_uuid"
+                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+            end
+            session1:hangup();
+        end
+    end
+
+
+    while(true) do
+    
     -- Get longest pending callback for each queue uuid
     pending_callbacks = {};
     local sql = "SELECT DISTINCT ON (call_center_queue_uuid) * FROM v_call_center_callbacks ";
-    sql = sql .. "WHERE status = 'pending' ORDER BY start_epoch ASC";
-    dbh:query(sql, nil, function(row)
+    sql = sql .. "WHERE status = 'pending' AND next_retry_epoch < :now ORDER BY start_epoch ASC";
+    dbh:query(sql, {now = os.time()}, function(row)
         table.insert(pending_callbacks, row);
     end);
     -- For each
@@ -200,206 +383,31 @@ if action == "event" then
             domain_uuid = row.domain_uuid;
         end);
 
-        -- Are we still waiting for retry delay?
-        if callback.retry_count > 0 and os.time() - callback.completed_epoch < callback_retry_delay then
-            goto next_callback;
-        end
-
         -- Check member list of queue
         local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
         members = trim(api:executeString(cmd));
         -- Check longest hold time and compare to longest callback
-        -- TODO also need to handle for no callers in queue
-        for line in members:gmatch("[^\r\n]+") do
+        for count, line in members:gmatch("[^\r\n]+") do
             if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
-                -- Members have a position when their state is Waiting or Trying
-                if string.find(line, "instance_id") == nil then --This is not the header row
-                    local line_delimit = {}
-                    for w in (line .. "|"):gmatch("([^|]*)|") do
-                        table.insert(line_delimit, w)
-                    end
-                    if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
-                    -- This callback is next in line
-                    -- Originate the call - get outbound dialplan
-                        local sql = [[select * from v_dialplans as d, v_dialplan_details as s
-                        where (d.domain_uuid = :domain_uuid or d.domain_uuid is null)
-                        and d.app_uuid = '8c914ec3-9fc0-8ab5-4cda-6c9288bdc9a3'
-                        and d.dialplan_enabled = 'true'
-                        and d.dialplan_uuid = s.dialplan_uuid
-                        order by
-                        d.dialplan_order asc,
-                        d.dialplan_name asc,
-                        d.dialplan_uuid asc,
-                        s.dialplan_detail_group asc,
-                        CASE s.dialplan_detail_tag
-                        WHEN 'condition' THEN 1
-                        WHEN 'action' THEN 2
-                        WHEN 'anti-action' THEN 3
-                        ELSE 100 END,
-                        s.dialplan_detail_order asc ]]
-                        local params = {domain_uuid = callback.domain_uuid};
-                        if (debug["sql"]) then
-                            freeswitch.consoleLog("notice", "[queue_callback] sql for dialplans:" .. sql .. "; params: " .. json.encode(params) .. "\n");
-                        end
-                        dialplans = {};
-                        x = 1;
-                        dbh:query(sql, params, function(row)
-                            dialplans[x] = row;
-                            x = x + 1;
-                        end);
-
-                        y = 0;
-                        previous_dialplan_uuid = '';
-                        for k, r in pairs(dialplans) do
-                            if (y > 0) then
-                                if (previous_dialplan_uuid ~= r.dialplan_uuid) then
-                                    regex_match = false;
-                                    bridge_match = false;
-                                    square = square .. "]";
-                                    y = 0;
-                                end
-                            end
-                            if (r.dialplan_detail_tag == "condition") then
-                                if (r.dialplan_detail_type == "destination_number") then
-                                    if (api:execute("regex", "m:~"..callback.caller_id_number.."~"..r.dialplan_detail_data) == "true") then
-                                        --get the regex result
-                                        destination_result = trim(api:execute("regex", "m:~"..callback.caller_id_number.."~"..r.dialplan_detail_data.."~$1"));
-                                        regex_match = true
-                                    end
-                                end
-                            end
-                            if (r.dialplan_detail_tag == "action") then
-                                if (regex_match) then
-                                    --replace $1
-                                    dialplan_detail_data = r.dialplan_detail_data:gsub("$1", destination_result);
-                                    --if the session is set then process the actions
-                                    if (y == 0) then
-                                        square = "[direction=outbound,origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",context="..context..",sip_invite_domain="..context..",domain_name="..context..",domain="..context..",accountcode="..accountcode..",domain_uuid="..domain_uuid..",";
-                                    end
-                                    if (r.dialplan_detail_type == "set") then
-                                        if (dialplan_detail_data == "sip_h_X-accountcode=${accountcode}") then
-                                            square = square .. "sip_h_X-accountcode="..accountcode..",";
-                                        elseif (dialplan_detail_data == "effective_caller_id_name=${outbound_caller_id_name}") then
-                                        elseif (dialplan_detail_data == "effective_caller_id_number=${outbound_caller_id_number}") then
-                                        else
-                                            square = square .. dialplan_detail_data..",";
-                                        end
-                                    elseif (r.dialplan_detail_type == "bridge") then
-                                        if (bridge_match) then
-                                            dial_string = dial_string .. "," .. square .."]"..dialplan_detail_data;
-                                            square = "[";
-                                        else
-                                            dial_string = square .."]"..dialplan_detail_data;
-                                        end
-                                        bridge_match = true;
-                                    end
-                                y = y + 1;
-                                end
-                            end
-                            previous_dialplan_uuid = r.dialplan_uuid;
-                        end
-
-                        freeswitch.consoleLog("info", "[queue_callback] dial_string " .. dial_string .. "\n");
-
-                        session1 = freeswitch.Session(dial_string);
-                        session1:execute("export", "domain_uuid="..domain_uuid);
-                        freeswitch.consoleLog("info", "[queue_callback] calling " .. callback.caller_id_number .. "\n");
-                        freeswitch.msleep(2000);
-
-                        while (session1:ready() and not session1:answered()) do
-                            if os.time() > t_started + callback_timeout then
-                                freeswitch.consoleLog("info", "[queue_callback] timed out for " .. callback.caller_id_number .. "\n");
-                                session1:hangup();
-                                -- TODO update table
-                                return;
-                            else
-                                --freeswitch.consoleLog("info", "[disa.callback] session is not yet answered for " .. callback_cid_number .. "\n");
-                                freeswitch.msleep(500);
-                            end
-                        end
-
-                        -- Play confirmation prompt
-                        if session1:ready() and session1:answered() then
-                            session1:answer();
-
-                            -- get the sounds dir, language, dialect and voice
-                            local sounds_dir = session1:getVariable("sounds_dir");
-                            local default_language = session1:getVariable("default_language") or 'en';
-                            local default_dialect = session1:getVariable("default_dialect") or 'us';
-                            local default_voice = session1:getVariable("default_voice") or 'callie';
-
-                            -- get the recordings settings
-                            local settings = Settings.new(db, domain_name, domain_uuid);
-
-                            -- set the storage type and path
-                            storage_type = settings:get('recordings', 'storage_type', 'text') or '';
-                            storage_path = settings:get('recordings', 'storage_path', 'text') or '';
-                            if (storage_path ~= '') then
-                                storage_path = storage_path:gsub("${domain_name}", session:getVariable("domain_name"));
-                                storage_path = storage_path:gsub("${domain_uuid}", domain_uuid);
-                            end
-                            -- set the recordings directory
-                            local recordings_dir = recordings_dir .. "/" .. domain_name;
-
-                            if (string.length(callback_confirm_prompt) > 0) then
-                                    if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
-                                        callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
-                                    end
-                            else
-                                callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-                                    "/ivr/ivr-accept_reject_voicemail.wav"
-                            end
-                            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", callback_confirm_prompt, "", "[12]");
-                            if dtmf_digits == "1" then
-                                -- Update table with complete status
-                                local sql = "UPDATE v_call_center_callbacks SET status = 'complete', completed_epoch = :now ";
-                                sql = sql .. "WHERE call_uuid = :call_uuid"
-                                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
-                                -- Check if still listed as abandoned, if so don't modify base score
-                                -- Above probably not necessary: https://github.com/signalwire/freeswitch/blob/master/src/mod/applications/mod_callcenter/mod_callcenter.c#L3108
-                                -- Join to queue with correct base score
-                                session1:setVariable("cc_base_score", os.time() - callback.start_epoch);
-                                session1:transfer(queue_extension, "XML", domain_name);
-                            elseif dtmf_digits == "2" then
-                               -- Update table with declined status
-                                local sql = "UPDATE v_call_center_callbacks SET status = 'declined', completed_epoch = :now ";
-                                sql = sql .. "WHERE call_uuid = :call_uuid"
-                                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
-                                session1:hangup();
-                            else
-                                if callback.retry_count < callback_retries then
-                                    local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now ";
-                                    sql = sql .. "WHERE call_uuid = :call_uuid"
-                                    dbh:query(sql, {now = os.time(), retry_count = callback.retry_count + 1});
-                                else
-                                    local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
-                                    sql = sql .. "WHERE call_uuid = :call_uuid"
-                                    dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
-                                end
-                            session1:hangup();
-                            end
-                        else
-                            -- Update table that timeout
-                            if callback.retry_count < callback_retries then
-                                local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now ";
-                                sql = sql .. "WHERE call_uuid = :call_uuid"
-                                dbh:query(sql, {now = os.time(), retry_count = callback.retry_count + 1});
-                            else
-                                local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
-                                sql = sql .. "WHERE call_uuid = :call_uuid"
-                                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
-                            end
-                            session1:hangup();
-                        end
-
-                        break;
-                    else
-                        -- we need to break here otherwise we always get callback if anyone is holding less
-                        break;
+            -- Members have a position when their state is Waiting or Trying
+                local line_delimit = {}
+                for w in (line .. "|"):gmatch("([^|]*)|") do
+                    table.insert(line_delimit, w)
+                end
+                if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
+                -- This callback is next in line
+                    start_queue_callback(callback);
+                    -- we need to break here otherwise we always get callback if anyone is holding less
+                    break;
+                else
+                    if count == #members:gmatch("[^\r\n]+") then
+                        -- The queue is empty
+                        start_queue_callback(callback);
                     end
                 end
             end
         end
-        ::next_callback::
     end
+end
+freeswitch.msleep(30000);
 end
