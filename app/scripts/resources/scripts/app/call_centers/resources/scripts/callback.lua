@@ -74,7 +74,7 @@ end
 local recordings_dir = recordings_dir .. "/" .. domain_name;
 
 -- Get when joined queue
-local joined_epoch = session:getVariable("cc_queue_joined_epoch");
+local cc_queue_joined_epoch = session:getVariable("cc_queue_joined_epoch");
 
 -- Get the callback_profile
 local sql = "SELECT c.queue_extension, p.caller_id_number, p.caller_id_name, p.callback_dialplan, p.callback_request_prompt, "
@@ -153,12 +153,12 @@ end);
     if (dtmf_digits ~= nil and dtmf_digits == "1") then
         sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
         sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, ";
-        sql = sql .. "next_retry_epoch, status, confirm_prompt) ";
-        sql = sql .. "SELECT (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
-        sql = sql .. "caller_id_number, 0, 0, 'pending', :confirm_prompt";
+        sql = sql .. "next_retry_epoch, status) ";
+        sql = sql .. "SELECT :queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
+        sql = sql .. ":caller_id_number, 0, 0, 'pending' ";
         -- Cannot request another callback in the same queue
         sql = sql .. "WHERE NOT EXISTS (SELECT caller_id_number, call_center_queue_uuid FROM v_call_center_callbacks "
-        sql = sql .. "WHERE caller_id_number = :caller_id_number AND call_center_queue_uuid = :queue_uuid and status = 'pending' "
+        sql = sql .. "WHERE caller_id_number = :caller_id_number AND call_center_queue_uuid = :queue_uuid and status = 'pending') "
         local params = {
             queue_uuid = queue_uuid,
             domain_uuid = domain_uuid,
@@ -291,7 +291,7 @@ if action == "service" then
             local default_voice = session1:getVariable("default_voice") or 'callie';
 
             -- get the recordings settings
-            local settings = Settings.new(db, domain_name, domain_uuid);
+            local settings = Settings.new(dbh, domain_name, domain_uuid);
 
             -- set the storage type and path
             storage_type = settings:get('recordings', 'storage_type', 'text') or '';
