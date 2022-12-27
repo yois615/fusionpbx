@@ -42,6 +42,11 @@ local file = require "resources.functions.file";
 
 -- Initial callback request
 if (action == "start") then
+    cc_exit_key = session:getVariable("cc_exit_key");
+    if cc_exit_key ~= "1" then
+        -- Callback not requested
+        return;
+    end
     -- get the variables
 domain_name = session:getVariable("domain_name");
 caller_id_name = session:getVariable("caller_id_name");

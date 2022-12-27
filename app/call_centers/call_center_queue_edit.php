@@ -373,20 +373,16 @@
 				$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".$queue_cc_exit_keys."\"/>\n";
 			}
 			$dialplan_xml .= "		<action application=\"callcenter\" data=\"".$queue_extension."@".$_SESSION["domain_name"]."\"/>\n";
-			$dialplan_xml .= "	</condition>\n";
 
 			if (strlen($queue_callback_profile) > 0) {
-				$dialplan_xml .= "	<condition field=\"cc_exit_key\" expression=\"^1\$\" break=\"never\">\n";
-				$dialplan_xml .= "		<action application=\"lua\" data=\"app/call_centers/callback.lua start ".$call_center_queue_uuid."\"/>\n";
-				$dialplan_xml .= "	</condition>\n";
+				$dialplan_xml .= "		<action application=\"lua\" data=\"app/call_centers/resources/scripts/callback.lua start ".$call_center_queue_uuid."\"/>\n";
 			}
 
 			if ($destination->valid($queue_timeout_app.':'.$queue_timeout_data)) {
-				$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".$queue_extension."$\">\n";
 				$dialplan_xml .= "		<action application=\"".$queue_timeout_app."\" data=\"".$queue_timeout_data."\"/>\n";
-				$dialplan_xml .= "	</condition>\n";
-				$dialplan_xml .= "</extension>\n";
 			}
+			$dialplan_xml .= "	</condition>\n";
+			$dialplan_xml .= "</extension>\n";
 
 		//build the dialplan array
 			$array['dialplans'][0]["domain_uuid"] = $_SESSION['domain_uuid'];
