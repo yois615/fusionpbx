@@ -112,7 +112,7 @@ end);
     sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
         "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
     if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
-        session:setVariable("cc_base_score", os.time() - joined_epoch);
+        session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
         session:transfer(queue_extension, "XML", domain_name);
     end
     if (callback_force_cid == false and dtmf_digits == "2") then
@@ -135,7 +135,7 @@ end);
                 session:streamFile("ivr/ivr-please_check_number_try_again.wav")
                 invalid = invalid + 1;
                 if invalid == 3 then
-                    session:setVariable("cc_base_score", os.time() - joined_epoch);
+                    session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
                     session:execute("transfer", queue_extension .. " XML " .. domain_name);
                     return;
                 end
@@ -174,7 +174,7 @@ end);
         session:streamFile("ivr/ivr-we_will_return_your_call_at_this_number.wav");
         session:hangup();
     else
-        session:setVariable("cc_base_score", os.time() - joined_epoch);
+        session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
         session:execute("transfer", queue_extension .. " XML " .. domain_name);
     end
 end
@@ -311,8 +311,8 @@ if action == "service" then
                     callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
                 end
             else
-                session:streamFile("ivr/ivr-this_is_a_call_from.wav")
-                session:say(callback_cid_number, "en", "telephone_number", "iterated");
+                session1:streamFile("ivr/ivr-this_is_a_call_from.wav")
+                session1:say(callback_cid_number, "en", "telephone_number", "iterated");
                 callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
                     "/ivr/ivr-accept_reject_voicemail.wav"
             end
