@@ -27,16 +27,9 @@ api = freeswitch.API()
 action = argv[1]
 queue_uuid = argv[2]
 
-if (action == nil or queue_uuid == nil) then
+if (action == nil) then
     return;
 end
-
--- get the variables
-domain_name = session:getVariable("domain_name");
-caller_id_name = session:getVariable("caller_id_name");
-caller_id_number = session:getVariable("caller_id_number");
-domain_uuid = session:getVariable("domain_uuid");
-uuid = session:getVariable("uuid");
 
 -- include config.lua
 require "resources.functions.config";
@@ -46,6 +39,15 @@ local Database = require "resources.functions.database";
 dbh = Database.new('system');
 local Settings = require "resources.functions.lazy_settings";
 local file = require "resources.functions.file";
+
+-- Initial callback request
+if (action == "start") then
+    -- get the variables
+domain_name = session:getVariable("domain_name");
+caller_id_name = session:getVariable("caller_id_name");
+caller_id_number = session:getVariable("caller_id_number");
+domain_uuid = session:getVariable("domain_uuid");
+uuid = session:getVariable("uuid");
 
 -- get the sounds dir, language, dialect and voice
 local sounds_dir = session:getVariable("sounds_dir");
@@ -68,7 +70,7 @@ local recordings_dir = recordings_dir .. "/" .. domain_name;
 
 -- Get the callback_profile
 local sql = "SELECT c.queue_extension, p.caller_id_number, p.caller_id_name, p.callback_dialplan, p.callback_request_prompt, "
-sql = sql .. "p. callback_confirm_prompt, p.callback_force_cid, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
+sql = sql .. "p.callback_confirm_prompt, p.callback_force_cid, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
 sql = sql .. "FROM v_call_center_queues c INNER JOIN v_call_center_callback_profile p ON c.queue_callback_profile = p.id ";
 sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
 local params = {
@@ -87,9 +89,6 @@ dbh:query(sql, params, function(row)
     callback_retry_delay = row.callback_retry_delay;
 end);
 
--- Initial callback request
-if (action == "start") then
-
     if (string.len(callback_request_prompt) > 0) then
         if (file_exists(recordings_dir .. "/" .. callback_request_prompt)) then
             session:streamFile(recordings_dir .. "/" .. callback_request_prompt);
@@ -105,7 +104,7 @@ if (action == "start") then
     sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
         "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
     if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
-        session:execute("transfer", queue_extension .. " XML " .. domain_name);
+        session:transfer(queue_extension, "XML", domain_name);
     end
     if (callback_force_cid == false and dtmf_digits == "2") then
         invalid = 0;
@@ -132,20 +131,33 @@ if (action == "start") then
         end
     end
 
+    -- Save the confirm prompt since we can't get it later
+    if (string.len(callback_confirm_prompt) > 0) then
+        if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
+            confirm_prompt_path = recordings_dir .. "/" .. callback_request_prompt;
+        else
+            confirm_prompt_path = callback_request_prompt;
+        end
+    end
+
     if (dtmf_digits ~= nil and dtmf_digits == "1") then
         -- TODO put call in table, play confirmation, and hangup
         local joined_epoch = session:getVariable("cc_queue_joined_epoch");
         sql = "INSERT INTO v_call_center_callbacks (call_center_queue_uuid, domain_uuid, ";
-        sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, status) ";
-        sql = sql .. "VALUES (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
-        sql = sql .. "caller_id_number, 0, 'pending' ";
+        sql = sql .. "call_uuid, start_epoch, caller_id_name, caller_id_number, retry_count, status, confirm_prompt) ";
+        sql = sql .. "SELECT (:queue_uuid, :domain_uuid, :uuid, :cc_queue_joined_epoch, :caller_id_name, "
+        sql = sql .. "caller_id_number, 0, 'pending', :confirm_prompt";
+        -- Cannot request another callback in the same queue
+        sql = sql .. "WHERE NOT EXISTS (SELECT caller_id_number, call_center_queue_uuid FROM v_call_center_callbacks "
+        sql = sql .. "WHERE caller_id_number = :caller_id_number AND call_center_queue_uuid = :queue_uuid and status = 'pending' "
         local params = {
             queue_uuid = queue_uuid,
             domain_uuid = domain_uuid,
             uuid = uuid,
             cc_queue_joined_epoch = cc_queue_joined_epoch,
             caller_id_name = caller_id_name,
-            caller_id_number = caller_id_number
+            caller_id_number = caller_id_number,
+            confirm_prompt = confirm_prompt_path
         }
         dbh:query(sql, params);
         session:hangup();
@@ -168,7 +180,7 @@ if action == "event" then
     for i, callback in ipairs(pending_callbacks) do
         -- get queue details
         -- Get the callback_profile
-        local sql = "SELECT c.queue_extension, d.domain_name, p.caller_id_number, p.caller_id_name, "
+        local sql = "SELECT c.queue_extension, d.domain_name, d.domain_uuid, p.caller_id_number, p.caller_id_name, "
         sql = sql .. "p. callback_confirm_prompt, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
         sql = sql .. "FROM v_call_center_queues c INNER JOIN v_call_center_callback_profile p ON c.queue_callback_profile = p.id ";
         sql = sql .. "INNER JOIN v_domains d ON p.domain_uuid = d.domain_uuid "
@@ -185,7 +197,13 @@ if action == "event" then
             callback_timeout = row.callback_timeout;
             callback_retry_delay = row.callback_retry_delay;
             domain_name = row.domain_name;
+            domain_uuid = row.domain_uuid;
         end);
+
+        -- Are we still waiting for retry delay?
+        if callback.retry_count > 0 and os.time() - callback.completed_epoch < callback_retry_delay then
+            goto next_callback;
+        end
 
         -- Check member list of queue
         local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
@@ -303,15 +321,75 @@ if action == "event" then
                         -- Play confirmation prompt
                         if session1:ready() and session1:answered() then
                             session1:answer();
-                            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
-                            sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-                                "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
-                        -- Update table with response (declined, rejoined, timeout)
-                        -- Check if still listed as abandoned, if so don't modify base score
-                        -- Above probably not necessary: https://github.com/signalwire/freeswitch/blob/master/src/mod/applications/mod_callcenter/mod_callcenter.c#L3108
-                        -- Join to queue with correct base score
+
+                            -- get the sounds dir, language, dialect and voice
+                            local sounds_dir = session1:getVariable("sounds_dir");
+                            local default_language = session1:getVariable("default_language") or 'en';
+                            local default_dialect = session1:getVariable("default_dialect") or 'us';
+                            local default_voice = session1:getVariable("default_voice") or 'callie';
+
+                            -- get the recordings settings
+                            local settings = Settings.new(db, domain_name, domain_uuid);
+
+                            -- set the storage type and path
+                            storage_type = settings:get('recordings', 'storage_type', 'text') or '';
+                            storage_path = settings:get('recordings', 'storage_path', 'text') or '';
+                            if (storage_path ~= '') then
+                                storage_path = storage_path:gsub("${domain_name}", session:getVariable("domain_name"));
+                                storage_path = storage_path:gsub("${domain_uuid}", domain_uuid);
+                            end
+                            -- set the recordings directory
+                            local recordings_dir = recordings_dir .. "/" .. domain_name;
+
+                            if (string.length(callback_confirm_prompt) > 0) then
+                                    if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
+                                        callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
+                                    end
+                            else
+                                callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+                                    "/ivr/ivr-accept_reject_voicemail.wav"
+                            end
+                            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", callback_confirm_prompt, "", "[12]");
+                            if dtmf_digits == "1" then
+                                -- Update table with complete status
+                                local sql = "UPDATE v_call_center_callbacks SET status = 'complete', completed_epoch = :now ";
+                                sql = sql .. "WHERE call_uuid = :call_uuid"
+                                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                                -- Check if still listed as abandoned, if so don't modify base score
+                                -- Above probably not necessary: https://github.com/signalwire/freeswitch/blob/master/src/mod/applications/mod_callcenter/mod_callcenter.c#L3108
+                                -- Join to queue with correct base score
+                                session1:setVariable("cc_base_score", os.time() - callback.start_epoch);
+                                session1:transfer(queue_extension, "XML", domain_name);
+                            elseif dtmf_digits == "2" then
+                               -- Update table with declined status
+                                local sql = "UPDATE v_call_center_callbacks SET status = 'declined', completed_epoch = :now ";
+                                sql = sql .. "WHERE call_uuid = :call_uuid"
+                                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                                session1:hangup();
+                            else
+                                if callback.retry_count < callback_retries then
+                                    local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now ";
+                                    sql = sql .. "WHERE call_uuid = :call_uuid"
+                                    dbh:query(sql, {now = os.time(), retry_count = callback.retry_count + 1});
+                                else
+                                    local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
+                                    sql = sql .. "WHERE call_uuid = :call_uuid"
+                                    dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                                end
+                            session1:hangup();
+                            end
                         else
                             -- Update table that timeout
+                            if callback.retry_count < callback_retries then
+                                local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now ";
+                                sql = sql .. "WHERE call_uuid = :call_uuid"
+                                dbh:query(sql, {now = os.time(), retry_count = callback.retry_count + 1});
+                            else
+                                local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
+                                sql = sql .. "WHERE call_uuid = :call_uuid"
+                                dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
+                            end
+                            session1:hangup();
                         end
 
                         break;
@@ -322,5 +400,6 @@ if action == "event" then
                 end
             end
         end
+        ::next_callback::
     end
 end
