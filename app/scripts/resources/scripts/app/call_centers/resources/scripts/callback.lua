@@ -370,71 +370,71 @@ if action == "service" then
 
     while(true) do
 
-            --exit the loop when the file does not exist
-			if (not file_exists(run_file)) then
-				freeswitch.consoleLog("NOTICE", "queue_callback" .. run_file.." not found\n");
-				break;
-			end
-    
-    -- Get longest pending callback for each queue uuid
-    pending_callbacks = {};
-    local sql = "SELECT DISTINCT ON (call_center_queue_uuid) * FROM v_call_center_callbacks ";
-    sql = sql .. "WHERE status = 'pending' AND next_retry_epoch < :now ORDER BY call_center_queue_uuid, start_epoch ASC";
-    dbh:query(sql, {now = os.time()}, function(row)
-        table.insert(pending_callbacks, row);
-    end);
-    -- For each
-    for i, callback in ipairs(pending_callbacks) do
-        -- get queue details
-        -- Get the callback_profile
-        local sql = "SELECT c.queue_extension, d.domain_name, d.domain_uuid, p.caller_id_number, p.caller_id_name, "
-        sql = sql .. "p. callback_confirm_prompt, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
-        sql = sql .. "FROM v_call_center_queues c INNER JOIN v_call_center_callback_profile p ON c.queue_callback_profile = p.id ";
-        sql = sql .. "INNER JOIN v_domains d ON p.domain_uuid = d.domain_uuid "
-        sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
-        local params = {
-            queue_uuid = callback.call_center_queue_uuid
-        };
-        dbh:query(sql, params, function(row)
-            queue_extension = row.queue_extension;
-            callback_cid_number = row.caller_id_number;
-            callback_cid_name = row.caller_id_name;
-            callback_confirm_prompt = row.callback_confirm_prompt;
-            callback_retries = row.callback_retries;
-            callback_timeout = row.callback_timeout;
-            callback_retry_delay = row.callback_retry_delay;
-            domain_name = row.domain_name;
-            domain_uuid = row.domain_uuid;
-        end);
+        --exit the loop when the file does not exist
+        if (not file_exists(run_file)) then
+            freeswitch.consoleLog("NOTICE", "queue_callback" .. run_file.." not found\n");
+            break;
+        end
 
-        -- Check member list of queue
-        local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
-        freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
-        members = trim(api:executeString(cmd));
-        -- Check longest hold time and compare to longest callback
-        for count, line in members:gmatch("[^\r\n]+") do
-            if line == nil then
-                start_queue_callback(callback);
-                break;
-            end
-            if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
-            -- Members have a position when their state is Waiting or Trying
-                local line_delimit = {}
-                for w in (line .. "|"):gmatch("([^|]*)|") do
-                    table.insert(line_delimit, w)
+        -- Get longest pending callback for each queue uuid
+        pending_callbacks = {};
+        local sql = "SELECT DISTINCT ON (call_center_queue_uuid) * FROM v_call_center_callbacks ";
+        sql = sql .. "WHERE status = 'pending' AND next_retry_epoch < :now ORDER BY call_center_queue_uuid, start_epoch ASC";
+        dbh:query(sql, {now = os.time()}, function(row)
+            table.insert(pending_callbacks, row);
+        end);
+        -- For each
+        for i, callback in ipairs(pending_callbacks) do
+            -- get queue details
+            -- Get the callback_profile
+            local sql = "SELECT c.queue_extension, d.domain_name, d.domain_uuid, p.caller_id_number, p.caller_id_name, "
+            sql = sql .. "p. callback_confirm_prompt, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
+            sql = sql .. "FROM v_call_center_queues c INNER JOIN v_call_center_callback_profile p ON c.queue_callback_profile = p.id ";
+            sql = sql .. "INNER JOIN v_domains d ON p.domain_uuid = d.domain_uuid "
+            sql = sql .. "WHERE c.call_center_queue_uuid = :queue_uuid";
+            local params = {
+                queue_uuid = callback.call_center_queue_uuid
+            };
+            dbh:query(sql, params, function(row)
+                queue_extension = row.queue_extension;
+                callback_cid_number = row.caller_id_number;
+                callback_cid_name = row.caller_id_name;
+                callback_confirm_prompt = row.callback_confirm_prompt;
+                callback_retries = row.callback_retries;
+                callback_timeout = row.callback_timeout;
+                callback_retry_delay = row.callback_retry_delay;
+                domain_name = row.domain_name;
+                domain_uuid = row.domain_uuid;
+            end);
+
+            -- Check member list of queue
+            local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
+            freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
+            members = trim(api:executeString(cmd));
+            -- Check longest hold time and compare to longest callback
+            for count, line in members:gmatch("[^\r\n]+") do
+                if line == nil then
+                    start_queue_callback(callback);
+                    break;
                 end
-                if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
-                -- This callback is next in line
+                if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
+                -- Members have a position when their state is Waiting or Trying
+                    local line_delimit = {}
+                    for w in (line .. "|"):gmatch("([^|]*)|") do
+                        table.insert(line_delimit, w)
+                    end
+                    if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
+                    -- This callback is next in line
+                        start_queue_callback(callback);
+                    end
+                    -- we need to break here otherwise we always get callback if anyone is holding less
+                    break;
+                elseif count == #members:gmatch("[^\r\n]+") then
+                    -- The queue is empty
                     start_queue_callback(callback);
                 end
-                -- we need to break here otherwise we always get callback if anyone is holding less
-                break;
-            elseif count == #members:gmatch("[^\r\n]+") then
-                -- The queue is empty
-                start_queue_callback(callback);
             end
         end
+    freeswitch.msleep(20000);
     end
-end
-freeswitch.msleep(30000);
 end
