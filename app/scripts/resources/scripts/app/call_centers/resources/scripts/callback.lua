@@ -104,7 +104,7 @@ end);
             session:streamFile(callback_request_prompt);
         end
     else
-        -- Play some default annoucnement
+        session:streamFile("ivr/ivr-we_will_return_your_call_at_this_number.wav");
     end
     session:say(caller_id_number, "en", "telephone_number", "iterated");
     -- To accept this number press 1, to enter a different number press 2
@@ -120,7 +120,7 @@ end);
         local accepted = false
         while (session:ready() and invalid < 3 and accepted == false) do
             local valid_callback = false;
-            caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "enter_your_number.wav", "", "\\d+");
+            caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "ivr/ivr-please_enter_the_number_where_we_can_reach_you.wav", "", "\\d+");
             valid_callback = api:execute("regex", "m:|" .. caller_id_number .. "|" .. callback_dialplan);
             if (valid_callback == true) then
                 session:say(caller_id_number, "en", "telephone_number", "iterated");
@@ -131,12 +131,14 @@ end);
                 if dtmf_digits == "1" then
                     accepted = true
                 end
-            end
-            invalid = invalid + 1;
-            if invalid == 3 then
-                session:setVariable("cc_base_score", os.time() - joined_epoch);
-                session:execute("transfer", queue_extension .. " XML " .. domain_name);
-                return;
+            else
+                session:streamFile("ivr/ivr-please_check_number_try_again.wav")
+                invalid = invalid + 1;
+                if invalid == 3 then
+                    session:setVariable("cc_base_score", os.time() - joined_epoch);
+                    session:execute("transfer", queue_extension .. " XML " .. domain_name);
+                    return;
+                end
             end
         end
     end
@@ -169,7 +171,7 @@ end);
             confirm_prompt = confirm_prompt_path
         }
         dbh:query(sql, params);
-        --TODO play confirmation
+        session:streamFile("ivr/ivr-we_will_return_your_call_at_this_number.wav");
         session:hangup();
     else
         session:setVariable("cc_base_score", os.time() - joined_epoch);
@@ -305,10 +307,12 @@ if action == "service" then
             local recordings_dir = recordings_dir .. "/" .. domain_name;
 
             if (string.len(callback_confirm_prompt) > 0) then
-                    if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
-                        callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
-                    end
+                if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
+                    callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
+                end
             else
+                session:streamFile("ivr/ivr-this_is_a_call_from.wav")
+                session:say(callback_cid_number, "en", "telephone_number", "iterated");
                 callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
                     "/ivr/ivr-accept_reject_voicemail.wav"
             end
