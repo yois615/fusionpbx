@@ -61,7 +61,7 @@ local default_dialect = session:getVariable("default_dialect") or 'us';
 local default_voice = session:getVariable("default_voice") or 'callie';
 
 -- get the recordings settings
-local settings = Settings.new(db, domain_name, domain_uuid);
+local settings = Settings.new(dbh, domain_name, domain_uuid);
 
 -- set the storage type and path
 storage_type = settings:get('recordings', 'storage_type', 'text') or '';
