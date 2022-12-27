@@ -402,14 +402,12 @@ if action == "service" then
                 if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
                 -- This callback is next in line
                     start_queue_callback(callback);
-                    -- we need to break here otherwise we always get callback if anyone is holding less
-                    break;
-                else
-                    if count == #members:gmatch("[^\r\n]+") then
-                        -- The queue is empty
-                        start_queue_callback(callback);
-                    end
                 end
+                -- we need to break here otherwise we always get callback if anyone is holding less
+                break;
+            elseif count == #members:gmatch("[^\r\n]+") then
+                -- The queue is empty
+                start_queue_callback(callback);
             end
         end
     end
