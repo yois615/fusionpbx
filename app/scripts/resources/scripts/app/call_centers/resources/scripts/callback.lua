@@ -307,6 +307,8 @@ if action == "event" then
                             sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
                                 "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
                         -- Update table with response (declined, rejoined, timeout)
+                        -- Check if still listed as abandoned, if so don't modify base score
+                        -- Above probably not necessary: https://github.com/signalwire/freeswitch/blob/master/src/mod/applications/mod_callcenter/mod_callcenter.c#L3108
                         -- Join to queue with correct base score
                         else
                             -- Update table that timeout
