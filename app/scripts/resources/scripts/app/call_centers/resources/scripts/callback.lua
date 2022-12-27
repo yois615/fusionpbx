@@ -236,11 +236,11 @@ if action == "service" then
                     dialplan_detail_data = r.dialplan_detail_data:gsub("$1", destination_result);
                     --if the session is set then process the actions
                     if (y == 0) then
-                        square = "[direction=outbound,origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",context="..context..",sip_invite_domain="..context..",domain_name="..context..",domain="..context..",accountcode="..accountcode..",domain_uuid="..domain_uuid..",";
+                        square = "[direction=outbound,origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",domain_name="..domain_name..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain="..domain_name..",domain_uuid="..domain_uuid..",";
                     end
                     if (r.dialplan_detail_type == "set") then
                         if (dialplan_detail_data == "sip_h_X-accountcode=${accountcode}") then
-                            square = square .. "sip_h_X-accountcode="..accountcode..",";
+                            square = square .. "sip_h_X-accountcode=0,";
                         elseif (dialplan_detail_data == "effective_caller_id_name=${outbound_caller_id_name}") then
                         elseif (dialplan_detail_data == "effective_caller_id_number=${outbound_caller_id_number}") then
                         else
@@ -263,6 +263,7 @@ if action == "service" then
 
         freeswitch.consoleLog("info", "[queue_callback] dial_string " .. dial_string .. "\n");
 
+        t_started = os.time();
         session1 = freeswitch.Session(dial_string);
         session1:execute("export", "domain_uuid="..domain_uuid);
         freeswitch.consoleLog("info", "[queue_callback] calling " .. callback.caller_id_number .. "\n");
@@ -303,7 +304,7 @@ if action == "service" then
             -- set the recordings directory
             local recordings_dir = recordings_dir .. "/" .. domain_name;
 
-            if (string.length(callback_confirm_prompt) > 0) then
+            if (string.len(callback_confirm_prompt) > 0) then
                     if (file_exists(recordings_dir .. "/" .. callback_confirm_prompt)) then
                         callback_confirm_prompt = recordings_dir .. "/" .. callback_confirm_prompt;
                     end
@@ -311,7 +312,7 @@ if action == "service" then
                 callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
                     "/ivr/ivr-accept_reject_voicemail.wav"
             end
-            local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#", callback_confirm_prompt, "", "[12]");
+            local dtmf_digits = session1:playAndGetDigits(1, 1, 3, 3000, "#", callback_confirm_prompt, "", "[12]");
             if dtmf_digits == "1" then
                 -- Update table with complete status
                 local sql = "UPDATE v_call_center_callbacks SET status = 'complete', completed_epoch = :now ";
@@ -378,7 +379,7 @@ if action == "service" then
     -- Get longest pending callback for each queue uuid
     pending_callbacks = {};
     local sql = "SELECT DISTINCT ON (call_center_queue_uuid) * FROM v_call_center_callbacks ";
-    sql = sql .. "WHERE status = 'pending' AND next_retry_epoch < :now ORDER BY start_epoch ASC";
+    sql = sql .. "WHERE status = 'pending' AND next_retry_epoch < :now ORDER BY call_center_queue_uuid, start_epoch ASC";
     dbh:query(sql, {now = os.time()}, function(row)
         table.insert(pending_callbacks, row);
     end);
@@ -408,9 +409,14 @@ if action == "service" then
 
         -- Check member list of queue
         local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
+        freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
         members = trim(api:executeString(cmd));
         -- Check longest hold time and compare to longest callback
         for count, line in members:gmatch("[^\r\n]+") do
+            if line == nil then
+                start_queue_callback(callback);
+                break;
+            end
             if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
             -- Members have a position when their state is Waiting or Trying
                 local line_delimit = {}
