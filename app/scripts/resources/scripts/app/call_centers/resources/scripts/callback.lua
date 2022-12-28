@@ -97,29 +97,39 @@ dbh:query(sql, params, function(row)
     callback_retry_delay = row.callback_retry_delay;
 end);
 
-    if (string.len(callback_request_prompt) > 0) then
-        if (file_exists(recordings_dir .. "/" .. callback_request_prompt)) then
-            session:streamFile(recordings_dir .. "/" .. callback_request_prompt);
-        else
-            session:streamFile(callback_request_prompt);
-        end
-    else
-        session:streamFile("ivr/ivr-we_will_return_your_call_at_this_number.wav");
-    end
-    session:say(caller_id_number, "en", "telephone_number", "iterated");
-    -- To accept this number press 1, to enter a different number press 2
-    local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
-    sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-        "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
-    if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
+    local valid_callback = api:execute("regex", "m:|" .. caller_id_number .. "|" .. callback_dialplan);
+    if valid_callback == "false" and callback_force_cid == "true" then
+        -- We can't service you
+        session:streamFile("ivr/ivr-please_check_number_try_again.wav")
         session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
-        session:transfer(queue_extension, "XML", domain_name);
+        session:execute("transfer", queue_extension .. " XML " .. domain_name);
     end
-    if (callback_force_cid == "false" and dtmf_digits == "2") then
+    if (valid_callback == "true") then
+        if (string.len(callback_request_prompt) > 0) then
+            if (file_exists(recordings_dir .. "/" .. callback_request_prompt)) then
+                session:streamFile(recordings_dir .. "/" .. callback_request_prompt);
+            else
+                session:streamFile(callback_request_prompt);
+            end
+            session:say(caller_id_number, "en", "telephone_number", "iterated");
+        else
+            session:streamFile("ivr/ivr-it_appears_that_your_phone_number_is.wav");
+            session:say(caller_id_number, "en", "telephone_number", "iterated");
+            session:streamFile("ivr/ivr-would_you_like_to_receive_a_call_at_this_number.wav");
+        end
+        -- To accept this number press 1, to enter a different number press 2
+        local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+        sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+            "/ivr/ivr-one_yes_two_no.wav", "", "[12]");
+        if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
+            session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
+            session:transfer(queue_extension, "XML", domain_name);
+        end
+    end
+    if (callback_force_cid == "false" and dtmf_digits == "2") or valid_callback == "false" then
         invalid = 0;
         local accepted = false
         while (session:ready() and invalid < 3 and accepted == false) do
-            local valid_callback = false;
             caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "ivr/ivr-please_enter_the_number_where_we_can_reach_you.wav", "", "\\d+");
             valid_callback = api:execute("regex", "m:|" .. caller_id_number .. "|" .. callback_dialplan);
             if (valid_callback == "true") then
