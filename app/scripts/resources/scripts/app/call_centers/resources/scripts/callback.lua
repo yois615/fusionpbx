@@ -1,27 +1,26 @@
---[[
-Steps:
-function to collect userinfo.  Needs to take channel vars and DB vars
-    so that we know who to call back and how to call them
-
-looping function to monitor queue cc-base-score
-    if the top user has a base score lower than my score (using os.time - start_epoch), and caller is not currently in queue, then call back and add to queue with my cc-base-score
-        If noone in queue then callback
-            
-Need to figure out how this plays with abandoned
-
-        freeswitch@fusion.corpit.xyz> callcenter_config queue list members 60001@fusion.corpit.xyz
-queue|instance_id|uuid|session_uuid|cid_number|cid_name|system_epoch|joined_epoch|rejoined_epoch|bridge_epoch|abandoned_epoch|base_score|skill_score|serving_agent|serving_system|state|score
-60001@fusion.corpit.xyz|single_box|5cfc0fee-3c95-4809-a32c-41379ade5f74|85c4cb75-e0fe-42ee-8203-ab501c11ad69|14013452580|WIRELESS CALLER|1671466072|1671466077|0|0|0|105|0|||Waiting|105
-+OK
-
-
-function to call back user using gateway and DB vars for caller ID
-
-
-Need to create table with domain, which queue in, position, entry time, how many attempts to call back
-Need a UI to set up callback options
-
-]]
+--
+--	FusionPBX
+--	Version: MPL 1.1
+--
+--	The contents of this file are subject to the Mozilla Public License Version
+--	1.1 (the "License"); you may not use this file except in compliance with
+--	the License. You may obtain a copy of the License at
+--	http://www.mozilla.org/MPL/
+--
+--	Software distributed under the License is distributed on an "AS IS" basis,
+--	WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+--	for the specific language governing rights and limitations under the
+--	License.
+--
+--	The Original Code is FusionPBX
+--
+--	The Initial Developer of the Original Code is
+--	Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2022
+--	the Initial Developer. All Rights Reserved.
+--
+--	Contributor(s):
+--	Joseph Nadiv <ynadiv@corpit.xyz>
 
 api = freeswitch.API()
 action = argv[1]
@@ -107,25 +106,26 @@ end);
     if (valid_callback == "true") then
         if (string.len(callback_request_prompt) > 0) then
             if (file_exists(recordings_dir .. "/" .. callback_request_prompt)) then
-                session:streamFile(recordings_dir .. "/" .. callback_request_prompt);
+                dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+                recordings_dir .. "/" .. callback_request_prompt, "", "[12]");
             else
-                session:streamFile(callback_request_prompt);
+                dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+                callback_request_prompt, "", "[12]");
             end
-            session:say(caller_id_number, "en", "telephone_number", "iterated");
         else
             session:streamFile("ivr/ivr-it_appears_that_your_phone_number_is.wav");
             session:say(caller_id_number, "en", "telephone_number", "iterated");
             session:streamFile("ivr/ivr-would_you_like_to_receive_a_call_at_this_number.wav");
+            dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+                sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
+                "/ivr/ivr-one_yes_two_no.wav", "", "[12]");
         end
-        -- To accept this number press 1, to enter a different number press 2
-        local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
-        sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-            "/ivr/ivr-one_yes_two_no.wav", "", "[12]");
         if ((tonumber(dtmf_digits) == nil) or callback_force_cid == "true" and dtmf_digits == "2") then
             session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
             session:transfer(queue_extension, "XML", domain_name);
         end
     end
+    
     if (callback_force_cid == "false" and dtmf_digits == "2") or valid_callback == "false" then
         invalid = 0;
         local accepted = false
