@@ -115,17 +115,17 @@ end);
         session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
         session:transfer(queue_extension, "XML", domain_name);
     end
-    if (callback_force_cid == false and dtmf_digits == "2") then
+    if (callback_force_cid == "false" and dtmf_digits == "2") then
         invalid = 0;
         local accepted = false
         while (session:ready() and invalid < 3 and accepted == false) do
             local valid_callback = false;
             caller_id_number = session:playAndGetDigits(10, 14, 3, 3000, "#", "ivr/ivr-please_enter_the_number_where_we_can_reach_you.wav", "", "\\d+");
             valid_callback = api:execute("regex", "m:|" .. caller_id_number .. "|" .. callback_dialplan);
-            if (valid_callback == true) then
+            if (valid_callback == "true") then
                 session:say(caller_id_number, "en", "telephone_number", "iterated");
                 -- To accept this number press 1, to enter a different number press 2
-                local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
+                dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
                 sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
                     "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
                 if dtmf_digits == "1" then
