@@ -137,7 +137,7 @@ end);
                 -- To accept this number press 1, to enter a different number press 2
                 dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
                 sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-                    "/ivr/ivr-accept_reject_voicemail.wav", "", "[12]");
+                    "/ivr/ivr-accept_reject.wav", "", "[12]");
                 if dtmf_digits == "1" then
                     accepted = true
                 end
@@ -324,7 +324,7 @@ if action == "service" then
                 session1:streamFile("ivr/ivr-this_is_a_call_from.wav")
                 session1:say(callback_cid_number, "en", "telephone_number", "iterated");
                 callback_confirm_prompt = sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
-                    "/ivr/ivr-accept_reject_voicemail.wav"
+                    "/ivr/ivr-accept_reject.wav"
             end
             local dtmf_digits = session1:playAndGetDigits(1, 1, 3, 3000, "#", callback_confirm_prompt, "", "[12]");
             if dtmf_digits == "1" then
