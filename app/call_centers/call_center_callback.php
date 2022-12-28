@@ -162,7 +162,7 @@
 		echo "		<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($result ?: "style='visibility: hidden;'").">\n";
 		echo "	</th>\n";
 	}
-	echo th_order_by('profile_name', $text['label-queue_name'], $order_by, $order);
+	echo th_order_by('profile_name', $text['label-callback_profile_name'], $order_by, $order);
 	echo th_order_by('profile_description', $text['label-description'], $order_by, $order, null, "class='hide-sm-dn'");
 	if (permission_exists('call_center_callback_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 		echo "	<td class='action-button'>&nbsp;</td>\n";
