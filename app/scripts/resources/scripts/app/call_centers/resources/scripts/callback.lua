@@ -121,7 +121,7 @@ end);
         local dtmf_digits = session:playAndGetDigits(1, 1, 3, 3000, "#",
         sounds_dir .. "/" .. default_language .. "/" .. default_dialect .. "/" .. default_voice ..
             "/ivr/ivr-one_yes_two_no.wav", "", "[12]");
-        if ((tonumber(dtmf_digits) == nil) or callback_force_cid == true and dtmf_digits == "2") then
+        if ((tonumber(dtmf_digits) == nil) or callback_force_cid == "true" and dtmf_digits == "2") then
             session:setVariable("cc_base_score", os.time() - cc_queue_joined_epoch);
             session:transfer(queue_extension, "XML", domain_name);
         end
