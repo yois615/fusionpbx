@@ -125,7 +125,7 @@ end);
             session:transfer(queue_extension, "XML", domain_name);
         end
     end
-    
+
     if (callback_force_cid == "false" and dtmf_digits == "2") or valid_callback == "false" then
         invalid = 0;
         local accepted = false
@@ -345,11 +345,12 @@ if action == "service" then
                 session1:hangup();
             else
                 if callback.retry_count < callback_retries then
-                    local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now, ";
+                    local sql = "UPDATE v_call_center_callbacks SET retry_count = :retry_count, completed_epoch = :now, ";
                     sql = sql .. "next_retry_epoch = :next_retry WHERE call_uuid = :call_uuid"
                     dbh:query(sql, {now = os.time(), 
                                     retry_count = callback.retry_count + 1,
-                                    next_retry = os.time() + callback_retry_delay});
+                                    next_retry = os.time() + callback_retry_delay,
+                                    call_uuid = callback.call_uuid});
                 else
                     local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
                     sql = sql .. "WHERE call_uuid = :call_uuid"
@@ -360,11 +361,12 @@ if action == "service" then
         else
             -- Update table that timeout
             if callback.retry_count < callback_retries then
-                local sql = "UPDATE v_call_center_callbacks SET retry_count = :count, completed_epoch = :now, ";
+                local sql = "UPDATE v_call_center_callbacks SET retry_count = :retry_count, completed_epoch = :now, ";
                     sql = sql .. "next_retry_epoch = :next_retry WHERE call_uuid = :call_uuid"
                     dbh:query(sql, {now = os.time(), 
                                     retry_count = callback.retry_count + 1,
-                                    next_retry = os.time() + callback_retry_delay});
+                                    next_retry = os.time() + callback_retry_delay,
+                                    call_uuid = callback.call_uuid});
             else
                 local sql = "UPDATE v_call_center_callbacks SET status = 'timeout', completed_epoch = :now ";
                 sql = sql .. "WHERE call_uuid = :call_uuid"
