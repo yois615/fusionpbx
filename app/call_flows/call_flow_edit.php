@@ -252,8 +252,8 @@
 				$event .= "alt_event_type: dialog\n";
 				$event .= "Presence-Call-Direction: outbound\n";
 				$event .= "state: Active (1 waiting)\n";
-				$event .= "from: flow+".$call_flow_feature_code."@".$this->domain_name."\n";
-				$event .= "login: flow+".$call_flow_feature_code."@".$this->domain_name."\n";
+				$event .= "from: flow+".$call_flow_feature_code."@".$_SESSION['domain_name']."\n";
+				$event .= "login: flow+".$call_flow_feature_code."@".$_SESSION['domain_name']."\n";
 				$event .= "unique-id: ".$call_flow_uuid."\n";
 				if ($call_flow_status == "true") {
 					$event .= "answer-state: confirmed\n";
