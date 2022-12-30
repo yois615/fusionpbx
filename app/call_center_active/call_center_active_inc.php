@@ -385,12 +385,8 @@
 			}
 			echo "</table>\n";
 
-			echo "<div class='action_bar sub'>\n";
-			echo "	<div class='heading'><b>".$text['label-queue-pending-callbacks'].": ".ucfirst(escape($queue_name))."</b></div>\n";
-			echo "	<div style='clear: both;'></div>\n";
-			echo "</div>\n";
-
-			echo $text['description-queue']."\n";
+			echo "<br /><br />\n";
+			echo $text['label-queue-pending-callbacks']."\n";
 			echo "<br /><br />\n";
 
 			echo "<table class='list'>\n";
