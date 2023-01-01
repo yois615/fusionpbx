@@ -1,0 +1,10 @@
+<context name="{v_context}">
+	<extension name="default_hold_music" continue="true" app_uuid="3ace0990-ef23-45b2-a81d-a5857a671e74" order="82">
+		<condition field="${file_exists(/usr/share/freeswitch/sounds/music/${domain_name}/moh)}" expression="true"/>
+		<condition field="${user_data ${destination_number}@${domain_name} var hold_music}" expression="^$">
+			<action application="set" data="hold_music=local_stream://${domain_name}/moh" inline="true"/>
+		</condition>
+	</extension>
+</context>
+
+
