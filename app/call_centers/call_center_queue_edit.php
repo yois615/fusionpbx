@@ -374,6 +374,7 @@
 			}
 			if (strlen($queue_cid_prefix) > 0) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".$queue_cid_prefix."#\${caller_id_name}\"/>\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=".$queue_cid_prefix."#\${caller_id_name}\"/>\n";
 			}
 
 			if (!strpos($queue_cc_exit_keys, "1") && strlen($queue_callback_profile) > 0) {
