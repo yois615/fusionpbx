@@ -32,6 +32,10 @@ end
 
 -- include config.lua
 require "resources.functions.config";
+require "resources.functions.mkdir";
+
+--make sure the scripts/run dir exists
+mkdir(scripts_dir .. "/run");
 
 -- load libraries
 local Database = require "resources.functions.database";
