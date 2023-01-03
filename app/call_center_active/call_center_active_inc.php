@@ -185,6 +185,9 @@
 
 						if (isset($agent_result)) {
 							foreach ($agent_result as $agent_row) {
+								if ($agent_row['status'] == 'Logged Out') {
+									continue;
+								}
 								if ($tier_row['agent'] == $agent_row['name']) {
 									$agent_uuid = $agent_row['name'];
 
