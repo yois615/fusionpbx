@@ -36,7 +36,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('call_center_active_options')) {
+	if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
 		//access granted
 	}
 	else {
@@ -76,10 +76,14 @@
 //validate the command
 	switch ($command) {
 		case "eavesdrop":
-			$switch_command = "originate {origination_caller_id_name=eavesdrop,origination_caller_id_number=".$extension."}user/".$_SESSION['user']['extension'][0]['user']."@".$_SESSION['domain_name']." &eavesdrop(".$uuid.")";
+			if (permission_exists('call_center_active_options')) {
+				$switch_command = "originate {origination_caller_id_name=eavesdrop,origination_caller_id_number=".$extension."}user/".$_SESSION['user']['extension'][0]['user']."@".$_SESSION['domain_name']." &eavesdrop(".$uuid.")";
+			}
 			break;
 		case "uuid_transfer":
-			$switch_command = "uuid_transfer ".$uuid." -bleg ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];
+			if (permission_exists('call_center_active_options')) {
+				$switch_command = "uuid_transfer ".$uuid." -bleg ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];
+			}
 			break;
 		case "uuid_pickup":
 				$switch_command = "uuid_transfer ".$uuid." ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];

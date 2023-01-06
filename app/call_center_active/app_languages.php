@@ -127,6 +127,8 @@ $text['label-transfer']['ru-ru'] = "Перевод";
 $text['label-transfer']['sv-se'] = "Överför";
 $text['label-transfer']['uk-ua'] = "";
 
+$test['label-pickup']['en-us'] = "Pickup";
+
 $text['label-time_base_score']['en-us'] = "Time Base Score";
 $text['label-time_base_score']['en-gb'] = "Time Base Score";
 $text['label-time_base_score']['ar-eg'] = "";
