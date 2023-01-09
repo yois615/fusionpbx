@@ -290,6 +290,7 @@ if action == "service" then
                 freeswitch.consoleLog("info", "[queue_callback] timed out for " .. callback.caller_id_number .. "\n");
                 -- Table is updated later in the next else block
                 session1:hangup();
+                session1:destroy();
                 break;
             else
                 --freeswitch.consoleLog("info", "[disa.callback] session is not yet answered for " .. callback_cid_number .. "\n");
@@ -341,12 +342,14 @@ if action == "service" then
                 -- Join to queue with correct base score
                 session1:setVariable("cc_base_score", os.time() - callback.start_epoch);
                 session1:transfer(queue_extension, "XML", domain_name);
+                session1:destroy();
             elseif dtmf_digits == "2" then
                 -- Update table with declined status
                 local sql = "UPDATE v_call_center_callbacks SET status = 'declined', completed_epoch = :now ";
                 sql = sql .. "WHERE call_uuid = :call_uuid"
                 dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
                 session1:hangup();
+                session1:destroy();
             else
                 if callback.retry_count < callback_retries then
                     local sql = "UPDATE v_call_center_callbacks SET retry_count = :retry_count, completed_epoch = :now, ";
@@ -361,6 +364,7 @@ if action == "service" then
                     dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
                 end
             session1:hangup();
+            session1:destroy();
             end
         else
             -- Update table that timeout
@@ -377,6 +381,7 @@ if action == "service" then
                 dbh:query(sql, {now = os.time(), call_uuid = callback.call_uuid})
             end
             session1:hangup();
+            session1:destroy();
         end
     end
 
@@ -463,6 +468,8 @@ if action == "service" then
                     -- This callback is next in line
                         freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n"); 
                         start_queue_callback(callback);
+                        -- We break here or we call twice
+                        break;
                     else
                         call_count = call_count + 1;
                         -- we need to break here otherwise we always get callback if anyone is holding less
