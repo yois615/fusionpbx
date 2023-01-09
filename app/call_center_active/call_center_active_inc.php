@@ -333,6 +333,9 @@
 
 			if (is_array($result)) {
 				foreach ($result as $row) {
+					if ($row['state'] == 'Abandoned') {
+						continue;
+					}
 					$queue = $row['queue'];
 					$system = $row['system'];
 					$uuid = $row['uuid'];
