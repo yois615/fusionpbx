@@ -83,7 +83,12 @@ while (true) do
             number_pending = row.count;
         end);
         api:executeString("uuid_broadcast " .. caller_uuid .. " ivr/ivr-you_are_number.wav aleg")
-        api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. #position_table + number_pending .. ".wav aleg")
+        if #position_table + number_pending > 20 then
+            api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. string.sub(#position_table + number_pending, 1, 1) .. "0.wav aleg")
+            api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. string.sub(#position_table + number_pending, 2) .. ".wav aleg")
+        else
+            api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. #position_table + number_pending .. ".wav aleg")
+        end
         -- TODO: Waiting for a representitive
         if (callback_profile ~= nil and #position_table + number_pending > 1) then
             api:executeString("uuid_broadcast " .. caller_uuid .. " ivr/ivr-if_you_would_like_us_to_call_back.wav aleg")
