@@ -41,9 +41,11 @@ local queue_details = dbh:query(sql, params, function(row)
     callback_profile = row.queue_callback_profile;
 end);
 
+-- Pause for first annoucement
+freeswitch.msleep(10000)
+
 while (true) do
-    -- Pause between announcements
-    freeswitch.msleep(mseconds)
+    
     local position_table = {};
     members = api:executeString("callcenter_config queue list members " .. queue_extension)
     exists = false
@@ -88,4 +90,6 @@ while (true) do
             api:executeString("uuid_broadcast " .. caller_uuid .. " digits/1.wav aleg")
         end
     end
+    -- Pause between announcements
+    freeswitch.msleep(mseconds)
 end
