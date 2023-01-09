@@ -447,6 +447,7 @@ if action == "service" then
                     end
                     if tonumber(line_delimit[#line_delimit]) < (os.time() - callback.start_epoch) then
                     -- This callback is next in line
+                        freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n"); 
                         start_queue_callback(callback);
                     end
                     -- we need to break here otherwise we always get callback if anyone is holding less
