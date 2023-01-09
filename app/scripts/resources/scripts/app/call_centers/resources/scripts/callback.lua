@@ -433,6 +433,7 @@ if action == "service" then
             members = trim(api:executeString(cmd));
             -- Check longest hold time and compare to longest callback
             local queue_empty = true;
+            local call_count = 0;
             for line in members:gmatch("[^\r\n]+") do
                 if line == nil then
                     start_queue_callback(callback);
@@ -449,9 +450,11 @@ if action == "service" then
                     -- This callback is next in line
                         freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n"); 
                         start_queue_callback(callback);
+                    else
+                        call_count = call_count + 1;
+                        -- we need to break here otherwise we always get callback if anyone is holding less
+                        if call_count > 2 then break; end
                     end
-                    -- we need to break here otherwise we always get callback if anyone is holding less
-                    break;
                 end
             end
             if queue_empty == true then
