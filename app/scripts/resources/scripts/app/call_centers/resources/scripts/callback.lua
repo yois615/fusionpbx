@@ -252,7 +252,7 @@ if action == "service" then
                     dialplan_detail_data = r.dialplan_detail_data:gsub("$1", destination_result);
                     --if the session is set then process the actions
                     if (y == 0) then
-                        square = "[direction=outbound,origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",domain_name="..domain_name..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain="..domain_name..",domain_uuid="..domain_uuid..",";
+                        square = "[direction=outbound,origination_callee_id_name="..callback.caller_id_name..",origination_caller_id_number="..callback_cid_number..",outbound_caller_id_number="..callback_cid_number..",call_timeout=" .. callback_timeout ..",domain_name="..domain_name..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain="..domain_name..",domain_uuid="..domain_uuid..",";
                     end
                     if (r.dialplan_detail_type == "set") then
                         if (dialplan_detail_data == "sip_h_X-accountcode=${accountcode}") then
