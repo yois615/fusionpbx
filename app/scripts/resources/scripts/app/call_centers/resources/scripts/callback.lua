@@ -427,6 +427,19 @@ if action == "service" then
                 domain_uuid = row.domain_uuid;
             end);
 
+            -- Check logged in agents in this queue
+            local cmd = "callcenter_config queue list agents " .. queue_extension .. "@" .. domain_name;
+            agents = trim(api:executeString(cmd));
+            agent_count = 0;
+            for line in agents:gmatch("[^\r\n]+") do
+                if (string.find(line, "Available") ~= nil)  then
+                    agent_count = agent_count + 1;
+                end
+            end
+
+            freeswitch.consoleLog("NOTICE", "queue_callback agents " .. agent_count .. "\n");
+            
+
             -- Check member list of queue
             local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
             freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
@@ -453,7 +466,7 @@ if action == "service" then
                     else
                         call_count = call_count + 1;
                         -- we need to break here otherwise we always get callback if anyone is holding less
-                        if call_count > 2 then break; end
+                        if call_count > agent_count then break; end
                     end
                 end
             end
@@ -462,6 +475,6 @@ if action == "service" then
                 start_queue_callback(callback);
             end
         end
-    freeswitch.msleep(20000);
+    freeswitch.msleep(15000);
     end
 end
