@@ -442,7 +442,7 @@ if action == "service" then
 
             -- Check member list of queue
             local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
-            freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
+            --freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
             members = trim(api:executeString(cmd));
             -- Check longest hold time and compare to longest callback
             local queue_empty = true;
