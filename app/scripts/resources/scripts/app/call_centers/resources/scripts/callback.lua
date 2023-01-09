@@ -432,27 +432,30 @@ if action == "service" then
             freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
             members = trim(api:executeString(cmd));
             -- Check longest hold time and compare to longest callback
-            for count, line in members:gmatch("[^\r\n]+") do
+            local queue_empty = true;
+            for line in members:gmatch("[^\r\n]+") do
                 if line == nil then
                     start_queue_callback(callback);
                     break;
                 end
                 if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
+                    queue_empty = false;
                 -- Members have a position when their state is Waiting or Trying
                     local line_delimit = {}
                     for w in (line .. "|"):gmatch("([^|]*)|") do
                         table.insert(line_delimit, w)
                     end
-                    if line_delimit[#line_delimit] < (os.time() - callback.start_epoch) then
+                    if tonumber(line_delimit[#line_delimit]) < (os.time() - callback.start_epoch) then
                     -- This callback is next in line
                         start_queue_callback(callback);
                     end
                     -- we need to break here otherwise we always get callback if anyone is holding less
                     break;
-                elseif count == #members:gmatch("[^\r\n]+") then
-                    -- The queue is empty
-                    start_queue_callback(callback);
                 end
+            end
+            if queue_empty == true then
+                --The queue is empty
+                start_queue_callback(callback);
             end
         end
     freeswitch.msleep(20000);
