@@ -406,6 +406,9 @@
 			echo "<th>".$text['label-name']."</th>\n";
 			echo "<th>".$text['label-number']."</th>\n";
 			echo "<th>".$text['label-retry_count']."</th>\n";
+			if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
+				echo "<th>".$text['label-options']."</th>\n";
+			}
 			echo "</tr>\n";
 
 			$sql = "select * from v_call_center_callbacks ";
@@ -438,6 +441,11 @@
 					echo "<td>".escape($caller_name)."&nbsp;</td>\n";
 					echo "<td>".escape($caller_number)."&nbsp;</td>\n";
 					echo "<td>".escape($retry_count)."&nbsp;</td>\n";
+					if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
+						echo "<td>";
+						echo button::create(['type'=>'button','class'=>'link','label'=>$text['label-callback'],'style'=>'margin-left: 15px;','onclick'=>"if (confirm('".$text['message-confirm']."')) { send_command('call_center_exec.php?command=uuid_callback&uuid=".urlencode($call_uuid)."'); } else { this.blur(); return false; }"]);
+						echo "</td>";
+					}
 				}
 			}
 			echo "</table>";

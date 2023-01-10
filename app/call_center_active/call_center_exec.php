@@ -91,6 +91,17 @@
 		case "bridge":
 			$switch_command = "originate {origination_caller_id_name=".$caller_id_name.",origination_caller_id_number=".$caller_id_number."}user/".$_SESSION['user']['extension'][0]['user']."@".$_SESSION['domain_name']." bridge(user/".$extension."@".$_SESSION['domain_name'].")";
 			break;
+		case "uuid_callback":
+			$sql = "update v_call_center_callbacks ";
+			$sql .= "set start_epoch = :start_epoch, ";
+			$sql .= "next_retry_epoch = :start_epoch ";
+			$sql .= "where call_uuid = :call_uuid ";
+			$sql .= "and status = 'pending' ";
+			$parameters['call_uuid'] = $uuid;
+			$parameters['start_epoch'] = os.time() - 10800;
+			$database = new database;
+			$result = $database->select($sql, $parameters, 'all');
+			break;
 		default:
 			echo "access denied";
 			exit;
