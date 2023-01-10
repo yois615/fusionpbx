@@ -98,7 +98,7 @@
 			$sql .= "where call_uuid = :call_uuid ";
 			$sql .= "and status = 'pending' ";
 			$parameters['call_uuid'] = $uuid;
-			$parameters['start_epoch'] = os.time() - 10800;
+			$parameters['start_epoch'] = time() - 10800;
 			$database = new database;
 			$result = $database->select($sql, $parameters, 'all');
 			break;
