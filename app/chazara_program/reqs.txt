@@ -14,9 +14,10 @@ recordings table better suited for core recordings like IVR menus etc.\
 VM table better used for incoming.
 Therefore:
 v_chazara_recordings
-chazara_recording_uuid, domain_uuid, user_uuid, created_epoch, length, (filename is recording_uuid just like voicemail), enabled, category
+chazara_recording_uuid, domain_uuid, user_uuid, created_epoch, length,
+    (filename is recording_uuid just like voicemail), enabled, category, label, description
 
 v_chazara_grades
-user_uuid, domain_uuid, grade
+user_uuid, domain_uuid, grade, parallel (the idea is that each user has a grade and which parallel they are)
 
 Need a way to set parallel class keypress for each teacher
