@@ -17,7 +17,11 @@ v_chazara_recordings
 chazara_recording_uuid, domain_uuid, user_uuid, created_epoch, length,
     (filename is recording_uuid just like voicemail), enabled, category, label, description
 
-v_chazara_grades
-user_uuid, domain_uuid, grade, parallel (the idea is that each user has a grade and which parallel they are)
+v_chazara_teachers
+chazara_teacher_uuid, user_uuid, domain_uuid, phone_pin, grade, parallel
+
+v_chazara_cdr
+chazara_recording_uuid, caller_id_name, caller_id_number, start_epoch, end_epoch
+
 
 Need a way to set parallel class keypress for each teacher
