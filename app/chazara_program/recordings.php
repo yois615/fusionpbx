@@ -180,25 +180,11 @@
 
 //get existing recordings
 	$sql = "select chazara_recording_uuid, recording_id, chazara_teacher_uuid ";
-	// need to join domain name and teachers private here so that paths work
+	// need to join teachers private here so that paths work
 	$sql .= "from v_chazara_recordings ";
-	if (!permission_exists('chazara_recording_domain') && !permission_exists('chazara_recording_all')) {
-		$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
 		$sql .= "and where user_uuid = :user_uuid ";
-	}
-	elseif (permission_exists('chazara_recording_domain')) {
-		if ($_GET['show'] != "all") {
-			$sql .= "where domain_uuid = :domain_uuid ";
-			$sql .= "and where user_uuid = :user_uuid ";
-		}
-	}
-	elseif (permission_exists('chazara_recording_all')) {
-		if ($_GET['show'] != "all") {
-			$sql .= "where domain_uuid = :domain_uuid ";
-			$sql .= "and where user_uuid = :user_uuid ";
-		} else {
-			$sql .= "where domain_uuid = :domain_uuid ";
-		}
 	}
 	$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	$parameters['domain_uuid'] = $domain_uuid;
@@ -211,7 +197,8 @@
 	}
 	unset($sql, $parameters, $result, $row);
 
-//add recordings to the database
+//scan dir and add recordings to the database
+// TODO this is broken if we use show-all?
 	if (is_dir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/')) {
 		if ($dh = opendir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/')) {
 			while (($recording_filename = readdir($dh)) !== false) {
