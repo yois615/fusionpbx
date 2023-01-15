@@ -57,34 +57,34 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		
 
-	//default settings
+	//default settings TODO
 		$y=0;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "a780b88f-188b-4d73-a1df-f93a114ca16d";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "6463bcd7-a874-4005-a24d-abe3b3166560";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "chazara";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "storage_type";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "base64";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 		$y++;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "960828e1-8d6b-4381-86c4-fa03fce4276a";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "eb479f27-ba4a-46f0-b2e1-a59574e9c7b5";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "chazara";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "recording_max_length";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "300";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Maximum length of a recording (in seconds).";
 		$y++;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "a1e837c6-e5bf-460f-aa7e-9b35d53d015a";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "26f47a8c-9dbd-4cb6-8f54-7ccdc3a9a05b";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "chazara";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "recording_silence_threshold";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "200";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Energy level below this number is considered silence.";
 		$y++;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "4db91322-83c1-4c6a-8966-f8db0b84cdcd";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "f9ae2d1e-40d8-4b78-9a0c-f687d2d00e0a";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "chazara";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "recording_silence_seconds";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "3";
@@ -93,10 +93,10 @@
 
 	//schema details
 		$y=0;
-		$apps[$x]['db'][$y]['table']['name'] = "v_recordings";
+		$apps[$x]['db'][$y]['table']['name'] = "v_chazara_recordings";
 		$apps[$x]['db'][$y]['table']['parent'] = "";
 		$z=0;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = "recording_uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "chazara_recording_uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
@@ -112,8 +112,17 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "domain_uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "recording_filename";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "user_uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "foreign";
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = "v_users";
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "user_uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "recording_id";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
@@ -125,6 +134,18 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "recording_description";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "created_epoch";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "recording_length";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "enabled";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "insert_date";
