@@ -352,7 +352,7 @@
 					$serving_agent = $row['serving_agent'];
 					$serving_system = $row['serving_system'];
 					$state = $row['state'];
-					$joined_seconds = time() - $joined_epoch;
+					$joined_seconds = time() - ($joined_epoch - $base_score);
 					$joined_length_hour = floor($joined_seconds/3600);
 					$joined_length_min = floor($joined_seconds/60 - ($joined_length_hour * 60));
 					$joined_length_sec = $joined_seconds - (($joined_length_hour * 3600) + ($joined_length_min * 60));
