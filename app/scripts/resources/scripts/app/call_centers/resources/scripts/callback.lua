@@ -78,6 +78,10 @@ local recordings_dir = recordings_dir .. "/" .. domain_name;
 
 -- Get when joined queue
 local cc_queue_joined_epoch = session:getVariable("cc_queue_joined_epoch");
+local cc_base_score = session:getVariable("cc_base_score");
+if tonumber(cc_base_score) == nil then
+    cc_base_score = 0;
+end
 
 -- Get the callback_profile
 local sql = "SELECT c.queue_extension, p.caller_id_number, p.caller_id_name, p.callback_dialplan, p.callback_request_prompt, "
@@ -179,7 +183,7 @@ end);
             queue_uuid = queue_uuid,
             domain_uuid = domain_uuid,
             uuid = uuid,
-            cc_queue_joined_epoch = cc_queue_joined_epoch,
+            cc_queue_joined_epoch = tonumber(cc_queue_joined_epoch) - tonumber(cc_base_score),
             caller_id_name = caller_id_name,
             caller_id_number = caller_id_number,
             confirm_prompt = confirm_prompt_path
