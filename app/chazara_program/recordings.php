@@ -211,17 +211,14 @@
 							$recording_description = $_GET['rd'];
 						//build array
 							$array['recordings'][0]['domain_uuid'] = $domain_uuid;
-							$array['recordings'][0]['recording_uuid'] = $recording_uuid;
-							$array['recordings'][0]['recording_filename'] = $recording_filename;
+							$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
+							//teacher
+							$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
 							$array['recordings'][0]['recording_name'] = $recording_name;
 							$array['recordings'][0]['recording_description'] = $recording_description;
-							if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
-								$recording_base64 = base64_encode(file_get_contents($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename));
-								$array['recordings'][0]['recording_base64'] = $recording_base64;
-							}
 						//set temporary permissions
 							$p = new permissions;
-							$p->add('recording_add', 'temp');
+							$p->add('chazara_recording_add', 'temp');
 						//execute insert
 							$database = new database;
 							$database->app_name = 'chazara_program';
@@ -229,7 +226,7 @@
 							$database->save($array);
 							unset($array);
 						//remove temporary permissions
-							$p->delete('recording_add', 'temp');
+							$p->delete('chazara_recording_add', 'temp');
 					}
 					else {
 						//file found in db, check if base64 present
