@@ -442,4 +442,16 @@ $text['description']['ru-ru'] = "Наберите *732 для создания �
 $text['description']['sv-se'] = "För att göra en inspelning ring * 732 eller så kan du göra en 16bit 8kHz/16kHz Mono WAV-fil och kopiera den till följande katalog uppdatera sedan sidan för att spela upp den.";
 $text['description']['uk-ua'] = "Редагування інформації облікового запису";
 
+$text['label-parallel']['en-us'] = "Parallel";
+
+$text['label-grade']['en-us'] = "Grade";
+
+$text['label-recording_id']['en-us'] = "Recording ID";
+
+$text['label-length']['en-us'] = "Length";
+
+$text['label-created']['en-us'] = "Created";
+
+$text['label-enabled']['en-us'] = "Enabled";
+
 ?>
