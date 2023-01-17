@@ -56,7 +56,11 @@
 				$sql .= "from v_chazara_teachers t INNER JOIN v_chazara_recordings r ";
 				$sql .= "on r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 				$sql .= "WHERE r.chazara_recording_uuid = :chazara_recording_uuid ";
-				$sql .= "and domain_uuid = :domain_uuid ";
+				$sql .= "and r.domain_uuid = :domain_uuid ";
+				if (!permission_exists('chazara_recording_all')) {
+					$sql .= "and t.user_uuid = :user_uuid ";
+					$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+				}
 				$parameters['domain_uuid'] = $domain_uuid;
 				$parameters['chazara_recording_uuid'] = $chazara_recording_uuid;
 				$database = new database;
