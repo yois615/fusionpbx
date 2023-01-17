@@ -202,6 +202,7 @@ end
 if action == "service" then
 
     local function start_queue_callback(callback)
+        freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n");
         -- Originate the call - get outbound dialplan
         local sql = [[select * from v_dialplans as d, v_dialplan_details as s
         where (d.domain_uuid = :domain_uuid or d.domain_uuid is null)
@@ -478,7 +479,6 @@ if action == "service" then
                         end
                         if tonumber(line_delimit[#line_delimit]) < (os.time() - callback.start_epoch) then
                         -- This callback is next in line
-                            freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n"); 
                             start_queue_callback(callback);
                             -- We break here or we call twice
                             break;
