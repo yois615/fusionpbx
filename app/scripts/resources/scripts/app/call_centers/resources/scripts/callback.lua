@@ -436,54 +436,62 @@ if action == "service" then
                 domain_uuid = row.domain_uuid;
             end);
 
-            -- Check logged in agents in this queue
-            local cmd = "callcenter_config queue list agents " .. queue_extension .. "@" .. domain_name;
-            agents = trim(api:executeString(cmd));
-            agent_count = 0;
-            for line in agents:gmatch("[^\r\n]+") do
-                if (string.find(line, "Available") ~= nil)  then
-                    agent_count = agent_count + 1;
-                end
-            end
+            if queue_extension == nil then
+                -- The callback profile was removed but this call is still pending.
+                local sql = "UPDATE v_call_center_callbacks SET status = 'profile_error' ";
+                sql = sql .. "WHERE call_uuid = :call_uuid ";
+                dbh:query(sql, {call_uuid = callback.call_uuid});
+                freeswitch.consoleLog("NOTICE", "queue_callback profile not found " .. callback.call_uuid .."\n");
+            else
 
-            freeswitch.consoleLog("NOTICE", "queue_callback agents " .. agent_count .. "\n");
-            
-
-            -- Check member list of queue
-            local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
-            --freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
-            members = trim(api:executeString(cmd));
-            -- Check longest hold time and compare to longest callback
-            local queue_empty = true;
-            local call_count = 0;
-            for line in members:gmatch("[^\r\n]+") do
-                if line == nil then
-                    start_queue_callback(callback);
-                    break;
-                end
-                if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
-                    queue_empty = false;
-                -- Members have a position when their state is Waiting or Trying
-                    local line_delimit = {}
-                    for w in (line .. "|"):gmatch("([^|]*)|") do
-                        table.insert(line_delimit, w)
+                -- Check logged in agents in this queue
+                local cmd = "callcenter_config queue list agents " .. queue_extension .. "@" .. domain_name;
+                agents = trim(api:executeString(cmd));
+                agent_count = 0;
+                for line in agents:gmatch("[^\r\n]+") do
+                    if (string.find(line, "Available") ~= nil)  then
+                        agent_count = agent_count + 1;
                     end
-                    if tonumber(line_delimit[#line_delimit]) < (os.time() - callback.start_epoch) then
-                    -- This callback is next in line
-                        freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n"); 
+                end
+
+                freeswitch.consoleLog("NOTICE", "queue_callback agents " .. agent_count .. "\n");
+                
+                -- Check member list of queue
+                local cmd = "callcenter_config queue list members " .. queue_extension .. "@" .. domain_name;
+                --freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
+                members = trim(api:executeString(cmd));
+                -- Check longest hold time and compare to longest callback
+                local queue_empty = true;
+                local call_count = 0;
+                for line in members:gmatch("[^\r\n]+") do
+                    if line == nil then
                         start_queue_callback(callback);
-                        -- We break here or we call twice
                         break;
-                    else
-                        call_count = call_count + 1;
-                        -- we need to break here otherwise we always get callback if anyone is holding less
-                        if call_count > agent_count then break; end
+                    end
+                    if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
+                        queue_empty = false;
+                    -- Members have a position when their state is Waiting or Trying
+                        local line_delimit = {}
+                        for w in (line .. "|"):gmatch("([^|]*)|") do
+                            table.insert(line_delimit, w)
+                        end
+                        if tonumber(line_delimit[#line_delimit]) < (os.time() - callback.start_epoch) then
+                        -- This callback is next in line
+                            freeswitch.consoleLog("NOTICE", "queue_callback calling " .. callback.caller_id_number .. "\n"); 
+                            start_queue_callback(callback);
+                            -- We break here or we call twice
+                            break;
+                        else
+                            call_count = call_count + 1;
+                            -- we need to break here otherwise we always get callback if anyone is holding less
+                            if call_count > agent_count then break; end
+                        end
                     end
                 end
-            end
-            if queue_empty == true then
-                --The queue is empty
-                start_queue_callback(callback);
+                if queue_empty == true then
+                    --The queue is empty
+                    start_queue_callback(callback);
+                end
             end
         end
     freeswitch.msleep(15000);
