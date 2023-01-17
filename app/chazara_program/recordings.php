@@ -239,12 +239,13 @@
 							//file not found in db, add it
 								$recording_uuid = uuid();
 								$recording_name = ucwords(str_replace('_', ' ', pathinfo($recording_filename, PATHINFO_FILENAME)));
-								$recording_description = $_GET['rd'];
+								$recording_description = (isset($_GET['rd'])) ? $_GET['rd'] : $recording_name;
 							//Get length of file
 								$recording_length = ceil(shell_exec('soxi -D '.$current_sound_dir.$recording_filename));
 							//build array
 								$array['recordings'][0]['domain_uuid'] = $domain_uuid;
 								$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
+								$array['recordings'][0]['created_epoch'] = filemtime($recording_filename);
 								$array['recordings'][0]['length'] = $recording_length;
 								$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
 								$array['recordings'][0]['recording_name'] = $recording_name;
