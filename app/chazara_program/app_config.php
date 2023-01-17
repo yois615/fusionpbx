@@ -14,6 +14,7 @@
 		$y=0;
 		$apps[$x]['permissions'][$y]['name'] = "chazara_recording_view";
 		$apps[$x]['permissions'][$y]['menu']['uuid'] = "30831f2c-3ccc-a758-1714-660d38453104";
+		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
@@ -22,14 +23,17 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "chazara_recording_edit";
+		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "chazara_recording_delete";
+		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "chazara_recording_all";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "chazara_recording_upload";
@@ -46,15 +50,20 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "chazara_pin_view";
+		$apps[$x]['permissions'][$y]['name'] = "chazara_teacher_view";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "chazara_teacher_edit";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "chazara_teacher_pin";
 		//$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "chazara_pin_edit";
-		//$apps[$x]['permissions'][$y]['groups'][] = "user";
-		$apps[$x]['permissions'][$y]['groups'][] = "admin";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		
 		
 
 	//default settings TODO
