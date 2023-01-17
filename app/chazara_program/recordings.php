@@ -178,13 +178,15 @@
 		exit;
 	}
 
-//get existing recordings
-	$sql = "select chazara_recording_uuid, recording_id, chazara_teacher_uuid ";
-	// need to join teachers private here so that paths work
-	$sql .= "from v_chazara_recordings ";
-	$sql .= "where domain_uuid = :domain_uuid ";
+//get existing recording uuid
+	$sql = "select r.chazara_recording_uuid, r.recording_id ";
+	$sql .= "from v_chazara_recordings r ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
-		$sql .= "and where user_uuid = :user_uuid ";
+		$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid "
+	}
+	$sql .= "where r.domain_uuid = :domain_uuid ";
+	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
+		$sql .= "and t.user_uuid = :user_uuid ";
 	}
 	$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	$parameters['domain_uuid'] = $domain_uuid;
@@ -192,77 +194,80 @@
 	$result = $database->select($sql, $parameters, 'all');
 	if (is_array($result) && @sizeof($result) != 0) {
 		foreach ($result as &$row) {
-			$array_recordings[$row['recording_uuid']] = $row['chazara_recording_uuid'];
+			$array_recordings[$row['chazara_recording_uuid']] = $row['recording_id'].".wav";
 		}
 	}
 	unset($sql, $parameters, $result, $row);
 
 //scan dir and add recordings to the database
-// TODO this is broken if we use show-all?
-	if (is_dir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/')) {
-		if ($dh = opendir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/')) {
-			while (($recording_filename = readdir($dh)) !== false) {
-				if (filetype($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename) == "file") {
+	if ($_GET['show'] != "all") {
 
-					if (!is_array($array_recordings) || !in_array($recording_filename, $array_recordings)) {
-						//file not found in db, add it
-							$recording_uuid = uuid();
-							$recording_name = ucwords(str_replace('_', ' ', pathinfo($recording_filename, PATHINFO_FILENAME)));
-							$recording_description = $_GET['rd'];
-						//build array
-							$array['recordings'][0]['domain_uuid'] = $domain_uuid;
-							$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
-							//teacher
-							$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
-							$array['recordings'][0]['recording_name'] = $recording_name;
-							$array['recordings'][0]['recording_description'] = $recording_description;
-						//set temporary permissions
-							$p = new permissions;
-							$p->add('chazara_recording_add', 'temp');
-						//execute insert
-							$database = new database;
-							$database->app_name = 'chazara_program';
-							$database->app_uuid = '37a9d861-c7a2-9e90-925d-29e3c2e0b60e';
-							$database->save($array);
-							unset($array);
-						//remove temporary permissions
-							$p->delete('chazara_recording_add', 'temp');
-					}
-					else {
-						//file found in db, check if base64 present
-							if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
-								$found_recording_uuid = array_search($recording_filename, $array_recordings);
-								if (!$array_base64_exists[$found_recording_uuid]) {
-									$recording_base64 = base64_encode(file_get_contents($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename));
-									//build array
-										$array['recordings'][0]['domain_uuid'] = $domain_uuid;
-										$array['recordings'][0]['recording_uuid'] = $found_recording_uuid;
-										$array['recordings'][0]['recording_base64'] = $recording_base64;
-									//set temporary permissions
-										$p = new permissions;
-										$p->add('recording_edit', 'temp');
-									//execute update
-										$database = new database;
-										$database->app_name = 'chazara_program';
-										$database->app_uuid = '37a9d861-c7a2-9e90-925d-29e3c2e0b60e';
-										$database->save($array);
-										unset($array);
-									//remove temporary permissions
-										$p->delete('recording_edit', 'temp');
-								}
-							}
-					}
-
-				}
+	//Get teacher's path
+		$sql = "select grade, parallel_class_id ";
+		$sql .= "from v_chazara_teachers ";
+		$sql .= "where user_uuid = :user_uuid ";
+		$sql .= "and domain_uuid = :domain_uuid ";
+		$parameters['domain_uuid'] = $domain_uuid;
+		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+		$database = new database;
+		$row = $database->select($sql, $parameters, 'row');
+		if (is_array($row) && @sizeof($row) != 0) {
+			if (strlen($row['grade']) < 2) {
+				$grade = "0" . $row['grade'];
+			} else {
+				$grade = $row['grade'];
 			}
-			closedir($dh);
+			if (empty($row['parallel_class_id'])) {
+				$parallel = "1";
+			} else {
+				$parallel = $row['parallel_class_id'];
+			}
+		}
+		unset($sql, $parameters, $row);
+
+		$current_sound_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel;
+		if (is_dir($current_sound_dir)) {
+			if ($dh = opendir($current_sound_dir)) {
+				while (($recording_filename = readdir($dh)) !== false) {
+					if (filetype($current_sound_dir.$recording_filename) == "file") {
+
+						if (!is_array($array_recordings) || !in_array($recording_filename, $array_recordings)) {
+							//file not found in db, add it
+								$recording_uuid = uuid();
+								$recording_name = ucwords(str_replace('_', ' ', pathinfo($recording_filename, PATHINFO_FILENAME)));
+								$recording_description = $_GET['rd'];
+							//Get length of file
+								$recording_length = ceil(shell_exec('soxi -D '.$current_sound_dir.$recording_filename));
+							//build array
+								$array['recordings'][0]['domain_uuid'] = $domain_uuid;
+								$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
+								$array['recordings'][0]['length'] = $recording_length;
+								$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
+								$array['recordings'][0]['recording_name'] = $recording_name;
+								$array['recordings'][0]['recording_description'] = $recording_description;
+							//set temporary permissions
+								$p = new permissions;
+								$p->add('chazara_recording_add', 'temp');
+							//execute insert
+								$database = new database;
+								$database->app_name = 'chazara_program';
+								$database->app_uuid = '37a9d861-c7a2-9e90-925d-29e3c2e0b60e';
+								$database->save($array);
+								unset($array);
+							//remove temporary permissions
+								$p->delete('chazara_recording_add', 'temp');
+						}
+					}
+				}
+				closedir($dh);
+			}
 		}
 
-		//redirect
-			if ($_GET['rd'] != '') {
-				header("Location: recordings.php");
-				exit;
-			}
+	//redirect
+		if ($_GET['rd'] != '') {
+			header("Location: recordings.php");
+			exit;
+		}
 	}
 
 //get posted data
@@ -276,8 +281,8 @@
 	if ($action != '' && is_array($recordings) && @sizeof($recordings) != 0) {
 		switch ($action) {
 			case 'delete':
-				if (permission_exists('recording_delete')) {
-					$obj = new switch_recordings;
+				if (permission_exists('chazara_recording_delete')) {
+					$obj = new chazara_program;
 					$obj->delete($recordings);
 				}
 				break;
@@ -296,19 +301,22 @@
 	if (strlen($search) > 0) {
 		$sql_search = "and (";
 		$sql_search .= "lower(recording_name) like :search ";
-		$sql_search .= "or lower(recording_filename) like :search ";
+		$sql_search .= "or lower(recording_id) like :search ";
 		$sql_search .= "or lower(recording_description) like :search ";
 		$sql_search .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
 
 //get total recordings from the database
-	$sql = "select count(*) from v_recordings ";
-	$sql .= "where true ";
-	if ($_GET['show'] != "all" || !permission_exists('conference_center_all')) {
-		$sql .= "and (domain_uuid = :domain_uuid or domain_uuid is null) ";
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$sql = "select count(*) from v_chazara_recordings r ";
+	$sql .= "INNER JOIN v_chazara_teachers t ";
+	$sql .= "ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
+	$sql .= "where r.domain_uuid = :domain_uuid ";
+	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
+		$sql .= "and t.user_uuid = :user_uuid ";
 	}
+	$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+	$parameters['domain_uuid'] = $domain_uuid;
 	$sql .= $sql_search;
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
@@ -316,7 +324,7 @@
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	$param = "&search=".urlencode($search);
-	if ($_GET['show'] == "all" && permission_exists('recording_all')) {
+	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 		$param .= "&show=all";
 	}
 	$param .= "&order_by=".$order_by."&order=".$order;
@@ -326,14 +334,18 @@
 	$offset = $rows_per_page * $page;
 
 //get the recordings from the database
-	if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
-		switch ($db_type) {
-			case 'pgsql': $sql_file_size = "length(decode(recording_base64,'base64')) as recording_size, "; break;
-			case 'mysql': $sql_file_size = "length(from_base64(recording_base64)) as recording_size, "; break;
-		}
+	$sql = "select r.chazara_recording_uuid, r.recording_id, ";
+	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.created_epoch, "
+	$sql .= "t.grade, t.parallel_class_id "
+	$sql .= "from v_chazara_recordings r ";
+	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid "
+	$sql .= "where r.domain_uuid = :domain_uuid ";
+	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
+		$sql .= "and t.user_uuid = :user_uuid ";
+		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	}
-	$sql = str_replace('count(*)', 'recording_uuid, domain_uuid, recording_filename, '.$sql_file_size.' recording_name, recording_description', $sql);
-	$sql .= order_by($order_by, $order, 'recording_name', 'asc');
+	$parameters['domain_uuid'] = $domain_uuid;
+	$sql .= order_by($order_by, $order, 'recording_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
 	$recordings = $database->select($sql, $parameters, 'all');
