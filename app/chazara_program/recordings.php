@@ -186,7 +186,7 @@
 	$sql = "select r.chazara_recording_uuid, r.recording_id ";
 	$sql .= "from v_chazara_recordings r ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
-		$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid "
+		$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 	}
 	$sql .= "where r.domain_uuid = :domain_uuid ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
@@ -245,7 +245,6 @@
 							//build array
 								$array['recordings'][0]['domain_uuid'] = $domain_uuid;
 								$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
-								$array['recordings'][0]['created_epoch'] = filemtime($recording_filename);
 								$array['recordings'][0]['length'] = $recording_length;
 								$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
 								$array['recordings'][0]['recording_name'] = $recording_name;
@@ -269,7 +268,7 @@
 		}
 
 	//redirect
-		if ($_GET['rd'] != '') {
+		if (isset($recording_description)) {
 			header("Location: recordings.php");
 			exit;
 		}
@@ -340,10 +339,10 @@
 
 //get the recordings from the database
 	$sql = "select r.chazara_recording_uuid, r.recording_id, ";
-	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.created_epoch, "
-	$sql .= "t.grade, t.parallel_class_id "
+	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, ";
+	$sql .= "t.grade, t.parallel_class_id ";
 	$sql .= "from v_chazara_recordings r ";
-	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid "
+	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 	$sql .= "where r.domain_uuid = :domain_uuid ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
 		$sql .= "and t.user_uuid = :user_uuid ";
@@ -378,7 +377,7 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-recordings']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
-	if (permission_exists('recording_upload')) {
+	if (permission_exists('chazara_recording_upload')) {
 		echo 	"<form id='form_upload' class='inline' method='post' enctype='multipart/form-data'>\n";
 		echo 	"<input name='a' type='hidden' value='upload'>\n";
 		echo 	"<input name='type' type='hidden' value='rec'>\n";
@@ -392,11 +391,11 @@
 		echo 	"</span>\n";
 		echo 	"</form>";
 	}
-	if (permission_exists('recording_delete') && $recordings) {
+	if (permission_exists('chazara_recording_delete') && $recordings) {
 		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'btn_delete','style'=>'display: none;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
-	if (permission_exists('recording_all')) {
+	if (permission_exists('chazara_recording_all')) {
 		if ($_GET['show'] == 'all') {
 			echo "		<input type='hidden' name='show' value='all'>";
 		}
@@ -415,7 +414,7 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	if (permission_exists('recording_delete') && $recordings) {
+	if (permission_exists('chazara_recording_delete') && $recordings) {
 		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
 	}
 
@@ -429,79 +428,84 @@
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
 	$col_count = 0;
-	if (permission_exists('recording_delete')) {
+	if (permission_exists('chazara_recording_delete')) {
 		echo "	<th class='checkbox'>\n";
 		echo "		<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".($recordings ?: "style='visibility: hidden;'").">\n";
 		echo "	</th>\n";
 		$col_count++;
 	}
-	if ($_GET['show'] == "all" && permission_exists('recording_all')) {
-		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order, $param, "class='shrink'");
-	}
-	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order);
+	echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order);
 	$col_count++;
-	if ($_SESSION['recordings']['storage_type']['text'] != 'base64') {
-		echo th_order_by('recording_filename', $text['label-file_name'], $order_by, $order, null, "class='hide-md-dn'");
+	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+		echo th_order_by('grade', $text['label-grade'], $order_by, $order, $param, "class='shrink'");
+		echo th_order_by('parallel_class_id', $text['label-parallel'], $order_by, $order, $param, "class='shrink'");
+		$col_count++;
 		$col_count++;
 	}
-	if (permission_exists('recording_play') || permission_exists('recording_download')) {
+	echo "<th class='center'>".$text['label-created']."</th>\n";
+	$col_count++;
+	echo "<th class='center'>".$text['label-length']."</th>\n";
+	$col_count++;
+	if (permission_exists('chazara_recording_play') || permission_exists('chazara_recording_download')) {
 		echo "<th class='center shrink'>".$text['label-tools']."</th>\n";
 		$col_count++;
 	}
-	echo "<th class='center'>".($_SESSION['recordings']['storage_type']['text'] == 'base64' ? $text['label-size'] : $text['label-file_size'])."</th>\n";
+	echo th_order_by('enabled', $text['label-enabled'], $order_by, $order, null, "class='center'");
 	$col_count++;
-	if ($_SESSION['recordings']['storage_type']['text'] != 'base64') {
-		echo "<th class='center hide-md-dn'>".$text['label-uploaded']."</th>\n";
-		$col_count++;
-	}
 	echo th_order_by('recording_description', $text['label-description'], $order_by, $order, null, "class='hide-sm-dn pct-25'");
-	if (permission_exists('recording_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
-		echo "	<td class='action-button'>&nbsp;</td>\n";
-	}
+	$col_count++;
+
 	echo "</tr>\n";
 
 	if (is_array($recordings) && @sizeof($recordings) != 0) {
 		$x = 0;
 		foreach ($recordings as $row) {
+			$message_minutes = floor($row['length'] / 60);
+			$message_seconds = $row['length'] % 60;
+			//use International System of Units (SI) - Source: https://en.wikipedia.org/wiki/International_System_of_Units
+			$row['message_length_label'] = ($message_minutes > 0 ? $message_minutes.' min' : null).($message_seconds > 0 ? ' '.$message_seconds.' s' : null);
+
 			//playback progress bar
-			if (permission_exists('recording_play')) {
-				echo "<tr class='list-row' id='recording_progress_bar_".escape($row['recording_uuid'])."' style='display: none;'><td class='playback_progress_bar_background' style='padding: 0; border: none;' colspan='".$col_count."'><span class='playback_progress_bar' id='recording_progress_".escape($row['recording_uuid'])."'></span></td><td class='description hide-sm-dn' style='border-bottom: none !important;'></td></tr>\n";
+			if (permission_exists('chazara_recording_play')) {
+				echo "<tr class='list-row' id='recording_progress_bar_".escape($row['chazara_recording_uuid'])."' style='display: none;'><td class='playback_progress_bar_background' style='padding: 0; border: none;' colspan='".$col_count."'><span class='playback_progress_bar' id='recording_progress_".escape($row['chazara_recording_uuid'])."'></span></td><td class='description hide-sm-dn' style='border-bottom: none !important;'></td></tr>\n";
 				echo "<tr class='list-row' style='display: none;'><td></td></tr>\n"; // dummy row to maintain alternating background color
 			}
-			if (permission_exists('recording_edit')) {
-				$list_row_url = "recording_edit.php?id=".urlencode($row['recording_uuid']);
+			if (permission_exists('chazara_recording_edit')) {
+				$list_row_url = "recording_edit.php?id=".urlencode($row['chazara_recording_uuid']);
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
-			if (permission_exists('recording_delete')) {
+			if (permission_exists('chazara_recording_delete')) {
 				echo "	<td class='checkbox'>\n";
 				echo "		<input type='checkbox' name='recordings[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-				echo "		<input type='hidden' name='recordings[$x][uuid]' value='".escape($row['recording_uuid'])."' />\n";
+				echo "		<input type='hidden' name='recordings[$x][uuid]' value='".escape($row['chazara_recording_uuid'])."' />\n";
 				echo "	</td>\n";
 			}
-			if ($_GET['show'] == "all" && permission_exists('recording_all')) {
-				if (strlen($_SESSION['domains'][$row['domain_uuid']]['domain_name']) > 0) {
-					$domain = $_SESSION['domains'][$row['domain_uuid']]['domain_name'];
-				}
-				else {
-					$domain = $text['label-global'];
-				}
-				echo "	<td>".escape($domain)."</td>\n";
-			}
 			echo "	<td>";
-			if (permission_exists('recording_edit')) {
-				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_name'])."</a>";
+			if (permission_exists('chazara_recording_edit')) {
+				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_id'])."</a>";
 			}
 			else {
-				echo escape($row['recording_name']);
+				echo escape($row['recording_id']);
 			}
 			echo "	</td>\n";
-			if ($_SESSION['recordings']['storage_type']['text'] != 'base64') {
-				echo "	<td class='hide-md-dn'>".str_replace('_', '_&#8203;', escape($row['recording_filename']))."</td>\n";
+			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+				echo "	<td>".$row['grade']."</td>\n";
+				echo "	<td>".$row['parallel_class_id']."</td>\n";
 			}
-			if (permission_exists('recording_play') || permission_exists('recording_download')) {
+			$file_name = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['grade'].$row['parallel_class_id']."/".$row['recording_filename'];
+			if (file_exists($file_name)) {
+				$file_date = date("M d, Y H:i:s", filemtime($file_name));
+			}
+			else {
+				unset($file_date);
+			}
+			echo "	<td class='center hide-md-dn'>".$file_date."</td>\n";
+			echo "	<td class='right no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
+
+			if (permission_exists('chazara_recording_play') || permission_exists('chazara_recording_download')) {
 				echo "	<td class='middle button center no-link no-wrap'>";
-				if (permission_exists('recording_play')) {
-					$recording_file_path = $row['recording_filename'];
+				if (permission_exists('chazara_recording_play')) {
+					$recording_file_path = $row['recording_id']."wav";
 					$recording_file_name = strtolower(pathinfo($recording_file_path, PATHINFO_BASENAME));
 					$recording_file_ext = pathinfo($recording_file_name, PATHINFO_EXTENSION);
 					switch ($recording_file_ext) {
@@ -509,31 +513,15 @@
 						case "mp3" : $recording_type = "audio/mpeg"; break;
 						case "ogg" : $recording_type = "audio/ogg"; break;
 					}
-					echo "<audio id='recording_audio_".escape($row['recording_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['recording_uuid'])."')\" onended=\"recording_reset('".escape($row['recording_uuid'])."');\" src=\"".PROJECT_PATH."/app/recordings/recordings.php?a=download&type=rec&id=".urlencode($row['recording_uuid'])."\" type='".$recording_type."'></audio>";
-					echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['recording_uuid']),'onclick'=>"recording_play('".escape($row['recording_uuid'])."')"]);
+					echo "<audio id='recording_audio_".escape($row['chazara_recording_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['chazara_recording_uuid'])."')\" onended=\"recording_reset('".escape($row['chazara_recording_uuid'])."');\" src=\"".PROJECT_PATH."/app/recordings/recordings.php?a=download&type=rec&id=".urlencode($row['chazara_recording_uuid'])."\" type='".$recording_type."'></audio>";
+					echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['chazara_recording_uuid']),'onclick'=>"recording_play('".escape($row['chazara_recording_uuid'])."')"]);
 				}
 				if (permission_exists('recording_download')) {
 					echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"recordings.php?a=download&type=rec&t=bin&id=".urlencode($row['recording_uuid'])]);
 				}
 				echo "	</td>\n";
 			}
-			if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
-				$file_size = byte_convert($row['recording_size']);
-				echo "	<td class='center no-wrap'>".$file_size."</td>\n";
-			}
-			else {
-				$file_name = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['recording_filename'];
-				if (file_exists($file_name)) {
-					$file_size = filesize($file_name);
-					$file_size = byte_convert($file_size);
-					$file_date = date("M d, Y H:i:s", filemtime($file_name));
-				}
-				else {
-					unset($file_size, $file_date);
-				}
-				echo "	<td class='center no-wrap'>".$file_size."</td>\n";
-				echo "	<td class='center hide-md-dn'>".$file_date."</td>\n";
-			}
+
 			echo "	<td class='description overflow hide-sm-dn'>".escape($row['recording_description'])."&nbsp;</td>\n";
 			if (permission_exists('recording_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 				echo "	<td class='action-button'>";
