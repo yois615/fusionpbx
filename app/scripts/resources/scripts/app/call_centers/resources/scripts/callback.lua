@@ -415,6 +415,7 @@ if action == "service" then
         -- For each
         for i, callback in ipairs(pending_callbacks) do
             -- get queue details
+            queue_extension = nil;
             -- Get the callback_profile
             local sql = "SELECT c.queue_extension, d.domain_name, d.domain_uuid, p.caller_id_number, p.caller_id_name, "
             sql = sql .. "p. callback_confirm_prompt, p.callback_retries, p.callback_timeout, p.callback_retry_delay "
