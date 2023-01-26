@@ -52,7 +52,7 @@
 
 			// build full path
 				//Get teacher's private path
-				$sql = "select t.grade, t.parallel_class_id, r.recording_id ";
+				$sql = "select t.grade, t.parallel_class_id, r.recording_filename ";
 				$sql .= "from v_chazara_teachers t INNER JOIN v_chazara_recordings r ";
 				$sql .= "on r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 				$sql .= "WHERE r.chazara_recording_uuid = :chazara_recording_uuid ";
@@ -76,7 +76,7 @@
 					} else {
 						$parallel = $row['parallel_class_id'];
 					}
-					$recording_filename = $row['recording_id'].".wav";
+					$recording_filename = $row['recording_filename'];
 					$full_recording_path = $path."/".$grade.$parallel."/".$recording_filename;
 				}
 				unset($sql, $parameters, $row);
@@ -183,7 +183,7 @@
 	}
 
 //get existing recording uuid
-	$sql = "select r.chazara_recording_uuid, r.recording_id ";
+	$sql = "select r.chazara_recording_uuid, r.recording_id, r.recording_filename ";
 	$sql .= "from v_chazara_recordings r ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
 		$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -198,7 +198,7 @@
 	$result = $database->select($sql, $parameters, 'all');
 	if (is_array($result) && @sizeof($result) != 0) {
 		foreach ($result as &$row) {
-			$array_recordings[$row['chazara_recording_uuid']] = $row['recording_id'].".wav";
+			$array_recordings[$row['chazara_recording_uuid']] = $row['recording_filename'];
 		}
 	}
 	unset($sql, $parameters, $result, $row);
@@ -247,6 +247,7 @@
 								$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
 								$array['recordings'][0]['length'] = $recording_length;
 								$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
+								$array['recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME)
 								$array['recordings'][0]['recording_name'] = $recording_name;
 								$array['recordings'][0]['recording_description'] = $recording_description;
 							//set temporary permissions
@@ -338,7 +339,7 @@
 	$offset = $rows_per_page * $page;
 
 //get the recordings from the database
-	$sql = "select r.chazara_recording_uuid, r.recording_id, ";
+	$sql = "select r.chazara_recording_uuid, r.recording_id, r.recording_filename, ";
 	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, ";
 	$sql .= "t.grade, t.parallel_class_id ";
 	$sql .= "from v_chazara_recordings r ";
@@ -500,13 +501,12 @@
 				unset($file_date);
 			}
 			echo "	<td class='center hide-md-dn'>".$file_date."</td>\n";
-			echo "	<td class='right no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
+			//echo "	<td class='right no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
 
 			if (permission_exists('chazara_recording_play') || permission_exists('chazara_recording_download')) {
 				echo "	<td class='middle button center no-link no-wrap'>";
 				if (permission_exists('chazara_recording_play')) {
-					$recording_file_path = $row['recording_id']."wav";
-					$recording_file_name = strtolower(pathinfo($recording_file_path, PATHINFO_BASENAME));
+					$recording_file_name = strtolower(pathinfo($file_name, PATHINFO_BASENAME));
 					$recording_file_ext = pathinfo($recording_file_name, PATHINFO_EXTENSION);
 					switch ($recording_file_ext) {
 						case "wav" : $recording_type = "audio/wav"; break;
