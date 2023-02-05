@@ -31,7 +31,7 @@
 	require_once "resources/paging.php";
 
 //check permissions
-	if (permission_exists('circle_votes_view')) {
+	if (permission_exists('circle_survey_edit')) {
 		//access granted
 	}
 	else {
@@ -44,25 +44,7 @@
 	$language = new text;
 	$text = $language->get();
 
-//get order and order by
-	$order_by = $_GET["order_by"];
-	$order = $_GET["order"];
-
-
-//get the count
-	$sql = "select count(vote) from circle_tt_votes ";
-	$database = new database;
-	$num_votes = $database->select($sql, $parameters, 'column');
-	$num_rows = 1;
-
-//prepare to page the results
-	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
-	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
-	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
-	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
-	$offset = $rows_per_page * $page;
-
-//get the list
+//get the current config
 
 	$sql = "select v.vote, v.call_uuid, c.caller_id_name, c.caller_id_number, vmm.voicemail_uuid, vm.voicemail_id ";
     $sql .= "FROM circle_tt_votes v INNER JOIN circle_customer c ON v.customer_id = c.customer_id ";

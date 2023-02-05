@@ -25,8 +25,8 @@
 */
 
 //define the bridges class
-if (!class_exists('circle_votes')) {
-	class circle_votes {
+if (!class_exists('circle_survey')) {
+	class circle_survey {
 
 		/**
 		 * declare private variables
@@ -44,12 +44,12 @@ if (!class_exists('circle_votes')) {
 		public function __construct() {
 
 			//assign private variables
-				$this->app_name = 'circle_votes';
-				$this->app_uuid = '01e92702-6b4b-11ed-a1eb-0242ac1ef276';
-				$this->permission_prefix = 'circle_votes_';
-				$this->list_page = 'circle_votes.php';
-				$this->table = 'circle';
-				$this->uuid_prefix = 'circle_votes_';
+				$this->app_name = 'circle_survey';
+				$this->app_uuid = '32af1175-9f22-4073-9499-33b50bbddad5';
+				$this->permission_prefix = 'circle_survey_';
+				$this->list_page = 'circle_survey.php';
+				$this->table = 'circle_survey';
+				$this->uuid_prefix = 'circle_survey_';
 
 		}
 
