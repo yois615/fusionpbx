@@ -1,0 +1,214 @@
+<?php
+/*
+	FusionPBX
+	Version: MPL 1.1
+
+	The contents of this file are subject to the Mozilla Public License Version
+	1.1 (the "License"); you may not use this file except in compliance with
+	the License. You may obtain a copy of the License at
+	http://www.mozilla.org/MPL/
+
+	Software distributed under the License is distributed on an "AS IS" basis,
+	WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+	for the specific language governing rights and limitations under the
+	License.
+
+	The Original Code is FusionPBX
+
+	The Initial Developer of the Original Code is
+	Mark J Crane <markjcrane@fusionpbx.com>
+	Portions created by the Initial Developer are Copyright (C) 2018 - 2019
+	the Initial Developer. All Rights Reserved.
+
+	Contributor(s):
+	Mark J Crane <markjcrane@fusionpbx.com>
+*/
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+	require_once "resources/paging.php";
+
+//check permissions
+	if (permission_exists('circle_survey_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
+
+//define functions
+function array2csv(array &$array) {
+	if (count($array) == 0) {
+		return null;
+	}
+	ob_start();
+	$df = fopen("php://output", 'w');
+	fputcsv($df, array_keys(reset($array)));
+	foreach ($array as $row) {
+		fputcsv($df, $row);
+	}
+	fclose($df);
+	return ob_get_clean();
+}
+
+function download_send_headers($filename) {
+	// disable caching
+	$now = gmdate("D, d M Y H:i:s");
+	header("Expires: Tue, 03 Jul 2001 06:00:00 GMT");
+	header("Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate");
+	header("Last-Modified: {$now} GMT");
+
+	// force download
+	header("Content-Type: application/force-download");
+	header("Content-Type: application/octet-stream");
+	header("Content-Type: application/download");
+
+	// disposition / encoding on response body
+	header("Content-Disposition: attachment;filename={$filename}");
+	header("Content-Transfer-Encoding: binary");
+}
+
+//add multi-lingual support
+	$language = new text;
+	$text = $language->get();
+
+//get the http post data
+	
+		$action = $_POST['action'];
+		$search = $_POST['search'];
+		$circle_votes = $_POST['circle_votes'];
+		$week_id = $_POST['week_id'];
+
+//Set default week_id to current
+	if (!empty($week_id)) {
+		$sql = "SELECT MAX(week_id) FROM circle_survey_votes ";
+		$database = new database;
+	    $week_id = $database->select($sql, $parameters, 'column');
+	}
+	
+
+//process the http post data by action
+	if ($action == 'delete' && permission_exists('circle_survey_delete')) {
+		$sql = "DELETE FROM circle_survey_votes WHERE week_id = :week_id ";
+		$parameters['week_id'] = $week_id;
+	    $database = new database;
+	    $vote_results = $database->select($sql, $parameters, 'all');
+	    unset($sql, $parameters);
+		header('Location: circle_survey.php'.($search != '' ? '?search='.urlencode($search) : null));
+		exit;
+	}
+
+	if ($_GET["action"] == "download") {
+		$sql = "select vote, article_id, week_id FROM circle_survey_votes ORDER BY week_id DESC, article_id ASC ";
+		$database = new database;
+		$vote_results = $database->select($sql, null, 'all');
+		unset($sql, $parameters);
+
+		download_send_headers("votes_export_".date("Y-m-d").".csv");
+		echo array2csv($vote_results);
+		exit;
+	}
+
+
+//get order and order by
+	$order_by = $_GET["order_by"];
+	$order = $_GET["order"];
+
+
+//get the count
+	$sql = "select count(vote) from circle_survey_votes WHERE week_id = :week_id ";
+	$parameters['week_id'] = $week_id;
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
+
+//prepare to page the results
+	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
+	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
+	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
+	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
+	$offset = $rows_per_page * $page;
+
+//get the list
+	$sql = "select AVG(vote), article_id FROM circle_survey_votes WHERE week_id = :week_id ";
+	$sql .= "GROUP BY article_id ";
+	$sql .= order_by($order_by, $order, 'article_id', 'asc');
+	$sql .= limit_offset($rows_per_page, $offset);
+	$parameters['week_id'] = $week_id;
+	$database = new database;
+	$vote_results = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
+//create token
+	$object = new token;
+	$token = $object->create($_SERVER['PHP_SELF']);
+
+//include the header
+	$document['title'] = $text['title-circle-survey'];
+	require_once "resources/header.php";
+
+//show the content
+	echo "<div class='action_bar' id='action_bar'>\n";
+	echo "	<div class='heading'><b>".$text['title-circle-survey']." (".$num_rows.")\n";
+	echo " Week ID: ".$week_id."</b></div>\n";
+	echo "	<div class='actions'>\n";
+
+	if (permission_exists('circle_survey_edit')) {
+		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_config.php']);
+	}
+	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download']);
+	
+	if (permission_exists('circle_survey_delete')) {
+		echo button::create(['type'=>'button','label'=>$text['button-circle-survey-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+	}
+	echo 		"<form id='form_search' class='inline' method='get'>\n";
+	if ($paging_controls_mini != '') {
+		echo 	"<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
+	}
+	echo "		</form>\n";
+	echo "	</div>\n";
+	echo "	<div style='clear: both;'></div>\n";
+	echo "</div>\n";
+
+	if (permission_exists('circle_survey_delete')) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
+
+	echo $text['title_description-survey']."\n";
+	echo "<br /><br />\n";
+
+	echo "<form id='form_list' method='post'>\n";
+	echo "<input type='hidden' id='action' name='action' value=''>\n";
+	echo "<input type='hidden' name='search' value=\"".escape($search)."\">\n";
+
+	echo "<table class='list'>\n";
+	echo "<tr class='list-header'>\n";
+	
+	echo th_order_by('count', $text['label-circle_votes_count'], $order_by, $order);
+	echo th_order_by('vote', $text['label-circle_votes_number'], $order_by, $order);
+	echo "</tr>\n";
+
+	if (is_array($vote_results) && @sizeof($vote_results) != 0) {
+		$x = 0;
+		foreach ($vote_results as $row) {		
+			echo "<tr class='list-row'>\n";
+			echo "	<td>".escape($row['count'])."</td>\n";
+            echo "	<td>".escape($row['vote'])."</td>\n";			
+			echo "</tr>\n";
+			$x++;
+		}
+		unset($vote_results);
+	}
+
+	echo "</table>\n";
+	echo "<br />\n";
+	echo "<div align='center'>".$paging_controls."</div>\n";
+	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
+	echo "</form>\n";
+
+//include the footer
+	require_once "resources/footer.php";
+
+?>
