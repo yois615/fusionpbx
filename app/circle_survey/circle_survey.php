@@ -80,7 +80,7 @@ function download_send_headers($filename) {
 		$action = $_POST['action'];
 		$search = $_POST['search'];
 		$circle_votes = $_POST['circle_votes'];
-		$week_id = $_POST['week_id'];
+		$week_id = $_GET['week_id'];
 
 //Set default week_id to current
 	if (!empty($week_id)) {
@@ -124,21 +124,24 @@ function download_send_headers($filename) {
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
 
-//prepare to page the results
-	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
-	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
-	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
-	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
-	$offset = $rows_per_page * $page;
+//add buttons to switch weeks
+if ($week_id > 1) {
+	$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','link'=>$self."?week_id=".$week_id - 1]);
+}
+else {
+	$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','onclick'=>"return false;",'title'=>'','style'=>'opacity: 0.4; -moz-opacity: 0.4; cursor: default;']);
+}
+
+$next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'chevron-left','link'=>$self."?week_id = ".$week_id + 1]);
 
 //get the list
-	$sql = "select AVG(vote), article_id FROM circle_survey_votes WHERE week_id = :week_id ";
+	$sql = "select AVG(vote) as vote_average, article_id FROM circle_survey_votes WHERE week_id = :week_id ";
 	$sql .= "GROUP BY article_id ";
 	$sql .= order_by($order_by, $order, 'article_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$parameters['week_id'] = $week_id;
 	$database = new database;
-	$vote_results = $database->select($sql, $parameters, 'all');
+	$survey_results = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
 //create token
@@ -186,16 +189,16 @@ function download_send_headers($filename) {
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
 	
-	echo th_order_by('count', $text['label-circle_votes_count'], $order_by, $order);
-	echo th_order_by('vote', $text['label-circle_votes_number'], $order_by, $order);
+	echo th_order_by('count', $text['label-circle_survey_article'], $order_by, $order);
+	echo th_order_by('vote', $text['label-circle_survey_average'], $order_by, $order);
 	echo "</tr>\n";
 
-	if (is_array($vote_results) && @sizeof($vote_results) != 0) {
+	if (is_array($survey_results) && @sizeof($survey_results) != 0) {
 		$x = 0;
-		foreach ($vote_results as $row) {		
+		foreach ($survey_results as $row) {		
 			echo "<tr class='list-row'>\n";
-			echo "	<td>".escape($row['count'])."</td>\n";
-            echo "	<td>".escape($row['vote'])."</td>\n";			
+			echo "	<td>".escape($row['article_id'])."</td>\n";
+            echo "	<td>".escape($row['vote_average'])."</td>\n";			
 			echo "</tr>\n";
 			$x++;
 		}
