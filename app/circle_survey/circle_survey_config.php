@@ -46,13 +46,9 @@
 
 //get the current config
 
-	$sql = "select v.vote, v.call_uuid, c.caller_id_name, c.caller_id_number, vmm.voicemail_uuid, vm.voicemail_id ";
-    $sql .= "FROM circle_tt_votes v INNER JOIN circle_customer c ON v.customer_id = c.customer_id ";
-	$sql .= "INNER JOIN v_voicemail_messages vmm ON v.call_uuid = vmm.voicemail_message_uuid ";
-	$sql .= "INNER JOIN v_voicemails vm ON vmm.voicemail_uuid = vm.voicemail_uuid ";
-	$sql .= "ORDER BY random() LIMIT 1 ";
+	$sql = "SELECT * FROM v_circle_survey_config ";
 	$database = new database;
-	$vote_results = $database->select($sql, $parameters, 'all');
+	$survey_config = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
 //create token
@@ -60,7 +56,7 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //include the header
-	$document['title'] = $text['title-circle-votes'];
+	$document['title'] = $text['title-circle_survey_config'];
 	require_once "resources/header.php";
 
 //show the content

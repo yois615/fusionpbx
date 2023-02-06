@@ -79,7 +79,6 @@ function download_send_headers($filename) {
 	
 		$action = $_POST['action'];
 		$search = $_POST['search'];
-		$circle_votes = $_POST['circle_votes'];
 		$week_id = $_GET['week_id'];
 
 //Set default week_id to current
@@ -119,7 +118,7 @@ function download_send_headers($filename) {
 
 
 //get the count
-	$sql = "select count(vote) from circle_survey_votes WHERE week_id = :week_id ";
+	$sql = "select count(vote) from circle_survey_votes WHERE week_id = :week_id GROUP BY customer_id";
 	$parameters['week_id'] = $week_id;
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
@@ -161,7 +160,7 @@ $next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'
 	if (permission_exists('circle_survey_edit')) {
 		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_config.php']);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download']);
+	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_survey.php?action=download']);
 	
 	if (permission_exists('circle_survey_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-survey-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
@@ -189,8 +188,8 @@ $next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
 	
-	echo th_order_by('count', $text['label-circle_survey_article'], $order_by, $order);
-	echo th_order_by('vote', $text['label-circle_survey_average'], $order_by, $order);
+	echo th_order_by('article_id', $text['label-circle_survey_article'], $order_by, $order);
+	echo th_order_by('vote_average', $text['label-circle_survey_average'], $order_by, $order);
 	echo "</tr>\n";
 
 	if (is_array($survey_results) && @sizeof($survey_results) != 0) {

@@ -52,7 +52,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'customer_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'circle_customer';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'circle_survey_customer';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'customer_id';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'call_uuid';
@@ -66,6 +66,20 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'article_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
+
+		$y++;
+		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey_config';
+		$apps[$x]['db'][$y]['table']['parent'] = '';
+		$z = 0;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'week_id';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'greeting';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'recordings';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 
 
