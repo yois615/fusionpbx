@@ -11,6 +11,8 @@
 
 		$text['title_description-survey']['en-us'] = 'Show vote averages by article for this week';
 
+		$text['title-circle_survey_config']['en-us'] = 'Survey configuration';
+
 		$text['button-circle-survey-delete']['en-us'] = "Delete this week's Votes";
 
 		$text['label-circle_votes_count']['en-us'] = 'Number of Votes';

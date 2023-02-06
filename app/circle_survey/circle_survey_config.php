@@ -61,9 +61,9 @@
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
-	echo "	<div class='heading'><b>Pick a winner (".$num_votes.")</b></div>\n";
+	echo "	<div class='heading'><b>Pick a winner </b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_votes.php']);
+	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_survey_votes.php']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
