@@ -247,7 +247,7 @@
 								$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
 								$array['recordings'][0]['length'] = $recording_length;
 								$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
-								$array['recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME)
+								$array['recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME);
 								$array['recordings'][0]['recording_name'] = $recording_name;
 								$array['recordings'][0]['recording_description'] = $recording_description;
 							//set temporary permissions
