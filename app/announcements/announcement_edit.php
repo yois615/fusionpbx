@@ -133,21 +133,21 @@
 		$dialplan_xml .= "		<action application=\"sleep\" data=\"200\"/>\n";
 		// TODO: explode recordings comma delimited, loop through foreach
 		$dialplan_xml .= "		<action application=\"playback\" data=\"".$recording_filename."\"/>\n";
-		$dialplan_xml .= "      <action application=\"transfer\" data=\"".$annoucement_destination." XML ".$_SESSION['domain_name']."\"/>\n";
+		$dialplan_xml .= "      <action application=\"transfer\" data=\"".$annoucement_xfer." XML ".$_SESSION['domain_name']."\"/>\n";
 		$dialplan_xml .= "	</condition>\n";
 		$dialplan_xml .= "</extension>\n";
 
 	//build the dialplan array
 		$array['dialplans'][0]["domain_uuid"] = $_SESSION['domain_uuid'];
 		$array['dialplans'][0]["dialplan_uuid"] = $dialplan_uuid;
-		$array['dialplans'][0]["dialplan_name"] = $queue_name;
-		$array['dialplans'][0]["dialplan_number"] = $queue_extension;
+		$array['dialplans'][0]["dialplan_name"] = $announcement_name;
+		$array['dialplans'][0]["dialplan_number"] = $annoucement_destination;
 		$array['dialplans'][0]["dialplan_context"] = $_SESSION['domain_name'];
 		$array['dialplans'][0]["dialplan_continue"] = "false";
 		$array['dialplans'][0]["dialplan_xml"] = $dialplan_xml;
 		$array['dialplans'][0]["dialplan_order"] = "230";
 		$array['dialplans'][0]["dialplan_enabled"] = "true";
-		$array['dialplans'][0]["dialplan_description"] = $queue_description;
+		$array['dialplans'][0]["dialplan_description"] = $announcement_description;
 		$array['dialplans'][0]["app_uuid"] = "5d2e6675-b359-4feb-80b4-602d0639ff4e";
 
 	//add the dialplan permission
