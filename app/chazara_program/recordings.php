@@ -245,13 +245,17 @@
 							//Get length of file
 								$recording_length = ceil(shell_exec('soxi -D '.$current_sound_dir.$recording_filename));
 							//build array
-								$array['recordings'][0]['domain_uuid'] = $domain_uuid;
-								$array['recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
-								$array['recordings'][0]['length'] = $recording_length;
-								$array['recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
-								$array['recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME);
-								$array['recordings'][0]['recording_name'] = $recording_name;
-								$array['recordings'][0]['recording_description'] = $recording_description;
+								$array['chazara_recordings'][0]['domain_uuid'] = $domain_uuid;
+								$array['chazara_recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
+
+								//todo: we need to find correct teacher uuid
+								$array['chazara_recordings'][0]['chazara_teacher_uuid'] = '57bd5741-e5cc-4e7e-b13a-19f3c4a1dc4c';
+
+								$array['chazara_recordings'][0]['length'] = $recording_length;
+								$array['chazara_recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
+								$array['chazara_recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME);
+								$array['chazara_recordings'][0]['recording_name'] = $recording_name;
+								$array['chazara_recordings'][0]['recording_description'] = $recording_description;
 							//set temporary permissions
 								$p = new permissions;
 								$p->add('chazara_recording_add', 'temp');
@@ -271,7 +275,7 @@
 		}
 
 	//redirect
-		if (isset($recording_description)) {
+		if ($_GET['rd'] != '') {
 			header("Location: recordings.php");
 			exit;
 		}
