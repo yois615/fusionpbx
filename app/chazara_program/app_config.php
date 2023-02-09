@@ -255,7 +255,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 
-		$y=0;
+		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = "v_chazara_cdrs";
 		$apps[$x]['db'][$y]['table']['parent'] = "";
 		$z=0;
@@ -276,7 +276,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
-		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
+		// $apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "start_epoch";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
