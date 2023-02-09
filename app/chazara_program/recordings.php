@@ -254,6 +254,7 @@
 								$array['chazara_recordings'][0]['length'] = $recording_length;
 								$array['chazara_recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
 								$array['chazara_recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME);
+								$array['chazara_recordings'][0]['recording_path'] = $grade.$parallel;
 								$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 								$array['chazara_recordings'][0]['recording_description'] = $recording_description;
 							//set temporary permissions
