@@ -129,6 +129,8 @@
 			$recording_filename = str_replace("'", "", $recording_filename);
 
 		//Get teacher's path
+			$grade = "00";
+			$parallel = "0";
 			$sql = "select grade, parallel_class_id ";
 			$sql .= "from v_chazara_teachers ";
 			$sql .= "where user_uuid = :user_uuid ";
@@ -144,7 +146,7 @@
 					$grade = $row['grade'];
 				}
 				if (empty($row['parallel_class_id'])) {
-					$parallel = "1";
+					$parallel = "0";
 				} else {
 					$parallel = $row['parallel_class_id'];
 				}
@@ -229,7 +231,7 @@
 		}
 		unset($sql, $parameters, $row);
 
-		$current_sound_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel;
+		$current_sound_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel.'/';
 		if (is_dir($current_sound_dir)) {
 			if ($dh = opendir($current_sound_dir)) {
 				while (($recording_filename = readdir($dh)) !== false) {
