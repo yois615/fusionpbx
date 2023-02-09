@@ -43,7 +43,7 @@ $text['title-add']['ru-ru'] = "Добавить запись";
 $text['title-add']['sv-se'] = "Lägg Till Inspelning";
 $text['title-add']['uk-ua'] = "Додати запис";
 
-$text['title-recordings']['en-us'] = "Recordings";
+$text['title-recordings']['en-us'] = "Chazara Recordings";
 $text['title-recordings']['en-gb'] = "Recordings";
 $text['title-recordings']['ar-eg'] = "";
 $text['title-recordings']['de-at'] = "Aufnahmen"; //copied from de-de
