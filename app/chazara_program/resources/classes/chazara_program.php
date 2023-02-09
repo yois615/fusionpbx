@@ -117,21 +117,21 @@ if (!class_exists('chazara_program')) {
 								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
 
 									//get filename
-										$sql = "select recording_filename from v_recordings ";
+										$sql = "select recording_filename, recording_path from v_chazara_recordings ";
 										$sql .= "where domain_uuid = :domain_uuid ";
-										$sql .= "and recording_uuid = :recording_uuid ";
+										$sql .= "and chazara_recording_uuid = :recording_uuid ";
 										$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 										$parameters['recording_uuid'] = $record['uuid'];
 										$database = new database;
-										$filenames[] = $database->select($sql, $parameters, 'column');
+										$filenames[] = $database->select($sql, $parameters, 'recording_filename, recording_path');
 										unset($sql, $parameters);
 
 									//build delete array
-										$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
+										$array[$this->table][$x][$this->uuid_prefix.'recording_uuid'] = $record['uuid'];
 										$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
 								}
 							}
-
+							// print_r($array);exit;
 						//delete the checked rows
 							if (is_array($array) && @sizeof($array) != 0) {
 
