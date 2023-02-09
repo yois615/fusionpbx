@@ -176,7 +176,7 @@
 	}
 
 //check the permission
-	if (permission_exists('recording_view')) {
+	if (permission_exists('chazara_recording_view')) {
 		//access granted
 	}
 	else {
