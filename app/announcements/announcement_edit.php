@@ -126,61 +126,14 @@
 			$array['annoucements'][0]['annoucement_enabled'] = $annoucement_enabled;
 			$array['annoucements'][0]['annoucement_description'] = $annoucement_description;
 
-		//build the xml dialplan
+	//build the xml dialplan
 		$dialplan_xml = "<extension name=\"".$announcement_name."\" continue=\"\" uuid=\"".$dialplan_uuid."\">\n";
-		$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^([^#]+#)(.*)\$\" break=\"never\">\n";
-		$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=\$2\"/>\n";
-		$dialplan_xml .= "	</condition>\n";
-		$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".$queue_extension."$\">\n";
+		$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^".$annoucement_destination."$\" break=\"on-true\">\n";
 		$dialplan_xml .= "		<action application=\"answer\" data=\"\"/>\n";
-		if (is_uuid($call_center_queue_uuid)) {
-			$dialplan_xml .= "		<action application=\"set\" data=\"call_center_queue_uuid=".$call_center_queue_uuid."\"/>\n";
-		}
-		if (is_numeric($queue_extension)) {
-			$dialplan_xml .= "		<action application=\"set\" data=\"queue_extension=".$queue_extension."\"/>\n";
-		}
-		$dialplan_xml .= "		<action application=\"set\" data=\"cc_export_vars=\${cc_export_vars},call_center_queue_uuid,sip_h_Alert-Info\"/>\n";
-		$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
-		if ($queue_announce_position && is_numeric($queue_announce_frequency)) {
-			$dialplan_xml .= "		<action application=\"set\" data=\"result=\${luarun(app/call_centers/resources/scripts/announce-position.lua ";
-			$dialplan_xml .= "\${uuid} ".$call_center_queue_uuid." ".($queue_announce_frequency * 1000)."})\"/>\n";
-		}
-		if ($queue_time_base_score_sec != '') {
-			$dialplan_xml .= "		<action application=\"set\" data=\"cc_base_score=".$queue_time_base_score_sec."\"/>\n";
-		}
-		if ($queue_greeting_path != '') {
-			$dialplan_xml .= "		<action application=\"sleep\" data=\"1000\"/>\n";
-			$greeting_array = explode(':', $queue_greeting_path);
-			if (count($greeting_array) == 1) {
-				$dialplan_xml .= "		<action application=\"playback\" data=\"".$queue_greeting_path."\"/>\n";
-			}
-			else {
-				if ($greeting_array[0] == 'say' || $greeting_array[0] == 'tone_stream' || $greeting_array[0] == 'phrase') {
-					$dialplan_xml .= "		<action application=\"".$greeting_array[0]."\" data=\"".$greeting_array[1]."\"/>\n";
-				}
-			}
-		}
-		if (strlen($queue_cid_prefix) > 0) {
-			$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".$queue_cid_prefix."#\${caller_id_name}\"/>\n";
-			$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=".$queue_cid_prefix."#\${caller_id_name}\"/>\n";
-		}
-
-		if (!strpos($queue_cc_exit_keys, "1") && strlen($queue_callback_profile) > 0) {
-			$queue_cc_exit_keys .= "1";
-		}
-
-		if (strlen($queue_cc_exit_keys) > 0) {
-			$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".$queue_cc_exit_keys."\"/>\n";
-		}
-		$dialplan_xml .= "		<action application=\"callcenter\" data=\"".$queue_extension."@".$_SESSION["domain_name"]."\"/>\n";
-
-		if (strlen($queue_callback_profile) > 0) {
-			$dialplan_xml .= "		<action application=\"lua\" data=\"app/call_centers/resources/scripts/callback.lua start ".$call_center_queue_uuid."\"/>\n";
-		}
-
-		if ($destination->valid($queue_timeout_app.':'.$queue_timeout_data)) {
-			$dialplan_xml .= "		<action application=\"".$queue_timeout_app."\" data=\"".$queue_timeout_data."\"/>\n";
-		}
+		$dialplan_xml .= "		<action application=\"sleep\" data=\"200\"/>\n";
+		// TODO: explode recordings comma delimited, loop through foreach
+		$dialplan_xml .= "		<action application=\"playback\" data=\"".$recording_filename."\"/>\n";
+		$dialplan_xml .= "      <action application=\"transfer\" data=\"".$annoucement_destination." XML ".$_SESSION['domain_name']."\"/>\n";
 		$dialplan_xml .= "	</condition>\n";
 		$dialplan_xml .= "</extension>\n";
 
