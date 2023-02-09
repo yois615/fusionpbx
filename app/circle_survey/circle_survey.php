@@ -123,16 +123,6 @@ function download_send_headers($filename) {
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
 
-//add buttons to switch weeks
-if ($week_id > 1) {
-	$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','link'=>$self."?week_id=".$week_id - 1]);
-}
-else {
-	$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','onclick'=>"return false;",'title'=>'','style'=>'opacity: 0.4; -moz-opacity: 0.4; cursor: default;']);
-}
-
-$next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'chevron-left','link'=>$self."?week_id = ".$week_id + 1]);
-
 //get the list
 	$sql = "select AVG(vote) as vote_average, article_id FROM circle_survey_votes WHERE week_id = :week_id ";
 	$sql .= "GROUP BY article_id ";
@@ -165,11 +155,17 @@ $next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'
 	if (permission_exists('circle_survey_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-survey-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
-	echo 		"<form id='form_search' class='inline' method='get'>\n";
-	if ($paging_controls_mini != '') {
-		echo 	"<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
+	
+	//add buttons to switch weeks
+	if ($week_id > 1) {
+		$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','link'=>$self."?week_id=".$week_id - 1]);
 	}
-	echo "		</form>\n";
+	else {
+		$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','onclick'=>"return false;",'title'=>'','style'=>'opacity: 0.4; -moz-opacity: 0.4; cursor: default;']);
+	}
+
+	$next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'chevron-left','link'=>$self."?week_id = ".$week_id + 1]);
+
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";

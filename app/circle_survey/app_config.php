@@ -1,7 +1,7 @@
 <?php
 
 	//application details
-		$apps[$x]['name'] = 'Circle Survey';
+		$apps[$x]['name'] = 'circle_survey';
 		$apps[$x]['uuid'] = '32af1175-9f22-4073-9499-33b50bbddad5';
 		$apps[$x]['category'] = '';
 		$apps[$x]['subcategory'] = '';
@@ -78,7 +78,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'greeting';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'recordings';
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'survey_recordings';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 

@@ -17,6 +17,12 @@
 
 		$text['label-circle_votes_count']['en-us'] = 'Number of Votes';
 		$text['label-circle_votes_number']['en-us'] = 'Vote Choice';
+
+		$text['label-week-id']['en-us'] = "Week ID";
+
+		$text['label-greeting']['en-us'] = "Greeting";
+
+		$text['label-survey-recordings']['en-us'] = "Question Recordings";
 		
 
 ?>

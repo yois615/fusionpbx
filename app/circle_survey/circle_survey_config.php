@@ -28,7 +28,6 @@
 	require_once "root.php";
 	require_once "resources/require.php";
 	require_once "resources/check_auth.php";
-	require_once "resources/paging.php";
 
 //check permissions
 	if (permission_exists('circle_survey_edit')) {
@@ -39,17 +38,94 @@
 		exit;
 	}
 
+	//get http post variables and set them to php variables
+	if (is_array($_POST)) {
+		$week_id = $_POST["week_id"];
+		$greeting = $_POST["greeting"];
+		$survey_recordings = $_POST["survey_recordings"];
+	}
+
+//process the user data and save it to the database
+	if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
+
+
+		//validate the token
+			$token = new token;
+			if (!$token->validate($_SERVER['PHP_SELF'])) {
+				message::add($text['message-invalid_token'],'negative');
+				header('Location: bridges.php');
+				exit;
+			}
+
+		//check for all required data
+			$msg = '';
+			if (strlen($week_id) == 0) { $msg .= $text['message-required']." ".$text['label-week-id']."<br>\n"; }
+			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
+			if (strlen($survey_recordings) == 0) { $msg .= $text['message-required']." ".$text['label-survey-recordings']."<br>\n"; }
+			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
+				require_once "resources/header.php";
+				require_once "resources/persist_form_var.php";
+				echo "<div align='center'>\n";
+				echo "<table><tr><td>\n";
+				echo $msg."<br />";
+				echo "</td></tr></table>\n";
+				persistformvar($_POST);
+				echo "</div>\n";
+				require_once "resources/footer.php";
+				return;
+			}
+
+
+		//prepare the array
+			$array['survey'][0]['week_id'] = $week_id;
+			$array['survey'][0]['greeting'] = $greeting;
+			$array['survey'][0]['survey_recordings'] = $survey_recordings;
+
+		//save to the data
+			$database = new database;
+			$database->app_name = 'circle_survey';
+			$database->app_uuid = '32af1175-9f22-4073-9499-33b50bbddad5';
+			$database->save($array);
+			$message = $database->message;
+
+		//clear the destinations session array
+			if (isset($_SESSION['destinations']['array'])) {
+				unset($_SESSION['destinations']['array']);
+			}
+
+		//redirect the user
+			$_SESSION["message"] = $text['message-update'];
+	
+			header('Location: circle_survey_config.php');
+			return;	
+	}
+
 
 //add multi-lingual support
 	$language = new text;
 	$text = $language->get();
 
-//get the current config
 
+//pre-populate the form
 	$sql = "SELECT * FROM v_circle_survey_config ";
 	$database = new database;
-	$survey_config = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters);
+	$row = $database->select($sql, $parameters, 'row');
+	if (is_array($row) && sizeof($row) != 0) {
+		$week_id = $row["weed_id"];
+		$greeting = $row["greeting"];
+		$survey_recordings = $row["survey_recordings"];
+	}
+	unset($sql, $parameters, $row);
+
+//get the recordings
+$sql = "select recording_name, recording_filename from v_recordings ";
+$sql .= "where domain_uuid = :domain_uuid ";
+$sql .= "order by recording_name asc ";
+$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+$database = new database;
+$recordings = $database->select($sql, $parameters, 'all');
+unset($sql, $parameters);
+
 
 //create token
 	$object = new token;
@@ -59,11 +135,14 @@
 	$document['title'] = $text['title-circle_survey_config'];
 	require_once "resources/header.php";
 
+	
+
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
-	echo "	<div class='heading'><b>Pick a winner </b></div>\n";
+	echo "	<div class='heading'><b>Survey Config</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_survey_votes.php']);
+	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_survey.php']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','name'=>'action','value'=>'save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -75,40 +154,98 @@
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
 	
-	echo th_order_by('caller_id_number', 'Caller ID Number', $order_by, $order);
-	echo th_order_by('caller_id_name', 'Caller ID Name', $order_by, $order);
-    echo th_order_by('vote', 'Vote', $order_by, $order);
-    echo "<th class='center shrink'>".$text['label-tools']."</th>\n";
-	//echo th_order_by('call_uuid', 'Call and VM UUID', $order_by, $order);
+	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
+
+	echo "<tr>\n";
+	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-week_id']."\n";
+	echo "</td>\n";
+	echo "<td width='70%' class='vtable' style='position: relative;' align='left'>\n";
+	echo "	<input class='formfld' type='text' name='week_id' maxlength='255' value='".escape($week_id)."'>\n";
+	echo "<br />\n";
+	echo $text['description-week-id']."\n";
+	echo "</td>\n";
 	echo "</tr>\n";
 
-	if (is_array($vote_results) && @sizeof($vote_results) != 0) {
-		$x = 0;
-		foreach ($vote_results as $row) {	
-			//playback progress bar
-			echo "<tr class='list-row' id='recording_progress_bar_".escape($row['call_uuid'])."' style='display: none;'><td class='playback_progress_bar_background' style='padding: 0; border: none;' colspan='4'><span class='playback_progress_bar' id='recording_progress_".escape($row['call_uuid'])."'></span></td></tr>\n";
-			echo "<tr style='display: none;'><td></td></tr>\n"; // dummy row to maintain alternating background color	
-			echo "<tr class='list-row'>\n";
-			echo "	<td>".escape($row['caller_id_number'])."</td>\n";
-            echo "	<td>".escape($row['caller_id_name'])."</td>\n";
-            echo "	<td>".escape($row['vote'])."</td>\n";
-			echo "	<td class='button center no-link no-wrap'>";
-			echo 		"<audio id='recording_audio_".escape($row['call_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['call_uuid'])."')\" onended=\"recording_reset('".escape($row['call_uuid'])."');\" src='/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".urlencode($row['voicemail_uuid'])."&uuid=".urlencode($row['call_uuid'])."&r=".uuid()."'></audio>";
-			echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['call_uuid']),'onclick'=>"recording_play('".escape($row['call_uuid'])."');"]);
-			echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".escape($row['voicemail_uuid'])."&uuid=".escape($row['call_uuid'])."&t=bin&r=".uuid(),'onclick'=>"$(this).closest('tr').children('td').css('font-weight','normal');"]);
-			echo "	</td>\n";
-            
-			echo "</tr>\n";
-			$x++;
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-greeting']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='greeting' id='greeting' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		$tmp_selected = false;
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as &$row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if ($greeting == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($greeting) > 0) {
+					$tmp_selected = true;
+					echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else if ($greeting == $recording_filename && strlen($greeting) > 0) {
+					$tmp_selected = true;
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
 		}
-		unset($vote_results);
-	}
-
-	echo "</table>\n";
+	echo "	</select>\n";
+	echo "</td>\n";
 	echo "<br />\n";
-	echo "<div align='center'>".$paging_controls."</div>\n";
+	echo $text['description-greeting']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-survey_recordings']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "	<select class='formfld' name='survey_recordings'>\n";
+	if ($bridge_enabled == "true") {
+		echo "		<option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	}
+	else {
+		echo "		<option value='true'>".$text['label-true']."</option>\n";
+	}
+	if ($bridge_enabled == "false") {
+		echo "		<option value='false' selected='selected'>".$text['label-false']."</option>\n";
+	}
+	else {
+		echo "		<option value='false'>".$text['label-false']."</option>\n";
+	}
+	echo "	</select>\n";
+	echo "<br />\n";
+	echo $text['description-bridge_enabled']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-bridge_description']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "	<input class='formfld' type='text' name='bridge_description' maxlength='255' value=\"".escape($bridge_description)."\">\n";
+	echo "<br />\n";
+	echo $text['description-bridge_description']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "</table>";
+	echo "<br /><br />";
+
+	if ($action == "update") {
+		echo "<input type='hidden' name='bridge_uuid' value='".escape($bridge_uuid)."'>\n";
+	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
-	echo "</form>\n";
+
+	echo "</form>";
 
 //include the footer
 	require_once "resources/footer.php";
