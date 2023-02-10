@@ -468,6 +468,6 @@ $text['header-teacher-edit']['en-us'] = "Teachers";
 $text['description-pin']['en-us'] = "";
 
 $text['label-true']['en-us'] = "True";
-$text['label-false']['en-us'] = "Flase";
+$text['label-false']['en-us'] = "False";
 
 ?>

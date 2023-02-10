@@ -79,7 +79,7 @@
 	if (count($_POST) > 0) {
 
 		//get the values from the HTTP POST and save them as PHP variables
-            $teacher_uuid = $id;
+            $teacher_uuid = $_REQUEST["id"];
 			$pin = $_POST["pin"];
 			$grade = $_POST["grade"];
 			$parallel_class_id = $_POST["parallel_class_id"];
