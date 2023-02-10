@@ -470,4 +470,8 @@ $text['description-pin']['en-us'] = "";
 $text['label-true']['en-us'] = "True";
 $text['label-false']['en-us'] = "False";
 
+
+$text['button-teacher-submenu']['en-us'] = "Teacher";
+$text['button-reacording-submenu']['en-us'] = "Recording";
+
 ?>

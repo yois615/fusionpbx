@@ -385,6 +385,9 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-recordings']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
+
+	echo button::create(['type'=>'button','label'=>$text['button-teacher-submenu'],'icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/teachers.php']);
+
 	if (permission_exists('chazara_recording_upload')) {
 		echo 	"<form id='form_upload' class='inline' method='post' enctype='multipart/form-data'>\n";
 		echo 	"<input name='a' type='hidden' value='upload'>\n";
