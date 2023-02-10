@@ -159,12 +159,7 @@
 					if ($action == "update") {
 						message::add($text['message-update']);
 					}
-					// if ($range > 1) {
-					// 	header("Location: teachers.php");
-					// }
-					// else {
-					header("Location: teachers_edit.php?id=".$teacher_uuid.(is_numeric($page) ? '&page='.$page : null));
-					// }
+					header("Location: teachers.php".(is_numeric($page) ? '?page='.$page : null));
 					exit;
 			}
 	}
