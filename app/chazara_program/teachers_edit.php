@@ -79,7 +79,7 @@
 	if (count($_POST) > 0) {
 
 		//get the values from the HTTP POST and save them as PHP variables
-            $chazara_teacher_uuid = $id;
+            $teacher_uuid = $id;
 			$pin = $_POST["pin"];
 			$grade = $_POST["grade"];
 			$parallel_class_id = $_POST["parallel_class_id"];
@@ -184,8 +184,8 @@
 	if (count($_GET) > 0 && $_POST["persistformvar"] != "true") {
 		$teacher_uuid = $_GET["id"];
 		$sql = "select * from v_chazara_teachers ";
-		$sql .= "where chazara_teacher_uuid = :chazara_teacher_uuid ";
-		$parameters['chazara_teacher_uuid'] = $teacher_uuid;
+		$sql .= "where chazara_teacher_uuid = :teacher_uuid ";
+		$parameters['teacher_uuid'] = $teacher_uuid;
 		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && @sizeof($row) != 0) {
@@ -318,8 +318,8 @@
 		echo "<input type='hidden' name='page' value='".$page."'>\n";
 	}
 	if ($action == "update") {
-		echo "<input type='hidden' name='chazara_teacher_uuid' value='".escape($chazara_teacher_uuid)."'>\n";
-		echo "<input type='hidden' name='id' id='id' value='".escape($chazara_teacher_uuid)."'>";
+		echo "<input type='hidden' name='teacher_uuid' value='".escape($teacher_uuid)."'>\n";
+		echo "<input type='hidden' name='id' id='id' value='".escape($teacher_uuid)."'>";
 		if (!permission_exists('extension_domain')) {
 			echo "<input type='hidden' name='domain_uuid' id='domain_uuid' value='".$_SESSION['domain_uuid']."'>";
 		}
