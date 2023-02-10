@@ -55,7 +55,7 @@
 		$description = $_POST["description"];
 		$name = $_POST["name"];
 		$survey_questions = $_POST["survey_questions"];
-		$circle_survey_questions_delete = $_POST["circle_survey_questions_delete"];
+		$survey_questions_delete = $_POST["survey_questions_delete"];
 	}
 
 //process the user data and save it to the database
@@ -78,12 +78,12 @@
 		//remove checked questions
 		if (
 			$action == 'update'
-			&& is_array($circle_survey_questions_delete)
-			&& @sizeof($circle_survey_questions_delete) != 0
+			&& is_array($survey_questions_delete)
+			&& @sizeof($survey_questions_delete) != 0
 			) {
 			$obj = new circle_survey;
 			$obj->circle_survey_uuid = $circle_survey_uuid;
-			$obj->delete_questions($circle_survey_questions_delete);
+			$obj->delete_questions($survey_questions_delete);
 		}
 
 
@@ -92,11 +92,26 @@
 				$circle_survey_uuid = uuid();
 			}
 
+		//prepare the recordings array
+			if (is_array($survey_questions)) {
+				foreach ($survey_questions as $i => $r) {
+					if (strlen($r['recording']) > 0) {
+						$array['survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
+						$array['survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
+						$array['survey_questions'][$i]['sequence_id'] = $r['sequence_id'];
+						$array['survey_questions'][$i]['recording'] = $r['recording'];
+						$array['survey_questions'][$i]['highest_number'] = $r['highest_number'];
+					}
+				}
+			}
+
 		//check for all required data
 			$msg = '';
 			if (strlen($week_id) == 0) { $msg .= $text['message-required']." ".$text['label-week-id']."<br>\n"; }
 			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
-			if (strlen($survey_questions) == 0) { $msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; }
+			if (!is_array($array['survey_questions']) || sizeof($array['survey_questions']) == 0) {
+				$msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; 
+			}
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -119,16 +134,7 @@
 			$array['circle_survey'][0]['week_id'] = $week_id;
 			$array['circle_survey'][0]['greeting'] = $greeting;
 
-		//prepare the recordings array
-			if (is_array($survey_questions)) {
-				foreach ($survey_questions as $i => $r) {
-				$array['circle_survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
-				$array['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
-				$array['circle_survey_questions'][$i]['sequence_id'] = $sequence_id;
-				$array['circle_survey_questions'][$i]['recording'] = $recording;
-				$array['circle_survey_questions'][$i]['highest_number'] = $highest_number;
-				}
-			}
+
 
 		//grant temporary permissions
 			$p = new permissions;
@@ -201,18 +207,18 @@
 //add an empty row to the options array
 if (!is_array($survey_questions) || count($survey_questions) == 0) {
 	$rows = 5;
-	$id = 0;
+	$sequence_id = 0;
 	$show_destination_delete = false;
 }
 if (is_array($survey_questions) && count($survey_questions) > 0) {
 	$rows = 2;
-	$id = count($survey_questions)+1;
+	$sequence_id = count($survey_questions)+1;
 	$show_destination_delete = true;
 }
 for ($x = 0; $x < $rows; $x++) {
-	$survey_questions[$id]['recording'] = '';
-	$survey_questions[$id]['highest_number'] = '';
-	$id++;
+	$survey_questions[$sequence_id]['recording'] = '';
+	$survey_questions[$sequence_id]['highest_number'] = '';
+	$sequence_id++;
 }
 
 //get the recordings
@@ -234,6 +240,7 @@ for ($x = 0; $x < $rows; $x++) {
 	require_once "resources/header.php";
 
 //show the content
+	echo "<form name='frm' id='form_list' method='post'>\n";
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>Survey Config</b></div>\n";
 	echo "	<div class='actions'>\n";
@@ -242,10 +249,6 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
-
-	echo "<form id='form_list' method='post'>\n";
-	echo "<input type='hidden' id='action' name='action' value=''>\n";
-	echo "<input type='hidden' name='search' value=\"".escape($search)."\">\n";
 
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
@@ -266,7 +269,7 @@ for ($x = 0; $x < $rows; $x++) {
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-survey_description']."\n";
+	echo "	".$text['label-description']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "	<input class='formfld' type='text' name='description' maxlength='255' value=\"".escape($description)."\">\n";
@@ -328,7 +331,7 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "				<tr>\n";
 	echo "					<td class='vtable'>".$text['label-survey-recording']."</td>\n";
-	echo "					<td class='vtable'>".$text['label-survey-higest-number']."</td>\n";
+	echo "					<td class='vtable'>".$text['label-survey-highest-number']."</td>\n";
 
 	if ($show_destination_delete) {
 		echo "					<td class='vtable edit_delete_checkbox_all' onmouseover=\"swap_display('delete_label_destinations', 'delete_toggle_destinations');\" onmouseout=\"swap_display('delete_label_destinations', 'delete_toggle_destinations');\">\n";
@@ -338,16 +341,16 @@ for ($x = 0; $x < $rows; $x++) {
 	}
 	echo "				</tr>\n";
 	$x = 0;
-	foreach ($circle_survey_questions as $row) {
+	foreach ($survey_questions as $row) {
 		if (strlen($row['recording']) == 0) { $row['recording'] = ""; }
 		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "9"; }
 
 		if (strlen($row['sequence_id']) > 0) {
-			echo "		<input name=\"circle_survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
+			echo "		<input name=\"survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
 		}
 		echo "			<tr>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
-		echo "<select name=\"circle_survey_questions[".$x."][recording]\" class='formfld'>\n";
+		echo "<select name=\"survey_questions[".$x."][recording]\" class='formfld'>\n";
 		echo "	<option></option>\n";
 			//recordings
 			$tmp_selected = false;
@@ -375,7 +378,7 @@ for ($x = 0; $x < $rows; $x++) {
 
 
 		echo "				<td class='formfld'>\n";
-		echo "					<select name=\"circle_survey_questions[".$x."][highest_number]\" class='formfld' style='width:55px'>\n";
+		echo "					<select name=\"survey_questions[".$x."][highest_number]\" class='formfld' style='width:55px'>\n";
 		$i=0;
 		while ($i <= 9) {
 			if ($i == $row['highest_number']) {
@@ -392,8 +395,8 @@ for ($x = 0; $x < $rows; $x++) {
 		if ($show_destination_delete) {
 			if (!empty($row['sequence_id'])) {
 				echo "			<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
-				echo "				<input type='checkbox' name='circle_survey_questions_delete[".$x."][checked]' value='true' class='chk_delete checkbox_questions' onclick=\"edit_delete_action('questions');\">\n";
-				echo "				<input type='hidden' name='circle_survey_questions_delete[".$x."][sequence_id]' value='".escape($row['sequence_id'])."' />\n";
+				echo "				<input type='checkbox' name='survey_questions_delete[".$x."][checked]' value='true' class='chk_delete checkbox_questions' onclick=\"edit_delete_action('questions');\">\n";
+				echo "				<input type='hidden' name='survey_questions_delete[".$x."][sequence_id]' value='".escape($row['sequence_id'])."' />\n";
 			}
 			else {
 				echo "			<td>\n";

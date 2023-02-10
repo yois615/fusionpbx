@@ -196,8 +196,8 @@
 	if ($_GET['show'] == 'all' && permission_exists('circle_survey_all')) {
 		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
 	}
-	echo th_order_by('name', $text['label-circle_survey_name'], $order_by, $order);
-	echo "	<th class='hide-sm-dn'>".$text['label-circle_survey_description']."</th>\n";
+	echo th_order_by('name', $text['label-name'], $order_by, $order);
+	echo "	<th class='hide-sm-dn'>".$text['label-description']."</th>\n";
 	if (permission_exists('circle_survey_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 		echo "	<td class='action-button'>&nbsp;</td>\n";
 	}

@@ -15,6 +15,10 @@
 		$y = 0;
 		$apps[$x]['permissions'][$y]['name'] = 'circle_survey_view';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+		$apps[$x]['permissions'][$y]['groups'][] = 'admin';
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = 'circle_survey_add';
+		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'circle_survey_delete';
@@ -25,10 +29,14 @@
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = 'circle_survey_all';
+		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
+		$y++;
 
 	//Votes
 		$y = 0;
-		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey_customer';
+		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_customer';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'customer_id';
@@ -43,7 +51,7 @@
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey_votes';
+		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_votes';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote';
@@ -69,7 +77,7 @@
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = 'circle_surveys';
+		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_surveys';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';
@@ -100,7 +108,7 @@
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey_questions';
+		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_questions';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';

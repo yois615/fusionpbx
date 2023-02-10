@@ -1,8 +1,10 @@
 <?php
 
 	//Bridges
-		$text['title-circle-votes']['en-us'] = 'Circle Survey';
-		$text['title-circle-votes']['en-gb'] = 'Circle Survey';
+		$text['title-circle_surveys']['en-us'] = 'Circle Surveys';
+		$text['title-circle-surveys']['en-gb'] = 'Circle Survey';
+
+		$text['title_description-circle_survey']['en-us'] = "List of all configured surveys";
 
 
 		$text['label-circle_survey_average']['en-us'] = 'Vote Average';
@@ -18,7 +20,7 @@
 		$text['label-circle_votes_count']['en-us'] = 'Number of Votes';
 		$text['label-circle_votes_number']['en-us'] = 'Vote Choice';
 
-		$text['label-week-id']['en-us'] = "Week ID";
+		$text['label-week_id']['en-us'] = "Week ID";
 
 		$text['label-greeting']['en-us'] = "Greeting";
 
