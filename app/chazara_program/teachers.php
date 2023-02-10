@@ -133,12 +133,12 @@
     // var_dump($page); var_dump($offset);
 //get the extensions
     $sql = str_replace('count(*)', '*', $sql);
-    if ($order_by == '' || $order_by == 'chazara_teachers_uuid') {
+    if ($order_by == '' || $order_by == 'chazara_teacher_uuid') {
         if ($db_type == 'pgsql') {
-            $sql .= 'order by chazara_teachers_uuid '.$order; //function in app_defaults.php
+            $sql .= 'order by chazara_teacher_uuid '.$order; //function in app_defaults.php
         }
         else {
-            $sql .= 'order by chazara_teachers_uuid '.$order;
+            $sql .= 'order by chazara_teacher_uuid '.$order;
         }
     }
     else {
@@ -246,7 +246,7 @@
         echo "<th>".$text['label-domain']."</th>\n";
         //echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
     }
-    echo th_order_by('chazara_teachers_uuid', $text['label-chazara_teachers_uuid'], $order_by, $order);
+    echo th_order_by('chazara_teacher_uuid', $text['label-chazara_teacher_uuid'], $order_by, $order);
     echo th_order_by('pin', $text['label-pin'], $order_by, $order, null, "class='hide-xs'");
     echo th_order_by('grade', $text['label-grade'], $order_by, $order);
     echo th_order_by('parallel_class_id', $text['label-parallel_class_id'], $order_by, $order);
@@ -260,13 +260,13 @@ if (is_array($teachers) && @sizeof($teachers) != 0) {
     $x = 0;
     foreach($teachers as $row) {
         if (permission_exists('chazara_teacher_edit')) {
-            $list_row_url = "teachers_edit.php?id=".urlencode($row['chazara_teachers_uuid']).(is_numeric($page) ? '&page='.urlencode($page) : null);
+            $list_row_url = "teachers_edit.php?id=".urlencode($row['chazara_teacher_uuid']).(is_numeric($page) ? '&page='.urlencode($page) : null);
         }
         echo "<tr class='list-row' href='".$list_row_url."'>\n";
         if (permission_exists('chazara_teacher_delete') || permission_exists('chazara_teacher_delete')) {
             echo "	<td class='checkbox'>\n";
             echo "		<input type='checkbox' name='teachers[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-            echo "		<input type='hidden' name='teachers[$x][uuid]' value='".escape($row['chazara_teachers_uuid'])."' />\n";
+            echo "		<input type='hidden' name='teachers[$x][uuid]' value='".escape($row['chazara_teacher_uuid'])."' />\n";
             echo "	</td>\n";
         }
         if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
@@ -274,10 +274,10 @@ if (is_array($teachers) && @sizeof($teachers) != 0) {
         }
         echo "	<td>";
         if (permission_exists('chazara_teacher_edit')) {
-            echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['chazara_teachers_uuid'])."</a>";
+            echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['chazara_teacher_uuid'])."</a>";
         }
         else {
-            echo escape($row['chazara_teachers_uuid']);
+            echo escape($row['chazara_teacher_uuid']);
         }
         echo "	</td>\n";
 
