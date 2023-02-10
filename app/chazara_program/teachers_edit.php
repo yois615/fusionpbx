@@ -34,7 +34,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('chazara_teacher_add') || permission_exists('chazara_teacher_edit')) {
+	if (permission_exists('chazara_teacher_add') || permission_exists('chazara_teachers_edit')) {
 		//access granted
 	}
 	else {
@@ -145,7 +145,7 @@
 									}
 
 								//create the data array
-									$array["chazara_teachers"][$i]["chazara_teachers_uuid"] = $teacher_uuid;
+									$array["chazara_teachers"][$i]["chazara_teacher_uuid"] = $teacher_uuid;
 									$array["chazara_teachers"][$i]["domain_uuid"] = $domain_uuid;
 									$array["chazara_teachers"][$i]["user_uuid"] = $_SESSION['user']['user_uuid'];
 									$array["chazara_teachers"][$i]["pin"] = $pin;
@@ -185,7 +185,7 @@
 	if (count($_GET) > 0 && $_POST["persistformvar"] != "true") {
 		$teacher_uuid = $_GET["id"];
 		$sql = "select * from v_chazara_teachers ";
-		$sql .= "where chazara_teachers_uuid = :teacher_uuid ";
+		$sql .= "where chazara_teacher_uuid = :teacher_uuid ";
 		$parameters['teacher_uuid'] = $teacher_uuid;
 		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
