@@ -119,7 +119,7 @@
     $sql .= $sql_search;
     $database = new database;
     $num_rows = $database->select($sql, $parameters, 'column');
-    echo "total: "; print_r($num_rows); echo "<br/>";
+    // echo "total: "; print_r($num_rows); echo "<br/>";
 //prepare to page the results
     $rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
     $param = "&search=".$search;
@@ -130,7 +130,7 @@
     list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page); //bottom
     list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true); //top
     $offset = $rows_per_page * $page;
-    var_dump($page); var_dump($offset);
+    // var_dump($page); var_dump($offset);
 //get the extensions
     $sql = str_replace('count(*)', '*', $sql);
     if ($order_by == '' || $order_by == 'chazara_teacher_uuid') {
@@ -145,12 +145,12 @@
         $sql .= order_by($order_by, $order);
     }
     $sql .= limit_offset($rows_per_page, $offset);
-    print_r($sql); print_r($parameters);
+    // print_r($sql); print_r($parameters);
     $database = new database;
     $teachers = $database->select($sql, $parameters, 'all');
     unset($sql, $parameters);
 
-    print_r($teachers);
+    // print_r($teachers);
 
 //create token
     $object = new token;
