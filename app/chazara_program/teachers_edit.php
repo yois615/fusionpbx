@@ -129,33 +129,21 @@
 			if ($_POST["persistformvar"] != "true") {
 
 				//build the data array
-					$range = 1;
-					$j = 0;
-					for ($i=0; $i<$range; $i++) {
-
-						//check if the extension exists
-							if ($action == "add" && extension_exists($extension)) {
-								//extension exists
-							}
-							else {
-
-								//extension does not exist add it
-									if ($action == "add" || $range > 1) {
-										$teacher_uuid = uuid();
-									}
-
-								//create the data array
-									$array["chazara_teachers"][$i]["chazara_teacher_uuid"] = $teacher_uuid;
-									$array["chazara_teachers"][$i]["domain_uuid"] = $domain_uuid;
-									$array["chazara_teachers"][$i]["user_uuid"] = $_SESSION['user']['user_uuid'];
-									$array["chazara_teachers"][$i]["pin"] = $pin;
-									$array["chazara_teachers"][$i]["grade"] = $grade;
-									$array["chazara_teachers"][$i]["parallel_class_id"] = $parallel_class_id;
-									$array["chazara_teachers"][$i]["enabled"] = $enabled;
-
-							}
+				//extension does not exist add it
+					if ($action == "add") {
+						$teacher_uuid = uuid();
 					}
 
+				//create the data array
+					$array["chazara_teachers"][$i]["chazara_teacher_uuid"] = $teacher_uuid;
+					$array["chazara_teachers"][$i]["domain_uuid"] = $domain_uuid;
+					$array["chazara_teachers"][$i]["user_uuid"] = $_SESSION['user']['user_uuid'];
+					$array["chazara_teachers"][$i]["pin"] = $pin;
+					$array["chazara_teachers"][$i]["grade"] = $grade;
+					$array["chazara_teachers"][$i]["parallel_class_id"] = $parallel_class_id;
+					$array["chazara_teachers"][$i]["enabled"] = $enabled;
+
+// print_r($array); exit;
 				//save to the data
 					$database = new database;
 					$database->app_name = 'chazara_program';
@@ -171,12 +159,12 @@
 					if ($action == "update") {
 						message::add($text['message-update']);
 					}
-					if ($range > 1) {
-						header("Location: teachers.php");
-					}
-					else {
-						header("Location: teachers_edit.php?id=".$teacher_uuid.(is_numeric($page) ? '&page='.$page : null));
-					}
+					// if ($range > 1) {
+					// 	header("Location: teachers.php");
+					// }
+					// else {
+					header("Location: teachers_edit.php?id=".$teacher_uuid.(is_numeric($page) ? '&page='.$page : null));
+					// }
 					exit;
 			}
 	}
