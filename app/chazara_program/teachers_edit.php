@@ -185,7 +185,7 @@
 	if (count($_GET) > 0 && $_POST["persistformvar"] != "true") {
 		$teacher_uuid = $_GET["id"];
 		$sql = "select * from v_chazara_teachers ";
-		$sql .= "where chazara_teacher_uuid = :teacher_uuid ";
+		$sql .= "where chazara_teachers_uuid = :teacher_uuid ";
 		$parameters['teacher_uuid'] = $teacher_uuid;
 		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
