@@ -170,6 +170,9 @@
     // if (permission_exists('extension_export')) {
     //     echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'extension_download.php']);
     // }
+// print_r($_SESSION['theme']);exit;
+	echo button::create(['type'=>'button','label'=>$text['button-reacording-submenu'],'icon'=>$_SESSION['theme']['button_icon_play'],'link'=>'/app/chazara_program/recordings.php']);
+
     // $margin_left = permission_exists('extension_import') || permission_exists('extension_export') ? "margin-left: 15px;" : null;
     if (permission_exists('chazara_teacher_edit') && (!is_numeric($_SESSION['limit']['teachers']['numeric']) || $total_extensions < $_SESSION['limit']['teachers']['numeric'])) {
         echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','style'=>$margin_left,'link'=>'teachers_edit.php']);
