@@ -174,7 +174,7 @@
 						header("Location: teachers.php");
 					}
 					else {
-						header("Location: teachers_edit.php?id=".$extension_uuid.(is_numeric($page) ? '&page='.$page : null));
+						header("Location: teachers_edit.php?id=".$teacher_uuid.(is_numeric($page) ? '&page='.$page : null));
 					}
 					exit;
 			}
