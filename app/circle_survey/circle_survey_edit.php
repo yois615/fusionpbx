@@ -55,6 +55,7 @@
 		$description = $_POST["description"];
 		$name = $_POST["name"];
 		$survey_questions = $_POST["survey_questions"];
+		$circle_survey_questions_delete = $_POST["circle_survey_questions_delete"];
 	}
 
 //process the user data and save it to the database
@@ -73,6 +74,18 @@
 			if ($action == "update") {
 				$circle_survey_uuid = $_POST["circle_survey_uuid"];
 			}
+		
+		//remove checked questions
+		if (
+			$action == 'update'
+			&& is_array($circle_survey_questions_delete)
+			&& @sizeof($circle_survey_questions_delete) != 0
+			) {
+			$obj = new circle_survey;
+			$obj->circle_survey_uuid = $circle_survey_uuid;
+			$obj->delete_questions($circle_survey_questions_delete);
+		}
+
 
 		//add the circle_survey_uuid
 			if (strlen($circle_survey_uuid) == 0) {

@@ -260,6 +260,73 @@ if (!class_exists('circle_survey')) {
 			}
 		}
 
+		public function delete_destinations($records) {
+
+			//assign private variables
+				$this->permission_prefix = 'circle_survey_questions_';
+				$this->table = 'circle_survey_questions';
+
+			if (true) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('L$ring_group_uuidocation: '.$this->list_page);
+						exit;
+					}
+
+				//delete multiple records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//filter out unchecked ring groups, build where clause for below
+							foreach ($records as $record) {
+								if ($record['checked'] == 'true' && !empty($record['sequence_id'])) {
+									$sequence_ids[] = $record['sequence_id'];
+								}
+							}
+
+						
+
+						//build the delete array
+							if (is_array($uuids) && @sizeof($uuids) != 0) {
+								$x = 0;
+								foreach ($sequence_ids as $sequence_id) {
+									$array[$this->table][$x]['sequence_id'] = $sequence_id;
+									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$x++;
+								}
+							}
+
+						//delete the checked rows
+							if (is_array($array) && @sizeof($array) != 0) {
+
+								//grant temporary permissions
+									$p = new permissions;
+									$p->add('circle_survey_questions_delete', 'temp');
+
+								//execute delete
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->delete($array);
+									unset($array);
+
+									$p->delete('circle_survey_questions_delete', 'temp');
+
+								//apply settings reminder
+									$_SESSION["reload_xml"] = true;
+
+							}
+							unset($records);
+					}
+			}
+		}
+
 	}
 }
 
