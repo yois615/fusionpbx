@@ -50,8 +50,6 @@
 
 	//get http post variables and set them to php variables
 	if (is_array($_POST)) {
-		print_r($_POST);
-		exit;
 		$week_id = $_POST["week_id"];
 		$greeting = $_POST["greeting"];
 		$description = $_POST["description"];
