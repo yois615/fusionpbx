@@ -460,4 +460,14 @@ $text['label-pin']['en-us'] = "PIN";
 $text['label-grade']['en-us'] = "Grade";
 $text['label-parallel_class_id']['en-us'] = "Parallel Class ID";
 
+$text['title-teacher-add']['en-us'] = "Add Teacher";
+$text['title-teacher-edit']['en-us'] = "Edit Teacher";
+$text['header-teacher-add']['en-us'] = "Teachers Add";
+$text['header-teacher-edit']['en-us'] = "Teachers";
+
+$text['description-pin']['en-us'] = "";
+
+$text['label-true']['en-us'] = "True";
+$text['label-false']['en-us'] = "Flase";
+
 ?>
