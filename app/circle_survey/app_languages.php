@@ -22,7 +22,13 @@
 
 		$text['label-greeting']['en-us'] = "Greeting";
 
-		$text['label-survey-recordings']['en-us'] = "Question Recordings";
+		$text['label-survey-questions']['en-us'] = "Questions";
+
+		$text['label-survey-recording']['en-us'] = "Recording";
+
+		$text['label-survey-highest-number']['en-us'] = "Highest Number";
+		
+		$text['label-survey-description']['en-us'] = "Description";
 		
 
 ?>

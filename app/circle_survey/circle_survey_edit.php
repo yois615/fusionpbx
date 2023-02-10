@@ -52,7 +52,9 @@
 	if (is_array($_POST)) {
 		$week_id = $_POST["week_id"];
 		$greeting = $_POST["greeting"];
-		$survey_recordings = $_POST["survey_recordings"];
+		$description = $_POST["description"];
+		$name = $_POST["name"];
+		$survey_questions = $_POST["survey_questions"];
 	}
 
 //process the user data and save it to the database
@@ -81,7 +83,7 @@
 			$msg = '';
 			if (strlen($week_id) == 0) { $msg .= $text['message-required']." ".$text['label-week-id']."<br>\n"; }
 			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
-			if (strlen($survey_recordings) == 0) { $msg .= $text['message-required']." ".$text['label-survey-recordings']."<br>\n"; }
+			if (strlen($survey_questions) == 0) { $msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; }
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -99,16 +101,19 @@
 		//prepare the array
 			$array['circle_survey'][0]['circle_survey_uuid'] = $circle_survey_uuid;
 			$array['circle_survey'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
+			$array['circle_survey'][0]['name'] = $name;
+			$array['circle_survey'][0]['description'] = $description;
 			$array['circle_survey'][0]['week_id'] = $week_id;
 			$array['circle_survey'][0]['greeting'] = $greeting;
 
 		//prepare the recordings array
-			if (is_array($survey_recordings)) {
-				foreach ($survey_recordings as $i => $r) {
+			if (is_array($survey_questions)) {
+				foreach ($survey_questions as $i => $r) {
 				$array['circle_survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
 				$array['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
 				$array['circle_survey_questions'][$i]['sequence_id'] = $sequence_id;
 				$array['circle_survey_questions'][$i]['recording'] = $recording;
+				$array['circle_survey_questions'][$i]['highest_number'] = $highest_number;
 				}
 			}
 
@@ -162,6 +167,8 @@
 	if (is_array($row) && sizeof($row) != 0) {
 		$week_id = $row["weed_id"];
 		$greeting = $row["greeting"];
+		$name = $row["name"];
+		$description = $row["description"];
 	}
 	unset($sql, $parameters, $row);
 
@@ -174,9 +181,26 @@
 		$parameters['domain_uuid'] = $domain_uuid;
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$database = new database;
-		$survey_recordings = $database->select($sql, $parameters, 'all');
+		$survey_questions = $database->select($sql, $parameters, 'all');
 		unset($sql, $parameters);
 	}
+
+//add an empty row to the options array
+if (!is_array($survey_questions) || count($survey_questions) == 0) {
+	$rows = 5;
+	$id = 0;
+	$show_destination_delete = false;
+}
+if (is_array($survey_questions) && count($survey_questions) > 0) {
+	$rows = 2;
+	$id = count($survey_questions)+1;
+	$show_destination_delete = true;
+}
+for ($x = 0; $x < $rows; $x++) {
+	$survey_questions[$id]['recording'] = '';
+	$survey_questions[$id]['highest_number'] = '';
+	$id++;
+}
 
 //get the recordings
 	$sql = "select recording_name, recording_filename from v_recordings ";
@@ -214,6 +238,29 @@
 	echo "<tr class='list-header'>\n";
 	
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
+
+	
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-name']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "	<input class='formfld' type='text' name='name' maxlength='255' value=\"".escape($name)."\" required='required'>\n";
+	echo "<br />\n";
+	echo $text['description-name']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-survey_description']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "	<input class='formfld' type='text' name='description' maxlength='255' value=\"".escape($description)."\">\n";
+	echo "<br />\n";
+	echo $text['description-survey_description']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
@@ -261,46 +308,100 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-survey_recordings']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<select class='formfld' name='survey_recordings'>\n";
-	if ($bridge_enabled == "true") {
-		echo "		<option value='true' selected='selected'>".$text['label-true']."</option>\n";
-	}
-	else {
-		echo "		<option value='true'>".$text['label-true']."</option>\n";
-	}
-	if ($bridge_enabled == "false") {
-		echo "		<option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "		<option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "	</select>\n";
-	echo "<br />\n";
-	echo $text['description-bridge_enabled']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	echo "	<tr>";
+	echo "		<td class='vncellreq' valign='top'>".$text['label-survey-questions']."</td>";
+	echo "		<td class='vtable' align='left'>";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-bridge_description']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='bridge_description' maxlength='255' value=\"".escape($bridge_description)."\">\n";
-	echo "<br />\n";
-	echo $text['description-bridge_description']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
+	echo "				<tr>\n";
+	echo "					<td class='vtable'>".$text['label-survey-recording']."</td>\n";
+	echo "					<td class='vtable'>".$text['label-survey-higest-number']."</td>\n";
+
+	if ($show_destination_delete) {
+		echo "					<td class='vtable edit_delete_checkbox_all' onmouseover=\"swap_display('delete_label_destinations', 'delete_toggle_destinations');\" onmouseout=\"swap_display('delete_label_destinations', 'delete_toggle_destinations');\">\n";
+		echo "						<span id='delete_label_destinations'>".$text['label-delete']."</span>\n";
+		echo "						<span id='delete_toggle_destinations'><input type='checkbox' id='checkbox_all_destinations' name='checkbox_all' onclick=\"edit_all_toggle('destinations');\"></span>\n";
+		echo "					</td>\n";
+	}
+	echo "				</tr>\n";
+	$x = 0;
+	foreach ($circle_survey_questions as $row) {
+		if (strlen($row['recording']) == 0) { $row['recording'] = ""; }
+		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "9"; }
+
+		if (strlen($row['sequence_id']) > 0) {
+			echo "		<input name=\"circle_survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
+		}
+		echo "			<tr>\n";
+		echo "<td class='vtable' style='position: relative;' align='left'>\n";
+		echo "<select name=\"circle_survey_questions[".$x."][recording]\" class='formfld'>\n";
+		echo "	<option></option>\n";
+			//recordings
+			$tmp_selected = false;
+			if (is_array($recordings)) {
+				echo "<optgroup label='Recordings'>\n";
+				foreach ($recordings as &$row) {
+					$recording_name = $row["recording_name"];
+					$recording_filename = $row["recording_filename"];
+					if ($row['recording'] == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($row['recording']) > 0) {
+						$tmp_selected = true;
+						echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+					}
+					else if ($row['recording'] == $recording_filename && strlen($row['recording']) > 0) {
+						$tmp_selected = true;
+						echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+					}
+					else {
+						echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+					}
+				}
+				echo "</optgroup>\n";
+			}
+		echo "	</select>\n";
+		echo "</td>\n";
+
+
+		echo "				<td class='formfld'>\n";
+		echo "					<select name=\"circle_survey_questions[".$x."][highest_number]\" class='formfld' style='width:55px'>\n";
+		$i=0;
+		while ($i <= 9) {
+			if ($i == $row['highest_number']) {
+				echo "				<option value='$i' selected='selected'>$i</option>\n";
+			}
+			else {
+				echo "				<option value='$i'>$i</option>\n";
+			}
+			$i = $i + 1;
+		}
+		echo "					</select>\n";
+		echo "				</td>\n";
+
+		if ($show_destination_delete) {
+			if (!empty($row['sequence_id'])) {
+				echo "			<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
+				echo "				<input type='checkbox' name='circle_survey_questions_delete[".$x."][checked]' value='true' class='chk_delete checkbox_questions' onclick=\"edit_delete_action('questions');\">\n";
+				echo "				<input type='hidden' name='circle_survey_questions_delete[".$x."][sequence_id]' value='".escape($row['sequence_id'])."' />\n";
+			}
+			else {
+				echo "			<td>\n";
+			}
+			echo "			</td>\n";
+		}
+		echo "			</tr>\n";
+		$x++;
+	}
+	echo "			</table>\n";
+	echo "			".$text['description-survey-questions']."\n";
+	echo "			<br />\n";
+	echo "		</td>";
+	echo "	</tr>";
+
 
 	echo "</table>";
 	echo "<br /><br />";
 
 	if ($action == "update") {
-		echo "<input type='hidden' name='bridge_uuid' value='".escape($bridge_uuid)."'>\n";
+		echo "<input type='hidden' name='circle_survey_uuid' value='".escape($circle_survey_uuid)."'>\n";
 	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 
