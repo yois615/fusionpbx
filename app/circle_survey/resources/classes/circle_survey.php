@@ -54,6 +54,11 @@ if (!class_exists('circle_survey')) {
 		}
 
 		/**
+		 * declare public variables
+		 */
+		public $circle_survey_uuid;
+
+		/**
 		 * called when there are no references to a particular object
 		 * unset the variables used in the class
 		 */
@@ -293,11 +298,12 @@ if (!class_exists('circle_survey')) {
 						
 
 						//build the delete array
-							if (is_array($uuids) && @sizeof($uuids) != 0) {
+							if (is_array($sequence_ids) && @sizeof($sequence_ids) != 0) {
 								$x = 0;
 								foreach ($sequence_ids as $sequence_id) {
 									$array[$this->table][$x]['sequence_id'] = $sequence_id;
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array[$this->table][$x]['circle_survey_uuid'] = $circle_survey_uuid;
 									$x++;
 								}
 							}
