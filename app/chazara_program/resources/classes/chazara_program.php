@@ -95,7 +95,7 @@ if (!class_exists('chazara_program')) {
 		 * delete records
 		 */
 		public function delete($records) {
-			if (permission_exists($this->permission_prefix.'delete')) {
+			if (permission_exists($this->permission_prefix.'recording_delete')) {
 
 				//add multi-lingual support
 					$language = new text;
@@ -145,8 +145,11 @@ if (!class_exists('chazara_program')) {
 								//delete recording files
 									if (is_array($filenames) && @sizeof($filenames) != 0) {
 										foreach ($filenames as $filename) {
-											if (isset($filename) && strlen($filename) > 0 && file_exists($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$filename)) {
-												@unlink($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$filename);
+											foreach($filename as $row) {
+												$filepath = $row['recording_path'].'/'.$row['recording_filename'];
+												if (isset($filepath) && strlen($filepath) > 0 && file_exists($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$filepath)) {
+													@unlink($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$filepath);
+												}
 											}
 										}
 									}
