@@ -38,6 +38,16 @@
 		exit;
 	}
 
+	//action add or update
+	if (is_uuid($_REQUEST["id"])) {
+		$action = "update";
+		$circle_survey_uuid = $_REQUEST["id"];
+		$id = $_REQUEST["id"];
+	}
+	else {
+		$action = "add";
+	}
+
 	//get http post variables and set them to php variables
 	if (is_array($_POST)) {
 		$week_id = $_POST["week_id"];
@@ -53,8 +63,18 @@
 			$token = new token;
 			if (!$token->validate($_SERVER['PHP_SELF'])) {
 				message::add($text['message-invalid_token'],'negative');
-				header('Location: bridges.php');
+				header('Location: circle_surveys.php');
 				exit;
+			}
+
+		//get the uuid from the POST
+			if ($action == "update") {
+				$circle_survey_uuid = $_POST["circle_survey_uuid"];
+			}
+
+		//add the circle_survey_uuid
+			if (strlen($circle_survey_uuid) == 0) {
+				$circle_survey_uuid = uuid();
 			}
 
 		//check for all required data
@@ -77,9 +97,25 @@
 
 
 		//prepare the array
-			$array['survey'][0]['week_id'] = $week_id;
-			$array['survey'][0]['greeting'] = $greeting;
-			$array['survey'][0]['survey_recordings'] = $survey_recordings;
+			$array['circle_survey'][0]['circle_survey_uuid'] = $circle_survey_uuid;
+			$array['circle_survey'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
+			$array['circle_survey'][0]['week_id'] = $week_id;
+			$array['circle_survey'][0]['greeting'] = $greeting;
+
+		//prepare the recordings array
+			if (is_array($survey_recordings)) {
+				foreach ($survey_recordings as $i => $r) {
+				$array['circle_survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
+				$array['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
+				$array['circle_survey_questions'][$i]['sequence_id'] = $sequence_id;
+				$array['circle_survey_questions'][$i]['recording'] = $recording;
+				}
+			}
+
+		//grant temporary permissions
+			$p = new permissions;
+			$p->add('circle_survey_questions_add', 'temp');
+			$p->add('circle_survey_questions_edit', 'temp');
 
 		//save to the data
 			$database = new database;
@@ -88,17 +124,28 @@
 			$database->save($array);
 			$message = $database->message;
 
+		//remove temporary permissions
+				$p->delete('circle_survey_questions_add', 'temp');
+				$p->delete('circle_survey_questions_edit', 'temp');
+
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
 				unset($_SESSION['destinations']['array']);
 			}
 
 		//redirect the user
-			$_SESSION["message"] = $text['message-update'];
-	
-			header('Location: circle_survey_config.php');
-			return;	
+			if (isset($action)) {
+				if ($action == "add") {
+					$_SESSION["message"] = $text['message-add'];
+				}
+				if ($action == "update") {
+					$_SESSION["message"] = $text['message-update'];
+				}
+				header('Location: circle_survey.php');
+				return;
+			}
 	}
+
 
 
 //add multi-lingual support
@@ -107,7 +154,9 @@
 
 
 //pre-populate the form
-	$sql = "SELECT * FROM v_circle_survey_config ";
+	$sql = "SELECT * FROM v_circle_survey ";
+	$sql .= "where circle_survey_uuid = :circle_survey_uuid ";
+	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 	$database = new database;
 	$row = $database->select($sql, $parameters, 'row');
 	if (is_array($row) && sizeof($row) != 0) {
@@ -118,13 +167,13 @@
 	unset($sql, $parameters, $row);
 
 //get the recordings
-$sql = "select recording_name, recording_filename from v_recordings ";
-$sql .= "where domain_uuid = :domain_uuid ";
-$sql .= "order by recording_name asc ";
-$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-$database = new database;
-$recordings = $database->select($sql, $parameters, 'all');
-unset($sql, $parameters);
+	$sql = "select recording_name, recording_filename from v_recordings ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "order by recording_name asc ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$recordings = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 
 //create token
@@ -132,10 +181,8 @@ unset($sql, $parameters);
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //include the header
-	$document['title'] = $text['title-circle_survey_config'];
+	$document['title'] = $text['title-circle_survey_edit'];
 	require_once "resources/header.php";
-
-	
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";

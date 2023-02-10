@@ -64,23 +64,62 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'week_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'article_id';
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'sequence_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey_config';
+		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'domain_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_domains';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'domain_uuid';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'week_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'greeting';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'survey_recordings';
+
+		$y++;
+		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey_questions';
+		$apps[$x]['db'][$y]['table']['parent'] = '';
+		$z = 0;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_circle_survey';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'circle_survey_uuid';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'domain_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_domains';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'domain_uuid';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'sequence_id';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'recording';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		
 
 
 ?>

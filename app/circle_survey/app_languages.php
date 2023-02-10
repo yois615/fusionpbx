@@ -7,11 +7,11 @@
 
 		$text['label-circle_survey_average']['en-us'] = 'Vote Average';
 
-		$text['label-circle_survey_article']['en-us'] = 'Article ID';
+		$text['label-circle_survey_sequence']['en-us'] = 'Question ID';
 
 		$text['title_description-survey']['en-us'] = 'Show vote averages by article for this week';
 
-		$text['title-circle_survey_config']['en-us'] = 'Survey configuration';
+		$text['title-circle_survey_edit']['en-us'] = 'Survey configuration';
 
 		$text['button-circle-survey-delete']['en-us'] = "Delete this week's Votes";
 
