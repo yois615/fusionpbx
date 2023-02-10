@@ -109,8 +109,14 @@
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_questions';
-		$apps[$x]['db'][$y]['table']['parent'] = '';
+		$apps[$x]['db'][$y]['table']['parent'] = 'v_circle_surveys';
 		$z = 0;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_question_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';

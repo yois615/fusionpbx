@@ -94,7 +94,7 @@ function download_send_headers($filename) {
 //Set default week_id to current
 	if (!empty($week_id)) {
 		$sql = "SELECT MAX(week_id) FROM circle_survey_votes ";
-		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid "
+		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
@@ -106,7 +106,7 @@ function download_send_headers($filename) {
 //process the http post data by action
 	if ($action == 'delete' && permission_exists('circle_survey_delete')) {
 		$sql = "DELETE FROM circle_survey_votes WHERE week_id = :week_id ";
-		$sql .= "AND circle_survey_uuid = :circle_survey_uuid "
+		$sql .= "AND circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
@@ -120,7 +120,7 @@ function download_send_headers($filename) {
 
 	if ($_GET["action"] == "download") {
 		$sql = "select vote, sequence_id, week_id FROM circle_survey_votes ";
-		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid "
+		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
 		$sql .= "ORDER BY week_id DESC, sequence_id ASC ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
@@ -142,7 +142,7 @@ function download_send_headers($filename) {
 
 //get the count
 	$sql = "select count(vote) from circle_survey_votes WHERE week_id = :week_id ";
-	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid "
+	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
 	$sql .= "GROUP BY customer_id";
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
@@ -154,7 +154,7 @@ function download_send_headers($filename) {
 //get the list
 	$sql = "select AVG(vote) as vote_average, sequence_id FROM circle_survey_votes ";
 	$sql .= "WHERE week_id = :week_id ";
-	$sql .= "AND circle_survey_uuid = :circle_survey_uuid "
+	$sql .= "AND circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
 	$sql .= "GROUP BY sequence_id ";
 	$sql .= order_by($order_by, $order, 'sequence_id', 'asc');
@@ -181,9 +181,9 @@ function download_send_headers($filename) {
 	echo "	<div class='actions'>\n";
 
 	if (permission_exists('circle_survey_edit')) {
-		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_edit.php']);
+		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_edit.php?id='.$circle_survey_uuid]);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_survey.php?action=download']);
+	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_survey.php?action=download&id='.$circle_survey_uuid]);
 	
 	if (permission_exists('circle_survey_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-survey-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);

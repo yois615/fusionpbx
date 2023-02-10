@@ -265,7 +265,7 @@ if (!class_exists('circle_survey')) {
 			}
 		}
 
-		public function delete_destinations($records) {
+		public function delete_questions($records) {
 
 			//assign private variables
 				$this->permission_prefix = 'circle_survey_questions_';
@@ -290,18 +290,18 @@ if (!class_exists('circle_survey')) {
 
 						//filter out unchecked ring groups, build where clause for below
 							foreach ($records as $record) {
-								if ($record['checked'] == 'true' && !empty($record['sequence_id'])) {
-									$sequence_ids[] = $record['sequence_id'];
+								if ($record['checked'] == 'true' && !empty($record['circle_survey_question_uuid'])) {
+									$record_uuids[] = $record['circle_survey_question_uuid'];
 								}
 							}
 
 						
 
 						//build the delete array
-							if (is_array($sequence_ids) && @sizeof($sequence_ids) != 0) {
+							if (is_array($record_uuids) && @sizeof($record_uuids) != 0) {
 								$x = 0;
-								foreach ($sequence_ids as $sequence_id) {
-									$array[$this->table][$x]['sequence_id'] = $sequence_id;
+								foreach ($record_uuids as $uuid) {
+									$array[$this->table][$x]['circle_survey_question_uuid'] = $uuid;
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
 									$array[$this->table][$x]['circle_survey_uuid'] = $circle_survey_uuid;
 									$x++;
@@ -313,7 +313,7 @@ if (!class_exists('circle_survey')) {
 
 								//grant temporary permissions
 									$p = new permissions;
-									$p->add('circle_survey_questions_delete', 'temp');
+									$p->add('circle_survey_question_delete', 'temp');
 
 								//execute delete
 									$database = new database;
@@ -322,10 +322,8 @@ if (!class_exists('circle_survey')) {
 									$database->delete($array);
 									unset($array);
 
-									$p->delete('circle_survey_questions_delete', 'temp');
+									$p->delete('circle_survey_question_delete', 'temp');
 
-								//apply settings reminder
-									$_SESSION["reload_xml"] = true;
 
 							}
 							unset($records);

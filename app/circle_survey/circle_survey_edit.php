@@ -50,6 +50,8 @@
 
 	//get http post variables and set them to php variables
 	if (is_array($_POST)) {
+		print_r($_POST);
+		exit;
 		$week_id = $_POST["week_id"];
 		$greeting = $_POST["greeting"];
 		$description = $_POST["description"];
@@ -96,11 +98,18 @@
 			if (is_array($survey_questions)) {
 				foreach ($survey_questions as $i => $r) {
 					if (strlen($r['recording']) > 0) {
-						$array['survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
-						$array['survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
-						$array['survey_questions'][$i]['sequence_id'] = $r['sequence_id'];
-						$array['survey_questions'][$i]['recording'] = $r['recording'];
-						$array['survey_questions'][$i]['highest_number'] = $r['highest_number'];
+						if (is_uuid($r['circle_survey_question_uuid'])) {
+							$circle_survey_question_uuid = $r['circle_survey_question_uuid'];
+						}
+						else {
+							$circle_survey_question_uuid = uuid();
+						}
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['circle_survey_question_uuid'] = $circle_survey_question_uuid;
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['sequence_id'] = $r['sequence_id'];
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['recording'] = $r['recording'];
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['highest_number'] = $r['highest_number'];
 					}
 				}
 			}
@@ -109,7 +118,7 @@
 			$msg = '';
 			if (strlen($week_id) == 0) { $msg .= $text['message-required']." ".$text['label-week-id']."<br>\n"; }
 			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
-			if (!is_array($array['survey_questions']) || sizeof($array['survey_questions']) == 0) {
+			if (!is_array($array['circle_surveys'][0]['circle_survey_questions']) || sizeof($array['circle_surveys'][0]['circle_survey_questions']) == 0) {
 				$msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; 
 			}
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
@@ -127,19 +136,19 @@
 
 
 		//prepare the array
-			$array['circle_survey'][0]['circle_survey_uuid'] = $circle_survey_uuid;
-			$array['circle_survey'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
-			$array['circle_survey'][0]['name'] = $name;
-			$array['circle_survey'][0]['description'] = $description;
-			$array['circle_survey'][0]['week_id'] = $week_id;
-			$array['circle_survey'][0]['greeting'] = $greeting;
+			$array['circle_surveys'][0]['circle_survey_uuid'] = $circle_survey_uuid;
+			$array['circle_surveys'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
+			$array['circle_surveys'][0]['name'] = $name;
+			$array['circle_surveys'][0]['description'] = $description;
+			$array['circle_surveys'][0]['week_id'] = $week_id;
+			$array['circle_surveys'][0]['greeting'] = $greeting;
 
 
 
 		//grant temporary permissions
 			$p = new permissions;
-			$p->add('circle_survey_questions_add', 'temp');
-			$p->add('circle_survey_questions_edit', 'temp');
+			$p->add('circle_survey_question_add', 'temp');
+			$p->add('circle_survey_question_edit', 'temp');
 
 		//save to the data
 			$database = new database;
@@ -149,8 +158,8 @@
 			$message = $database->message;
 
 		//remove temporary permissions
-				$p->delete('circle_survey_questions_add', 'temp');
-				$p->delete('circle_survey_questions_edit', 'temp');
+				$p->delete('circle_survey_question_add', 'temp');
+				$p->delete('circle_survey_question_edit', 'temp');
 
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
@@ -184,7 +193,7 @@
 	$database = new database;
 	$row = $database->select($sql, $parameters, 'row');
 	if (is_array($row) && sizeof($row) != 0) {
-		$week_id = $row["weed_id"];
+		$week_id = $row["week_id"];
 		$greeting = $row["greeting"];
 		$name = $row["name"];
 		$description = $row["description"];
@@ -206,12 +215,12 @@
 
 //add an empty row to the options array
 if (!is_array($survey_questions) || count($survey_questions) == 0) {
-	$rows = 5;
+	$rows = 1;
 	$sequence_id = 0;
 	$show_destination_delete = false;
 }
 if (is_array($survey_questions) && count($survey_questions) > 0) {
-	$rows = 2;
+	$rows = 1;
 	$sequence_id = count($survey_questions)+1;
 	$show_destination_delete = true;
 }
@@ -344,9 +353,11 @@ for ($x = 0; $x < $rows; $x++) {
 	foreach ($survey_questions as $row) {
 		if (strlen($row['recording']) == 0) { $row['recording'] = ""; }
 		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "9"; }
+		if (strlen($row['sequence_id']) == 0) { $row['sequence_id'] = $x + 1 ; }
 
-		if (strlen($row['sequence_id']) > 0) {
-			echo "		<input name=\"survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
+		echo "		<input name=\"survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
+		if (strlen($row['circle_survey_question_uuid']) > 0) {
+			echo "		<input name=\"survey_questions[".$x."][circle_survey_question_uuid]\" type='hidden' value=\"".escape($row['circle_survey_question_uuid'])."\">\n";
 		}
 		echo "			<tr>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
@@ -356,9 +367,9 @@ for ($x = 0; $x < $rows; $x++) {
 			$tmp_selected = false;
 			if (is_array($recordings)) {
 				echo "<optgroup label='Recordings'>\n";
-				foreach ($recordings as &$row) {
-					$recording_name = $row["recording_name"];
-					$recording_filename = $row["recording_filename"];
+				foreach ($recordings as $recording) {
+					$recording_name = $recording["recording_name"];
+					$recording_filename = $recording["recording_filename"];
 					if ($row['recording'] == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($row['recording']) > 0) {
 						$tmp_selected = true;
 						echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
@@ -393,10 +404,10 @@ for ($x = 0; $x < $rows; $x++) {
 		echo "				</td>\n";
 
 		if ($show_destination_delete) {
-			if (!empty($row['sequence_id'])) {
+			if (!empty($row['circle_survey_question_uuid'])) {
 				echo "			<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
 				echo "				<input type='checkbox' name='survey_questions_delete[".$x."][checked]' value='true' class='chk_delete checkbox_questions' onclick=\"edit_delete_action('questions');\">\n";
-				echo "				<input type='hidden' name='survey_questions_delete[".$x."][sequence_id]' value='".escape($row['sequence_id'])."' />\n";
+				echo "				<input type='hidden' name='survey_questions_delete[".$x."][circle_survey_question_uuid]' value='".escape($row['circle_survey_question_uuid'])."' />\n";
 			}
 			else {
 				echo "			<td>\n";
