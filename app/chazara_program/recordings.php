@@ -130,7 +130,7 @@
 
 		//Get teacher's path
 			$grade = "00";
-			$parallel = "0";
+			$parallel = "1";
 			$sql = "select grade, parallel_class_id ";
 			$sql .= "from v_chazara_teachers ";
 			$sql .= "where user_uuid = :user_uuid ";
@@ -146,7 +146,7 @@
 					$grade = $row['grade'];
 				}
 				if (empty($row['parallel_class_id'])) {
-					$parallel = "0";
+					$parallel = "1";
 				} else {
 					$parallel = $row['parallel_class_id'];
 				}
