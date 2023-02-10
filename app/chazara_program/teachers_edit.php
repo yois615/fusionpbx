@@ -145,6 +145,7 @@
 									}
 
 								//create the data array
+									$array["chazara_teachers"][$i]["chazara_teachers_uuid"] = $teacher_uuid;
 									$array["chazara_teachers"][$i]["domain_uuid"] = $domain_uuid;
 									$array["chazara_teachers"][$i]["user_uuid"] = $_SESSION['user']['user_uuid'];
 									$array["chazara_teachers"][$i]["pin"] = $pin;
