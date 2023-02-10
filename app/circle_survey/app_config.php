@@ -69,7 +69,7 @@
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = 'circle_survey';
+		$apps[$x]['db'][$y]['table']['name'] = 'circle_surveys';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';
@@ -85,6 +85,12 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_domains';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'domain_uuid';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'name';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'description';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'week_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
@@ -119,7 +125,8 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'recording';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
-		
-
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'highest_number';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
 
 ?>

@@ -154,7 +154,7 @@
 
 
 //pre-populate the form
-	$sql = "SELECT * FROM v_circle_survey ";
+	$sql = "SELECT * FROM v_circle_surveys ";
 	$sql .= "where circle_survey_uuid = :circle_survey_uuid ";
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 	$database = new database;
@@ -162,9 +162,21 @@
 	if (is_array($row) && sizeof($row) != 0) {
 		$week_id = $row["weed_id"];
 		$greeting = $row["greeting"];
-		$survey_recordings = $row["survey_recordings"];
 	}
 	unset($sql, $parameters, $row);
+
+//Get the questions
+	if (is_uuid($circle_survey_uuid)) {
+		$sql = "select * from v_circle_survey_questions ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and circle_survey_uuid = :circle_survey_uuid ";
+		$sql .= "order by sequence_id asc ";
+		$parameters['domain_uuid'] = $domain_uuid;
+		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
+		$database = new database;
+		$survey_recordings = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+	}
 
 //get the recordings
 	$sql = "select recording_name, recording_filename from v_recordings ";
