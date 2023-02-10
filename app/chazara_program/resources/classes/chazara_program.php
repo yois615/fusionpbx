@@ -165,8 +165,15 @@ if (!class_exists('chazara_program')) {
 							unset($records);
 					}
 			}
-		} //method
+		}
 
+		/**
+		 * delete teacher records
+		 */
+		public function teacher_delete($records) {
+			if (permission_exists($this->permission_prefix.'teacher_delete')) {
+			}
+		} //method
 	} //class
 }
 

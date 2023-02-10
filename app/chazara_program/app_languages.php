@@ -444,8 +444,6 @@ $text['description']['uk-ua'] = "Редагування інформації о�
 
 $text['label-parallel']['en-us'] = "Parallel";
 
-$text['label-grade']['en-us'] = "Grade";
-
 $text['label-recording_id']['en-us'] = "Recording ID";
 
 $text['label-length']['en-us'] = "Length";
@@ -453,5 +451,13 @@ $text['label-length']['en-us'] = "Length";
 $text['label-created']['en-us'] = "Created";
 
 $text['label-enabled']['en-us'] = "Enabled";
+
+$text['title-teachers']['en-us'] = "Chazara Teachers";
+$text['header-teachers']['en-us'] = "Chazara Teachers";
+$text['description-teachers']['en-us'] = "Chazara Teachers";
+$text['label-chazara_teacher_uuid']['en-us'] = "Teacher UUID";
+$text['label-pin']['en-us'] = "PIN";
+$text['label-grade']['en-us'] = "Grade";
+$text['label-parallel_class_id']['en-us'] = "Parallel Class ID";
 
 ?>
