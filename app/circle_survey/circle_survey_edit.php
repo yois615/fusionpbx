@@ -74,17 +74,6 @@
 			if ($action == "update") {
 				$circle_survey_uuid = $_POST["circle_survey_uuid"];
 			}
-		
-		//remove checked questions
-		if (
-			$action == 'update'
-			&& is_array($survey_questions_delete)
-			&& @sizeof($survey_questions_delete) != 0
-			) {
-			$obj = new circle_survey;
-			$obj->circle_survey_uuid = $circle_survey_uuid;
-			$obj->delete_questions($survey_questions_delete);
-		}
 
 
 		//add the circle_survey_uuid
@@ -162,6 +151,35 @@
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
 				unset($_SESSION['destinations']['array']);
+			}
+
+		//remove checked questions
+			if (
+				$action == 'update'
+				&& is_array($survey_questions_delete)
+				&& @sizeof($survey_questions_delete) != 0
+				) {
+				$obj = new circle_survey;
+				$obj->circle_survey_uuid = $circle_survey_uuid;
+				$obj->delete_questions($survey_questions_delete);
+				//Need to reorder sequence_id
+				$sql = "select * from v_circle_survey_questions ";
+				$sql .= "where domain_uuid = :domain_uuid ";
+				$sql .= "and circle_survey_uuid = :circle_survey_uuid ";
+				$sql .= "order by sequence_id asc ";
+				$parameters['domain_uuid'] = $_SESSION["domain_uuid"];
+				$parameters['circle_survey_uuid'] = $circle_survey_uuid;
+				$database = new database;
+				$survey_questions = $database->select($sql, $parameters, 'all');
+				foreach ($survey_questions as $i => $row) {
+					$sql = "UPDATE v_circle_survey_questions SET sequence_id = :sequence_id ";
+					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "and circle_survey_uuid = :circle_survey_uuid ";
+					$parameters['sequence_id'] = $i + 1;
+					$parameters['domain_uuid'] = $_SESSION["domain_uuid"];
+					$parameters['circle_survey_uuid'] = $circle_survey_uuid;	
+				}
+				unset($sql, $parameters, $survey_questions);
 			}
 
 		//redirect the user
