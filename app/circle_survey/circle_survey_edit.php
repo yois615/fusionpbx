@@ -173,11 +173,15 @@
 				$survey_questions = $database->select($sql, $parameters, 'all');
 				foreach ($survey_questions as $i => $row) {
 					$sql = "UPDATE v_circle_survey_questions SET sequence_id = :sequence_id ";
-					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "WHERE circle_survey_question_uuid = :circle_survey_question_uuid ";
+					$sql .= "and domain_uuid = :domain_uuid ";
 					$sql .= "and circle_survey_uuid = :circle_survey_uuid ";
 					$parameters['sequence_id'] = $i + 1;
 					$parameters['domain_uuid'] = $_SESSION["domain_uuid"];
-					$parameters['circle_survey_uuid'] = $circle_survey_uuid;	
+					$parameters['circle_survey_uuid'] = $circle_survey_uuid;
+					$parameters['circle_survey_question_uuid'] = $row['circle_survey_question_uuid'];
+					$database = new database;
+					$database->select($sql, $parameters, 'all');
 				}
 				unset($sql, $parameters, $survey_questions);
 			}
@@ -369,7 +373,7 @@ for ($x = 0; $x < $rows; $x++) {
 	foreach ($survey_questions as $row) {
 		if (strlen($row['recording']) == 0) { $row['recording'] = ""; }
 		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "9"; }
-		if (strlen($row['sequence_id']) == 0) { $row['sequence_id'] = $x + 1 ; }
+		$row['sequence_id'] = $x + 1 ;
 
 		echo "		<input name=\"survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
 		if (strlen($row['circle_survey_question_uuid']) > 0) {

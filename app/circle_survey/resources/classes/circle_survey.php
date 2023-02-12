@@ -303,7 +303,7 @@ if (!class_exists('circle_survey')) {
 								foreach ($record_uuids as $uuid) {
 									$array[$this->table][$x]['circle_survey_question_uuid'] = $uuid;
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-									$array[$this->table][$x]['circle_survey_uuid'] = $circle_survey_uuid;
+									$array[$this->table][$x]['circle_survey_uuid'] = $this->circle_survey_uuid;
 									$x++;
 								}
 							}
