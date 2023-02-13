@@ -527,7 +527,7 @@
 					echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['chazara_recording_uuid']),'onclick'=>"recording_play('".escape($row['chazara_recording_uuid'])."')"]);
 				}
 				if (permission_exists('recording_download')) {
-					echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"recordings.php?a=download&type=rec&t=bin&id=".urlencode($row['recording_uuid'])]);
+					echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"recordings.php?a=download&type=rec&t=bin&id=".urlencode($row['chazara_recording_uuid'])]);
 				}
 				echo "	</td>\n";
 			}
