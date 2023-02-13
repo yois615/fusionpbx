@@ -476,6 +476,17 @@
 			//use International System of Units (SI) - Source: https://en.wikipedia.org/wiki/International_System_of_Units
 			$row['message_length_label'] = ($message_minutes > 0 ? $message_minutes.' min' : null).($message_seconds > 0 ? ' '.$message_seconds.' s' : null);
 
+			if (strlen($row['grade']) < 2) {
+				$grade = "0" . $row['grade'];
+			} else {
+				$grade = $row['grade'];
+			}
+			if (empty($row['parallel_class_id'])) {
+				$parallel = "1";
+			} else {
+				$parallel = $row['parallel_class_id'];
+			}
+			$subpath = $grade.$parallel."/";
 			//playback progress bar
 			if (permission_exists('chazara_recording_play')) {
 				echo "<tr class='list-row' id='recording_progress_bar_".escape($row['chazara_recording_uuid'])."' style='display: none;'><td class='playback_progress_bar_background' style='padding: 0; border: none;' colspan='".$col_count."'><span class='playback_progress_bar' id='recording_progress_".escape($row['chazara_recording_uuid'])."'></span></td><td class='description hide-sm-dn' style='border-bottom: none !important;'></td></tr>\n";
@@ -503,7 +514,7 @@
 				echo "	<td>".$row['grade']."</td>\n";
 				echo "	<td>".$row['parallel_class_id']."</td>\n";
 			}
-			$file_name = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['grade'].$row['parallel_class_id']."/".$row['recording_filename'];
+			$file_name = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$subpath.$row['recording_filename'];
 			if (file_exists($file_name)) {
 				$file_date = date("M d, Y H:i:s", filemtime($file_name));
 			}
@@ -511,7 +522,7 @@
 				unset($file_date);
 			}
 			echo "	<td class='center hide-md-dn'>".$file_date."</td>\n";
-			//echo "	<td class='right no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
+			echo "	<td class='center no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
 
 			if (permission_exists('chazara_recording_play') || permission_exists('chazara_recording_download')) {
 				echo "	<td class='middle button center no-link no-wrap'>";
@@ -532,6 +543,7 @@
 				echo "	</td>\n";
 			}
 
+			echo "  <td class='enabled overflow hide-sm-dn'>".$text['label-'.$row['enabled']]."&nbsp;</td>\n";
 			echo "	<td class='description overflow hide-sm-dn'>".escape($row['recording_description'])."&nbsp;</td>\n";
 			if (permission_exists('recording_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 				echo "	<td class='action-button'>";
