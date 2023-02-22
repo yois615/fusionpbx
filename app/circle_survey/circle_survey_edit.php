@@ -231,7 +231,7 @@
 
 //add an empty row to the options array
 if (!is_array($survey_questions) || count($survey_questions) == 0) {
-	$rows = 1;
+	$rows = 5;
 	$sequence_id = 0;
 	$show_destination_delete = false;
 }
@@ -311,18 +311,12 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "<select name='greeting' id='greeting' class='formfld'>\n";
 	echo "	<option></option>\n";
 		//recordings
-		$tmp_selected = false;
 		if (is_array($recordings)) {
 			echo "<optgroup label='Recordings'>\n";
-			foreach ($recordings as &$row) {
+			foreach ($recordings as $row) {
 				$recording_name = $row["recording_name"];
 				$recording_filename = $row["recording_filename"];
-				if ($greeting == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($greeting) > 0) {
-					$tmp_selected = true;
-					echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
-				}
-				else if ($greeting == $recording_filename && strlen($greeting) > 0) {
-					$tmp_selected = true;
+				if (strlen($greeting) > 0 && $greeting == $recording_filename) {
 					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
 				}
 				else {
@@ -344,6 +338,7 @@ for ($x = 0; $x < $rows; $x++) {
 
 	echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "				<tr>\n";
+	echo "					<td class='vtable'>".$text['label-circle_survey_sequence']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-recording']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-highest-number']."</td>\n";
 
@@ -360,27 +355,23 @@ for ($x = 0; $x < $rows; $x++) {
 		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "9"; }
 		$row['sequence_id'] = $x + 1 ;
 
-		echo "		<input name=\"survey_questions[".$x."][sequence_id]\" type='hidden' value=\"".escape($row['sequence_id'])."\">\n";
 		if (strlen($row['circle_survey_question_uuid']) > 0) {
 			echo "		<input name=\"survey_questions[".$x."][circle_survey_question_uuid]\" type='hidden' value=\"".escape($row['circle_survey_question_uuid'])."\">\n";
 		}
 		echo "			<tr>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
+		echo "		<input class=\"formfld\" style=\"width: 50px; text-align: center;\" name=\"survey_questions[".$x."][sequence_id]\" readonly=\"readonly\"' value=\"".escape($row['sequence_id'])."\">\n";
+		echo "</td>\n";
+		echo "<td class='vtable' style='position: relative;' align='left'>\n";
 		echo "<select name=\"survey_questions[".$x."][recording]\" class='formfld'>\n";
 		echo "	<option></option>\n";
 			//recordings
-			$tmp_selected = false;
 			if (is_array($recordings)) {
 				echo "<optgroup label='Recordings'>\n";
 				foreach ($recordings as $recording) {
 					$recording_name = $recording["recording_name"];
 					$recording_filename = $recording["recording_filename"];
-					if ($row['recording'] == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($row['recording']) > 0) {
-						$tmp_selected = true;
-						echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
-					}
-					else if ($row['recording'] == $recording_filename && strlen($row['recording']) > 0) {
-						$tmp_selected = true;
+					if (strlen($row['recording']) > 0 && $row['recording'] == $recording_filename) {
 						echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
 					}
 					else {

@@ -92,7 +92,7 @@ function download_send_headers($filename) {
 
 //process the http post data by action
 	if ($action == 'delete' && permission_exists('circle_survey_delete')) {
-		$sql = "DELETE FROM circle_survey_votes ";
+		$sql = "DELETE FROM v_circle_survey_votes ";
 		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
@@ -105,7 +105,7 @@ function download_send_headers($filename) {
 	}
 
 	if ($_GET["action"] == "download") {
-		$sql = "select vote, sequence_id, FROM circle_survey_votes ";
+		$sql = "select vote, sequence_id, FROM v_circle_survey_votes ";
 		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
 		$sql .= "ORDER BY sequence_id ASC ";
@@ -125,19 +125,28 @@ function download_send_headers($filename) {
 	$order_by = $_GET["order_by"];
 	$order = $_GET["order"];
 
-
-//get the count
-	$sql = "select count(vote) from circle_survey_votes ";
+//get the survey name
+	$sql = "select name from v_circle_surveys ";
 	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
-	$sql .= "GROUP BY customer_id";
+	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$survey_name = $database->select($sql, $parameters, 'column');
+	unset($sql, $parameters);
+
+//get the count
+	$sql = "select count(DISTINCT customer_id) from v_circle_survey_votes ";
+	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
+	$sql .= "AND domain_uuid = :domain_uuid ";
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
+	unset($sql, $parameters);
 
 //get the list
-	$sql = "select AVG(vote) as vote_average, sequence_id FROM circle_survey_votes ";
+	$sql = "select AVG(vote) as vote_average, sequence_id FROM v_circle_survey_votes ";
 	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
 	$sql .= "GROUP BY sequence_id ";
@@ -160,7 +169,7 @@ function download_send_headers($filename) {
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
 	// TODO Replace the below with the survey name
-	echo "	<div class='heading'><b>".$text['title-circle-survey']." (".$num_rows.")\n";
+	echo "	<div class='heading'><b>".$survey_name." (".$num_rows.")\n</b></div>";
 	echo "	<div class='actions'>\n";
 
 	if (permission_exists('circle_survey_edit')) {
