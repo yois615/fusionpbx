@@ -88,41 +88,27 @@ function download_send_headers($filename) {
 	
 		$action = $_POST['action'];
 		$search = $_POST['search'];
-		$week_id = $_GET['week_id'];
 		$circle_survey_uuid = $_GET['id'];
 
-//Set default week_id to current
-	if (!empty($week_id)) {
-		$sql = "SELECT MAX(week_id) FROM circle_survey_votes ";
+//process the http post data by action
+	if ($action == 'delete' && permission_exists('circle_survey_delete')) {
+		$sql = "DELETE FROM circle_survey_votes ";
 		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$database = new database;
-	    $week_id = $database->select($sql, $parameters, 'column');
-	}
-	
-
-//process the http post data by action
-	if ($action == 'delete' && permission_exists('circle_survey_delete')) {
-		$sql = "DELETE FROM circle_survey_votes WHERE week_id = :week_id ";
-		$sql .= "AND circle_survey_uuid = :circle_survey_uuid ";
-		$sql .= "AND domain_uuid = :domain_uuid ";
-		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$parameters['week_id'] = $week_id;
 	    $database = new database;
-	    $vote_results = $database->select($sql, $parameters, 'all');
+		$database->select($sql, $parameters, 'all');
 	    unset($sql, $parameters);
 		header('Location: circle_survey.php'.($search != '' ? '?search='.urlencode($search) : null));
 		exit;
 	}
 
 	if ($_GET["action"] == "download") {
-		$sql = "select vote, sequence_id, week_id FROM circle_survey_votes ";
+		$sql = "select vote, sequence_id, FROM circle_survey_votes ";
 		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND domain_uuid = :domain_uuid ";
-		$sql .= "ORDER BY week_id DESC, sequence_id ASC ";
+		$sql .= "ORDER BY sequence_id ASC ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 		$database = new database;
@@ -141,27 +127,24 @@ function download_send_headers($filename) {
 
 
 //get the count
-	$sql = "select count(vote) from circle_survey_votes WHERE week_id = :week_id ";
+	$sql = "select count(vote) from circle_survey_votes ";
 	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
 	$sql .= "GROUP BY customer_id";
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$parameters['week_id'] = $week_id;
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
 
 //get the list
 	$sql = "select AVG(vote) as vote_average, sequence_id FROM circle_survey_votes ";
-	$sql .= "WHERE week_id = :week_id ";
-	$sql .= "AND circle_survey_uuid = :circle_survey_uuid ";
+	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
 	$sql .= "GROUP BY sequence_id ";
 	$sql .= order_by($order_by, $order, 'sequence_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$parameters['week_id'] = $week_id;
 	$database = new database;
 	$survey_results = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
@@ -176,8 +159,8 @@ function download_send_headers($filename) {
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
+	// TODO Replace the below with the survey name
 	echo "	<div class='heading'><b>".$text['title-circle-survey']." (".$num_rows.")\n";
-	echo " Week ID: ".$week_id."</b></div>\n";
 	echo "	<div class='actions'>\n";
 
 	if (permission_exists('circle_survey_edit')) {
@@ -188,16 +171,6 @@ function download_send_headers($filename) {
 	if (permission_exists('circle_survey_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-survey-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
-	
-	//add buttons to switch weeks
-	if ($week_id > 1) {
-		$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','link'=>$self."?week_id=".$week_id - 1]);
-	}
-	else {
-		$prev = button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>'chevron-left','onclick'=>"return false;",'title'=>'','style'=>'opacity: 0.4; -moz-opacity: 0.4; cursor: default;']);
-	}
-
-	$next = button::create(['type'=>'button','label'=>$text['button-next'],'icon'=>'chevron-left','link'=>$self."?week_id = ".$week_id + 1]);
 
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";

@@ -50,7 +50,6 @@
 
 	//get http post variables and set them to php variables
 	if (is_array($_POST)) {
-		$week_id = $_POST["week_id"];
 		$greeting = $_POST["greeting"];
 		$description = $_POST["description"];
 		$name = $_POST["name"];
@@ -103,7 +102,6 @@
 
 		//check for all required data
 			$msg = '';
-			if (strlen($week_id) == 0) { $msg .= $text['message-required']." ".$text['label-week-id']."<br>\n"; }
 			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
 			if (!is_array($array['circle_surveys'][0]['circle_survey_questions']) || sizeof($array['circle_surveys'][0]['circle_survey_questions']) == 0) {
 				$msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; 
@@ -127,7 +125,6 @@
 			$array['circle_surveys'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
 			$array['circle_surveys'][0]['name'] = $name;
 			$array['circle_surveys'][0]['description'] = $description;
-			$array['circle_surveys'][0]['week_id'] = $week_id;
 			$array['circle_surveys'][0]['greeting'] = $greeting;
 
 
@@ -213,7 +210,6 @@
 	$database = new database;
 	$row = $database->select($sql, $parameters, 'row');
 	if (is_array($row) && sizeof($row) != 0) {
-		$week_id = $row["week_id"];
 		$greeting = $row["greeting"];
 		$name = $row["name"];
 		$description = $row["description"];
@@ -304,17 +300,6 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "	<input class='formfld' type='text' name='description' maxlength='255' value=\"".escape($description)."\">\n";
 	echo "<br />\n";
 	echo $text['description-survey_description']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-week_id']."\n";
-	echo "</td>\n";
-	echo "<td width='70%' class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='week_id' maxlength='255' value='".escape($week_id)."'>\n";
-	echo "<br />\n";
-	echo $text['description-week-id']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
