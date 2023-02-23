@@ -1,5 +1,4 @@
 -- Placeholder for survey
-
 -- circle_survey/index.lua
 --
 -- This file belongs to a standalone project
@@ -8,11 +7,9 @@
 --
 -- (c) 2023 The Voice of Lakewood, Circle Magazine
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
-
 require "resources.functions.config";
 debug.sql = true;
 json = freeswitch.JSON();
-
 
 -- connect to the database
 local Database = require "resources.functions.database";
@@ -21,17 +18,16 @@ dbh = Database.new('system');
 -- Get which survey we're doing
 circle_survey_uuid = argv[1];
 domain_name = session:getVariable("domain_name");
+domain_uuid = session:getVariable("domain_uuid");
 
 -- set the defaults
-digit_max_length = 3;
-timeout_pin = 5000;
 max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
 -- TODO
 voicemail_id = "250";
 
---set the recordings directory
+-- set the recordings directory
 local recordings_dir = recordings_dir .. "/" .. domain_name .. "/";
 
 -- get session variables
@@ -47,84 +43,133 @@ if (string.sub(caller_id_number, 1, 1) == "+") then
     caller_id_number = string.sub(caller_id_number, 2);
 end
 
+session:answer();
+
+-- Reject bad callerID
+if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
+    -- TODO play rejection
+    -- session:streamFile(audio_dir .. "bad_caller_id.wav");
+    session:hangup();
+end
+
+-- Check if customer is in table
+
+local sql = [[SELECT customer_id FROM v_circle_survey_customer
+            WHERE domain_uuid = :domain_uuid
+            AND caller_id_number = :caller_id_number]];
+local params = {
+    domain_uuid = domain_uuid,
+    caller_id_number = caller_id_number
+};
+if (debug["sql"]) then
+    freeswitch.consoleLog("notice",
+        "[circle_survey_customer] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+end
+dbh:query(sql, params, function(row)
+    customer_id = row["customer_id"];
+end);
+
+if customer_id ~= nil then
+    -- TOD you voted already
+    session:hangup();
+end
+
 -- Create function to save vote
 
-    -- Get survey config
+-- Get survey config
+if session:ready() then
     local sql = [[SELECT * FROM v_circle_surveys
 					WHERE domain_uuid = :domain_uuid
 					AND circle_survey_uuid = :circle_survey_uuid]];
-				local params = {domain_uuid = domain_uuid, circle_survey_uuid = circle_survey_uuid};
-				if (debug["sql"]) then
-					freeswitch.consoleLog("notice", "[circle_survey] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
-				end
-				dbh:query(sql, params, function(row)
-                    greeting_file = row["greeting"];
-                    exit_file = row["exit_file"];
-				end);
-				dbh:release()
+    local params = {
+        domain_uuid = domain_uuid,
+        circle_survey_uuid = circle_survey_uuid
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[circle_survey] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        greeting_file = row["greeting"];
+        exit_file = row["exit_file"];
+    end);
 
     -- Play greeting
     session:streamFile(recordings_dir .. greeting_file);
+end
 
-
-    -- loop through questions
-    local sql = [[SELECT * FROM v_circle_survey_questions
+-- loop through questions
+local sql = [[SELECT * FROM v_circle_survey_questions
     WHERE domain_uuid = :domain_uuid
     AND circle_survey_uuid = :circle_survey_uuid]];
-    local params = {domain_uuid = domain_uuid, circle_survey_uuid = circle_survey_uuid};
-    if (debug["sql"]) then
-    freeswitch.consoleLog("notice", "[circle_survey_questions] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
-    end
-    dbh:query(sql, params, function(row)
-        local question = {};
-        question['recording'] = row['recording'];
-        question['highest_number'] = row['highest_number'];
-        table.insert(survey_questions, row['sequence_id'], question);
-    end);
-    dbh:release()
+local params = {
+    domain_uuid = domain_uuid,
+    circle_survey_uuid = circle_survey_uuid
+};
+if (debug["sql"]) then
+    freeswitch.consoleLog("notice",
+        "[circle_survey_questions] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+end
+dbh:query(sql, params, function(row)
+    local question = {};
+    question['recording'] = row['recording'];
+    question['highest_number'] = row['highest_number'];
+    table.insert(survey_questions, row['sequence_id'], question);
+end);
 
+if session:ready() then
     for i, question in ipairs(survey_questions) do
         session:flushDigits();
         local exit = false;
-        while (session:ready() and exit == false) do 
-            dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"], "", "");
-            if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= question['highest_number'] then exit = true; end;
+        while (session:ready() and exit == false) do
+            dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"],
+                "", "");
+            if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= tonumber(question['highest_number']) then
+                exit = true;
+            end
         end
 
         if tonumber(dtmf_digits) ~= nil then
+            if i == 1 then
+                -- TODO create customer
+            end
             -- TODO save vote to database
         end
     end
+end
+
+if (session:ready()) then
+    -- TODO - voicemail system
+
+    -- record vM    
+    if (session:ready()) then
+        session:setInputCallback("on_dtmf", "");
+        dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", audio_dir .. "top_ten_record_info.wav", "", "\\d+")
+        dtmf_digits = '';
+        session:execute("playback", "silence_stream://200");
+        session:streamFile("tone_stream://L=1;%(500, 0, 640)");
+        start_epoch = os.time();
+        result = session:recordFile(voicemail_dir .. "/" .. voicemail_id .. "/msg_" .. uuid .. ".wav", max_len_seconds,
+            500, 4);
+        message_length = (os.time() - start_epoch);
+        session:unsetInputCallback();
+
+    end
+
+    if tonumber(message_length) > 3 then
+        result = save_vm()
+        if result then
+            save_vote(vote_dtmf_digits);
+        end
+    end
+
+    session:hangup();
+
+end
 
 -- Play exit file
-session:streamFile(recordings_dir .. exit_file);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if session:ready() and exit_file ~= nil then
+    session:streamFile(recordings_dir .. exit_file);
+end
 
 -- functions
 function on_dtmf(s, type, obj, arg)
@@ -267,72 +312,7 @@ end
 
 
 
--- Check if any recordings associated with this phone number
-local sql = "select customer_id from circle_customer WHERE caller_id_number = :caller_id_number; ";
-local params = {
-    caller_id_number = caller_id_number
-};
-if (debug["sql"]) then
-    freeswitch.consoleLog("notice", "[directory] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
-end
-dbh:query(sql, params, function(row)
-    customer_id = tonumber(row.customer_id);
-end)
 
-if (session:ready()) then
-    -- answer the call
-    session:answer();
-    -- Insert delay so that we hear the first words
-    session:execute("playback", "silence_stream://200");
-end
-
--- Reject bad callerID
-if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
-    session:streamFile(audio_dir .. "bad_caller_id.wav");
-    session:hangup();
-end
-
-if (session:ready()) then
-    -- play main menu and instructions
-    ::start_vote::
-    vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. "top_ten_main_vote.wav", "",
-        "");
-    if (vote_dtmf_digits ~= nil and vote_dtmf_digits == "1") then
-        vote_dtmf_digits = vote_dtmf_digits .. session:getDigits(1, "#", 3000);
-    end
-    if (tonumber(vote_dtmf_digits) == nil) then
-        session:hangup();
-    end
-
-    if (session:ready() and tonumber(vote_dtmf_digits) < 1 or tonumber(vote_dtmf_digits) > 10) then
-        goto start_vote
-    end
-
-    -- record vM    
-    if (session:ready()) then
-        session:setInputCallback("on_dtmf", "");
-        dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", audio_dir .. "top_ten_record_info.wav", "", "\\d+")
-        dtmf_digits = '';
-        session:execute("playback", "silence_stream://200");
-        session:streamFile("tone_stream://L=1;%(500, 0, 640)");
-        start_epoch = os.time();
-        result = session:recordFile(voicemail_dir .. "/" .. voicemail_id .. "/msg_" .. uuid .. ".wav", max_len_seconds,
-            500, 4);
-        message_length = (os.time() - start_epoch);
-        session:unsetInputCallback();
-
-    end
-
-    if tonumber(message_length) > 3 then
-        result = save_vm()
-        if result then
-            save_vote(vote_dtmf_digits);
-        end
-    end
-
-    session:hangup();
-
-end
 
 --[[
 DROP TABLE circle_customer CASCADE;
