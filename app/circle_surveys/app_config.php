@@ -1,7 +1,7 @@
 <?php
 
 	//application details
-		$apps[$x]['name'] = 'circle_survey';
+		$apps[$x]['name'] = 'circle_surveys';
 		$apps[$x]['uuid'] = '32af1175-9f22-4073-9499-33b50bbddad5';
 		$apps[$x]['category'] = '';
 		$apps[$x]['subcategory'] = '';
@@ -29,10 +29,30 @@
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = 'circle_survey_destinations';
+		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
+		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'circle_survey_all';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
+
+		//destination details
+		$y=0;
+		$apps[$x]['destinations'][$y]['type'] = "sql";
+		$apps[$x]['destinations'][$y]['label'] = "circle_surveys";
+		$apps[$x]['destinations'][$y]['name'] = "circle_surveys";
+		$apps[$x]['destinations'][$y]['sql'] = "select circle_survey_uuid as uuid, name as name, circle_survey_uuid as destination, description as description from v_circle_surveys";
+		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' ";
+		$apps[$x]['destinations'][$y]['order_by'] = "name asc";
+		$apps[$x]['destinations'][$y]['field']['uuid'] = "circle_survey_uuid";
+		$apps[$x]['destinations'][$y]['field']['name'] = "name";
+		$apps[$x]['destinations'][$y]['field']['destination'] = "name";
+		$apps[$x]['destinations'][$y]['field']['description'] = "description";
+		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "lua:circle_survey.lua \${destination}";
+		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:lua circle_survey.lua \${destination}";
+		$apps[$x]['destinations'][$y]['select_label'] = "\${name}";
 
 	//Votes
 		$y = 0;

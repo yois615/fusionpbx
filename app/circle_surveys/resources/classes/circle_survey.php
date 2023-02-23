@@ -44,7 +44,7 @@ if (!class_exists('circle_survey')) {
 		public function __construct() {
 
 			//assign private variables
-				$this->app_name = 'circle_survey';
+				$this->app_name = 'circle_surveys';
 				$this->app_uuid = '32af1175-9f22-4073-9499-33b50bbddad5';
 				$this->permission_prefix = 'circle_survey_';
 				$this->list_page = 'circle_survey.php';

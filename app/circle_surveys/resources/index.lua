@@ -1,17 +1,18 @@
 -- Placeholder for survey
 
--- hotline_story.lua
+-- circle_survey/index.lua
 --
 -- This file belongs to a standalone project
--- by the Circle to collect stories, play back,
--- and vote.
+-- by the Circle to survey callers about magazine
+-- articles and vote.
 --
--- (c) 2022 The Voice of Lakewood, Circle Magazine
+-- (c) 2023 The Voice of Lakewood, Circle Magazine
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
+
 require "resources.functions.config";
 debug.sql = true;
 json = freeswitch.JSON();
--- require "app.the_loop.applications.record_to_upload";
+
 
 -- connect to the database
 local Database = require "resources.functions.database";
@@ -20,6 +21,110 @@ dbh = Database.new('system');
 -- Get which survey we're doing
 circle_survey_uuid = argv[1];
 domain_name = session:getVariable("domain_name");
+
+-- set the defaults
+digit_max_length = 3;
+timeout_pin = 5000;
+max_tries = 3;
+digit_timeout = 5000;
+max_len_seconds = 15;
+-- TODO
+voicemail_id = "250";
+
+--set the recordings directory
+local recordings_dir = recordings_dir .. "/" .. domain_name .. "/";
+
+-- get session variables
+caller_id_name = session:getVariable("caller_id_name");
+caller_id_number = session:getVariable("caller_id_number");
+uuid = session:getVariable("uuid");
+voicemail_message_uuid = uuid;
+voicemail_dir = "/var/lib/freeswitch/storage/voicemail/default/the-circle.corpit.xyz";
+survey_questions = {};
+
+-- Strip E.164 plus sign
+if (string.sub(caller_id_number, 1, 1) == "+") then
+    caller_id_number = string.sub(caller_id_number, 2);
+end
+
+-- Create function to save vote
+
+    -- Get survey config
+    local sql = [[SELECT * FROM v_circle_surveys
+					WHERE domain_uuid = :domain_uuid
+					AND circle_survey_uuid = :circle_survey_uuid]];
+				local params = {domain_uuid = domain_uuid, circle_survey_uuid = circle_survey_uuid};
+				if (debug["sql"]) then
+					freeswitch.consoleLog("notice", "[circle_survey] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
+				end
+				dbh:query(sql, params, function(row)
+                    greeting_file = row["greeting"];
+                    exit_file = row["exit_file"];
+				end);
+				dbh:release()
+
+    -- Play greeting
+    session:streamFile(recordings_dir .. greeting_file);
+
+
+    -- loop through questions
+    local sql = [[SELECT * FROM v_circle_survey_questions
+    WHERE domain_uuid = :domain_uuid
+    AND circle_survey_uuid = :circle_survey_uuid]];
+    local params = {domain_uuid = domain_uuid, circle_survey_uuid = circle_survey_uuid};
+    if (debug["sql"]) then
+    freeswitch.consoleLog("notice", "[circle_survey_questions] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        local question = {};
+        question['recording'] = row['recording'];
+        question['highest_number'] = row['highest_number'];
+        table.insert(survey_questions, row['sequence_id'], question);
+    end);
+    dbh:release()
+
+    for i, question in ipairs(survey_questions) do
+        session:flushDigits();
+        local exit = false;
+        while (session:ready() and exit == false) do 
+            dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"], "", "");
+            if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= question['highest_number'] then exit = true; end;
+        end
+
+        if tonumber(dtmf_digits) ~= nil then
+            -- TODO save vote to database
+        end
+    end
+
+-- Play exit file
+session:streamFile(recordings_dir .. exit_file);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- functions
 function on_dtmf(s, type, obj, arg)
@@ -160,26 +265,7 @@ function save_vote(vote)
     story_incomplete = 0;
 end
 
--- set the defaults
-digit_max_length = 3;
-timeout_pin = 5000;
-max_tries = 3;
-digit_timeout = 5000;
-max_len_seconds = 15;
-story_incomplete = 1;
-voicemail_id = "250";
 
--- get session variables
-caller_id_name = session:getVariable("caller_id_name");
-caller_id_number = session:getVariable("caller_id_number");
-uuid = session:getVariable("uuid");
-voicemail_message_uuid = uuid;
-voicemail_dir = "/var/lib/freeswitch/storage/voicemail/default/the-circle.corpit.xyz";
-
--- Strip E.164 plus sign
-if (string.sub(caller_id_number, 1, 1) == "+") then
-    caller_id_number = string.sub(caller_id_number, 2);
-end
 
 -- Check if any recordings associated with this phone number
 local sql = "select customer_id from circle_customer WHERE caller_id_number = :caller_id_number; ";
