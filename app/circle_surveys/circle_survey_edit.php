@@ -52,6 +52,7 @@
 	if (is_array($_POST)) {
 		$greeting = $_POST["greeting"];
 		$exit_file = $_POST["exit_file"];
+		$exit_action = $_POST["exit_action"];
 		$description = $_POST["description"];
 		$name = $_POST["name"];
 		$survey_questions = $_POST["survey_questions"];
@@ -128,6 +129,7 @@
 			$array['circle_surveys'][0]['description'] = $description;
 			$array['circle_surveys'][0]['greeting'] = $greeting;
 			$array['circle_surveys'][0]['exit_file'] = $exit_file;
+			$array['circle_surveys'][0]['exit_action'] = $exit_action;
 
 
 
@@ -204,6 +206,8 @@
 	$language = new text;
 	$text = $language->get();
 
+//initialize the destinations object
+$destination = new destinations;
 
 //pre-populate the form
 	$sql = "SELECT * FROM v_circle_surveys ";
@@ -216,6 +220,7 @@
 		$name = $row["name"];
 		$description = $row["description"];
 		$exit_file = $row['exit_file'];
+		$exit_action = $row['exit_action'];
 	}
 	unset($sql, $parameters, $row);
 
@@ -448,6 +453,17 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "<br />\n";
 	echo $text['description-exit_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "    ".$text['label-exit_action']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo $destination->select('dialplan', 'exit_action', $exit_action);
+	echo "	<br />\n";
+	echo "	".$text['description-exit_action']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

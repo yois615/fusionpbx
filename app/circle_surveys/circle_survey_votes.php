@@ -176,6 +176,8 @@ function download_send_headers($filename) {
 	echo "	<div class='heading'><b>".$survey_name." (".$num_rows.")\n</b></div>";
 	echo "	<div class='actions'>\n";
 
+	echo button::create(['type'=>'button','label'=>'Pick random winner','link'=>'circle_survey_winner.php?id='.$circle_survey_uuid]);
+
 	if (permission_exists('circle_survey_edit')) {
 		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_edit.php?id='.$circle_survey_uuid]);
 	}

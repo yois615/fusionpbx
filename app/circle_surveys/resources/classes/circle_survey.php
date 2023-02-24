@@ -94,6 +94,14 @@ if (!class_exists('circle_survey')) {
 								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+
+									//Clear votes from table
+									$sql = "DELETE FROM v_circle_survey_votes ";
+									$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid";
+									$parameters['circle_survey_uuid'] = $record['uuid'];
+									$database = new database;
+									$database->select($sql, $parameters, 'all');
+									unset($sql, $parameters);
 								}
 							}
 

@@ -150,6 +150,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_action';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_questions';

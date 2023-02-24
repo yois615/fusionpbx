@@ -129,6 +129,7 @@ if session:ready() then
     dbh:query(sql, params, function(row)
         greeting_file = row["greeting"];
         exit_file = row["exit_file"];
+        exit_action = row["exit_action"];
     end);
 
     -- Play greeting
@@ -179,7 +180,7 @@ if session:ready() and exit_file ~= nil and string.len(exit_file) > 0 then
     session:streamFile(recordings_dir .. exit_file);
 end
 
--- Transfer to VM system
-if session:ready() then
-    session:transfer('*99' .. voicemail_id, 'XML', domain_name);
+-- Transfer to exit_action
+if exit_action ~= nil and string.len(exit_action) > 0 then
+    session:transfer(exit_action, 'XML', domain_name);
 end
