@@ -31,6 +31,8 @@
 		$text['label-survey-description']['en-us'] = "Description";
 
 		$text['label-exit_file']['en-us'] = "Exit recording";
+
+		$text['label-exit_action']['en-us'] = "Exit Action";
 		
 
 ?>

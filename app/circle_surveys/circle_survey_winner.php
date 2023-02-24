@@ -54,7 +54,7 @@
 
 
 //get the count
-	$num_rows = 1;
+	$num_votes = 1;
 
 //get the list
 

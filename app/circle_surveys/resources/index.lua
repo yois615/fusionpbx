@@ -8,6 +8,7 @@
 -- (c) 2023 The Voice of Lakewood, Circle Magazine
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
 require "resources.functions.config";
+require "resources.functions.split";
 debug.sql = true;
 json = freeswitch.JSON();
 
@@ -182,5 +183,6 @@ end
 
 -- Transfer to exit_action
 if exit_action ~= nil and string.len(exit_action) > 0 then
-    session:transfer(exit_action, 'XML', domain_name);
+    local exit_action_app, exit_action_params = split_first(exit_action, ":", true);
+    session:execute(exit_action_app, exit_action_params);
 end
