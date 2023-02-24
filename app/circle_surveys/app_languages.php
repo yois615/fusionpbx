@@ -15,7 +15,7 @@
 
 		$text['title-circle_survey_edit']['en-us'] = 'Survey configuration';
 
-		$text['button-circle-survey-delete']['en-us'] = "Delete this week's Votes";
+		$text['button-circle-survey-delete']['en-us'] = "Clear Survey Votes";
 
 		$text['label-circle_votes_count']['en-us'] = 'Number of Votes';
 		$text['label-circle_votes_number']['en-us'] = 'Vote Choice';

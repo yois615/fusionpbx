@@ -136,23 +136,25 @@ if session:ready() then
 end
 
 -- loop through questions
-local sql = [[SELECT * FROM v_circle_survey_questions
-    WHERE domain_uuid = :domain_uuid
-    AND circle_survey_uuid = :circle_survey_uuid]];
-local params = {
-    domain_uuid = domain_uuid,
-    circle_survey_uuid = circle_survey_uuid
-};
-if (debug["sql"]) then
-    freeswitch.consoleLog("notice",
-        "[circle_survey_questions] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+if session:ready() then
+    local sql = [[SELECT * FROM v_circle_survey_questions
+        WHERE domain_uuid = :domain_uuid
+        AND circle_survey_uuid = :circle_survey_uuid]];
+    local params = {
+        domain_uuid = domain_uuid,
+        circle_survey_uuid = circle_survey_uuid
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice",
+            "[circle_survey_questions] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        local question = {};
+        question['recording'] = row['recording'];
+        question['highest_number'] = row['highest_number'];
+        table.insert(survey_questions, row['sequence_id'], question);
+    end);
 end
-dbh:query(sql, params, function(row)
-    local question = {};
-    question['recording'] = row['recording'];
-    question['highest_number'] = row['highest_number'];
-    table.insert(survey_questions, row['sequence_id'], question);
-end);
 
 if session:ready() then
     for i, question in ipairs(survey_questions) do
@@ -173,7 +175,7 @@ if session:ready() then
 end
 
 -- Play exit file
-if session:ready() and exit_file ~= nil then
+if session:ready() and exit_file ~= nil and string.len(exit_file) > 0 then
     session:streamFile(recordings_dir .. exit_file);
 end
 

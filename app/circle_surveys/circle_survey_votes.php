@@ -105,9 +105,13 @@ function download_send_headers($filename) {
 	}
 
 	if ($_GET["action"] == "download") {
-		$sql = "select vote, sequence_id, FROM v_circle_survey_votes ";
-		$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
-		$sql .= "AND domain_uuid = :domain_uuid ";
+		$sql = "select v.sequence_id as \"Question\", v.vote as \"Vote\",  ";
+		$sql .= "c.caller_id_name as \"Caller ID\", c.caller_id_number as \"Phone Number\" ";
+		$sql .= "FROM v_circle_survey_votes v ";
+		$sql .= "INNER JOIN v_circle_survey_customer c ";
+		$sql .= "ON v.circle_survey_customer_uuid = c.circle_survey_customer_uuid ";
+		$sql .= "WHERE v.circle_survey_uuid = :circle_survey_uuid ";
+		$sql .= "AND v.domain_uuid = :domain_uuid ";
 		$sql .= "ORDER BY sequence_id ASC ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
@@ -136,7 +140,7 @@ function download_send_headers($filename) {
 	unset($sql, $parameters);
 
 //get the count
-	$sql = "select count(DISTINCT customer_id) from v_circle_survey_votes ";
+	$sql = "select count(DISTINCT circle_survey_customer_uuid) from v_circle_survey_votes ";
 	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
@@ -175,7 +179,7 @@ function download_send_headers($filename) {
 	if (permission_exists('circle_survey_edit')) {
 		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_edit.php?id='.$circle_survey_uuid]);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_survey.php?action=download&id='.$circle_survey_uuid]);
+	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_survey_votes.php?action=download&id='.$circle_survey_uuid]);
 	
 	if (permission_exists('circle_survey_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-survey-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
