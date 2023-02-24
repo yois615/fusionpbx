@@ -208,7 +208,7 @@ function download_send_headers($filename) {
 		foreach ($survey_results as $row) {		
 			echo "<tr class='list-row'>\n";
 			echo "	<td>".escape($row['sequence_id'])."</td>\n";
-            echo "	<td>".escape($row['vote_average'])."</td>\n";			
+            echo "	<td>".round(floatval($row['vote_average']), 3)."</td>\n";			
 			echo "</tr>\n";
 			$x++;
 		}

@@ -51,6 +51,7 @@
 	//get http post variables and set them to php variables
 	if (is_array($_POST)) {
 		$greeting = $_POST["greeting"];
+		$exit_file = $_POST["exit_file"];
 		$description = $_POST["description"];
 		$name = $_POST["name"];
 		$survey_questions = $_POST["survey_questions"];
@@ -126,6 +127,7 @@
 			$array['circle_surveys'][0]['name'] = $name;
 			$array['circle_surveys'][0]['description'] = $description;
 			$array['circle_surveys'][0]['greeting'] = $greeting;
+			$array['circle_surveys'][0]['exit_file'] = $exit_file;
 
 
 
@@ -213,6 +215,7 @@
 		$greeting = $row["greeting"];
 		$name = $row["name"];
 		$description = $row["description"];
+		$exit_file = $row['exit_file'];
 	}
 	unset($sql, $parameters, $row);
 
@@ -418,6 +421,35 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "			<br />\n";
 	echo "		</td>";
 	echo "	</tr>";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-exit_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='exit_file' id='exit_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($exit_file) > 0 && $exit_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<br />\n";
+	echo $text['description-exit_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
 
 	echo "</table>";

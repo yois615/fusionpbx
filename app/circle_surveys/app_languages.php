@@ -29,6 +29,8 @@
 		$text['label-survey-highest-number']['en-us'] = "Highest Number";
 		
 		$text['label-survey-description']['en-us'] = "Description";
+
+		$text['label-exit_file']['en-us'] = "Exit recording";
 		
 
 ?>

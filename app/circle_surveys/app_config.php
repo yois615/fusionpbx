@@ -59,8 +59,10 @@
 		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_customer';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'customer_id';
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'serial';
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_customer_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'domain_uuid';
@@ -85,11 +87,13 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'customer_id';
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_customer_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'circle_survey_customer';
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'customer_id';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_circle_survey_customer';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'circle_survey_customer_uuid';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
@@ -111,7 +115,6 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
-		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'sequence_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
@@ -142,6 +145,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'greeting';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 
