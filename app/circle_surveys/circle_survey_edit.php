@@ -195,7 +195,7 @@
 				if ($action == "update") {
 					$_SESSION["message"] = $text['message-update'];
 				}
-				header('Location: circle_survey.php');
+				header('Location: circle_survey_edit.php?id='.$circle_survey_uuid);
 				return;
 			}
 	}
