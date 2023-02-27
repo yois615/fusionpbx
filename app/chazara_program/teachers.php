@@ -249,7 +249,7 @@
         echo "<th>".$text['label-domain']."</th>\n";
         //echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
     }
-    echo th_order_by('chazara_teacher_uuid', $text['label-chazara_teacher_uuid'], $order_by, $order);
+    echo th_order_by('name', $text['label-name'], $order_by, $order);
     echo th_order_by('pin', $text['label-pin'], $order_by, $order, null, "class='hide-xs'");
     echo th_order_by('grade', $text['label-grade'], $order_by, $order);
     echo th_order_by('parallel_class_id', $text['label-parallel_class_id'], $order_by, $order);
@@ -277,10 +277,10 @@ if (is_array($teachers) && @sizeof($teachers) != 0) {
         }
         echo "	<td>";
         if (permission_exists('chazara_teacher_edit')) {
-            echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['chazara_teacher_uuid'])."</a>";
+            echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['name'])."</a>";
         }
         else {
-            echo escape($row['chazara_teacher_uuid']);
+            echo escape($row['name']);
         }
         echo "	</td>\n";
 
