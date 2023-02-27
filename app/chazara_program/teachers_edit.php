@@ -84,6 +84,8 @@
 			$grade = $_POST["grade"];
 			$parallel_class_id = $_POST["parallel_class_id"];
 			$enabled = $_POST["enabled"];
+			$name = $_POST["name"];
+			$user_uuid = $_POST["user_uuid"];
 	}
 
 //delete the user from the v_extension_users
@@ -103,13 +105,13 @@
 			$token = new token;
 			if (!$token->validate($_SERVER['PHP_SELF'])) {
 				message::add($text['message-invalid_token'],'negative');
-				header('Location: extensions.php');
+				header('Location: teachers.php');
 				exit;
 			}
 
 		//check for all required data
 			$msg = '';
-			// if (strlen($extension) == 0) { $msg .= $text['message-required'].$text['label-extension']."<br>\n"; }
+			 if (strlen($name) == 0) { $msg .= $text['message-required'].$text['label-name']."<br>\n"; }
             if (strlen($enabled) == 0) { $msg .= $text['message-required'].$text['label-enabled']."<br>\n"; }
 
             if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
@@ -142,6 +144,8 @@
 					$array["chazara_teachers"][$i]["grade"] = $grade;
 					$array["chazara_teachers"][$i]["parallel_class_id"] = $parallel_class_id;
 					$array["chazara_teachers"][$i]["enabled"] = $enabled;
+					$array["chazara_teachers"][$i]["name"] = $name;
+					$array["chazara_teachers"][$i]["user_uuid"] = $user_uuid;
 
 // print_r($array); exit;
 				//save to the data
@@ -179,7 +183,8 @@
 			$grade = $row["grade"];
 			$parallel_class_id = $row["parallel_class_id"];
 			$enabled = $row["enabled"];
-			// $description = $row["description"];
+			$user_uuid = $row["user_uuid"];
+			$name = $row["name"];
 		}
 		unset($sql, $parameters, $row);
 
@@ -192,6 +197,16 @@
 //create token
 	$object = new token;
 	$token = $object->create($_SERVER['PHP_SELF']);
+
+//get the list of users for this domain
+	$sql = "select * from v_users ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "and user_enabled = 'true' ";
+	$sql .= "order by username asc ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$users = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //begin the page content
 	require_once "resources/header.php";
@@ -222,9 +237,20 @@
 
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 
+    // name
+		echo "<tr>\n";
+		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "    ".$text['label-name']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='text' name='name' maxlength='255' value=\"".escape($name)."\">\n";
+		echo "<br />\n";
+		echo $text['description-name']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
     // pin
 		echo "<tr>\n";
-		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-pin']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
@@ -236,7 +262,7 @@
 
     // Grade
 		echo "<tr>\n";
-		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-grade']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
@@ -248,7 +274,7 @@
 
     // Parallel Class ID
 		echo "<tr>\n";
-		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-parallel_class_id']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
@@ -257,6 +283,28 @@
 		echo $text['description-parallel_class_id']."\n";
 		echo "</td>\n";
 		echo "</tr>\n";
+
+
+//user uuid
+		echo "	<tr>";
+		echo "		<td class='vncell' valign='top'>".$text['label-username']."</td>";
+		echo "		<td class='vtable' align='left'>";
+		echo "			<select name=\"user_uuid\" class='formfld' style='width: auto;'>\n";
+		echo "			<option value=\"\"></option>\n";
+		foreach($users as $field) {
+			if ($user_uuid == $field['user_uuid']) {
+				echo "			<option value='".escape($field['user_uuid'])."' selected='selected'>".escape($field['username'])."</option>\n";
+			}
+			else {
+				echo "			<option value='".escape($field['user_uuid'])."' $selected>".escape($field['username'])."</option>\n";
+			}
+		}
+		echo "			</select>";
+		unset($users);
+		echo "			<br>\n";
+		echo "			".$text['description-users']."\n";
+		echo "		</td>";
+		echo "	</tr>";
 
 	// if (permission_exists('extension_enabled')) {
 		echo "<tr>\n";
