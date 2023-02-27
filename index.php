@@ -23,9 +23,8 @@
 	Contributor(s):
 	Mark J. Crane <markjcrane@fusionpbx.com>
 */
-
 //set the include path
-	$conf = glob("{/usr/local/etc,/etc}/fusionpbx/config.conf", GLOB_BRACE);
+	$conf = glob("{/usr/local/etc,/etc,/opt/homebrew/etc}/fusionpbx/config.conf", GLOB_BRACE);
 	set_include_path(parse_ini_file($conf[0])['document.root']);
 
 //start the session
@@ -37,6 +36,8 @@
 		//BSD
 	} elseif (file_exists("/etc/fusionpbx/config.conf")) {
 		//Linux
+	} elseif (file_exists("/opt/homebrew/etc/fusionpbx/config.conf")) {
+		//OSX
 	} else {
 		header("Location: /core/install/install.php");
 		exit;
