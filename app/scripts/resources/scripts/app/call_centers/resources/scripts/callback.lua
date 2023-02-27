@@ -463,15 +463,17 @@ if action == "service" then
                 --freeswitch.consoleLog("NOTICE", "queue_callback member cmd " .. cmd);
                 members = trim(api:executeString(cmd));
                 -- Check longest hold time and compare to longest callback
-                local queue_empty = true;
-                local call_count = 0;
+                local callback_success = false;
+                local waiting_count = 0;
                 for line in members:gmatch("[^\r\n]+") do
                     if line == nil then
                         start_queue_callback(callback);
+                        callback_success = true;
                         break;
                     end
                     if (string.find(line, "Trying") ~= nil or string.find(line, "Waiting") ~= nil) then
                         queue_empty = false;
+                        waiting_count = waiting_count + 1;
                     -- Members have a position when their state is Waiting or Trying
                         local line_delimit = {}
                         for w in (line .. "|"):gmatch("([^|]*)|") do
@@ -480,21 +482,21 @@ if action == "service" then
                         if tonumber(line_delimit[#line_delimit]) < (os.time() - callback.start_epoch) then
                         -- This callback is next in line
                             start_queue_callback(callback);
+                            callback_success = true;
                             -- We break here or we call twice
                             break;
                         else
-                            call_count = call_count + 1;
                             -- we need to break here otherwise we always get callback if anyone is holding less
-                            if call_count > agent_count then break; end
+                            if waiting_count > agent_count then break; end
                         end
                     end
                 end
-                if queue_empty == true then
+                if waiting_count < agent_count and callback_success == false then
                     --The queue is empty
                     start_queue_callback(callback);
                 end
             end
         end
-    freeswitch.msleep(15000);
+    freeswitch.msleep(10000);
     end
 end
