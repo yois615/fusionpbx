@@ -482,5 +482,10 @@ $text['label-teacher-name']['en-us'] = "Teacher";
 $text['label-ivr-main-greeting']['en-us'] = "Main Greeting";
 $text['label-ivr-grade_greeting']['en-us'] = "Grade Recording";
 
+$text['title-ivr-add']['en-us'] = "Add IVR";
+$text['title-ivr-edit']['en-us'] = "Edit IVR";
+$text['header-ivr-add']['en-us'] = "IVR - Add";
+$text['header-ivr-edit']['en-us'] = "IVR";
+
 
 ?>
