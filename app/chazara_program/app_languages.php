@@ -475,4 +475,12 @@ $text['button-teacher-submenu']['en-us'] = "Teacher";
 $text['button-reacording-submenu']['en-us'] = "Recording";
 $text['button-ivr-submenu']['en-us'] = "IVR";
 
+$text['title-ivrs']['en-us'] = "Chazara IVRs";
+$text['header-ivrs']['en-us'] = "Chazara IVRs";
+$text['description-ivr']['en-us'] = "Chazara IVRs";
+$text['label-teacher-name']['en-us'] = "Teacher";
+$text['label-ivr-main-greeting']['en-us'] = "Main Greeting";
+$text['label-ivr-grade_greeting']['en-us'] = "Grade Recording";
+
+
 ?>
