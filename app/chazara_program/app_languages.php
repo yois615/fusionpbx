@@ -473,5 +473,6 @@ $text['label-false']['en-us'] = "False";
 
 $text['button-teacher-submenu']['en-us'] = "Teacher";
 $text['button-reacording-submenu']['en-us'] = "Recording";
+$text['button-ivr-submenu']['en-us'] = "IVR";
 
 ?>
