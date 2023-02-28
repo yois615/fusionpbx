@@ -311,6 +311,7 @@
 				foreach($parallel_class_recordings as $pr){
 					if ($pr['grade'] == $pg['grade']) {
 						$parallel_recording = $pr['recording'];
+						$chazara_ivr_recording_uuid = $pr['chazara_ivr_recording_uuid'];
 						break;
 					}
 				}
@@ -334,6 +335,9 @@
 						echo "</optgroup>\n";
 					}
 				echo "	</select>\n";
+				if (strlen($chazara_ivr_recording_uuid) > 0) {
+					echo "		<input name=\"parallel_class_recordings[".$pg["grade"]."][chazara_ivr_recording_uuid]\" type='hidden' value=\"".escape($chazara_ivr_recording_uuid)."\">\n";
+				}
 				echo "<br />\n";
 				echo $text['description-grade']."\n";
 				echo "</td>\n";
