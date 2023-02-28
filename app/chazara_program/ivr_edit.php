@@ -99,10 +99,10 @@
 			if ($_POST["persistformvar"] != "true") {
 
 				//create the data array
-					$array["chazara_ivrs"][$i]["chazara_ivr_uuid"] = $chazara_ivr_uuid;
-					$array["chazara_ivrs"][$i]["domain_uuid"] = $domain_uuid;
-					$array["chazara_ivrs"][$i]["greeting_recording"] = $ivr_greeting_recording;
-					$array["chazara_ivrs"][$i]["grade_recording"] = $grade_recording;
+					$array["chazara_ivrs"][0]["chazara_ivr_uuid"] = $chazara_ivr_uuid;
+					$array["chazara_ivrs"][0]["domain_uuid"] = $domain_uuid;
+					$array["chazara_ivrs"][0]["greeting_recording"] = $ivr_greeting_recording;
+					$array["chazara_ivrs"][0]["grade_recording"] = $grade_recording;
 
 				//prepare the parallels array
 					if (is_array($parallel_class_recordings)) {
