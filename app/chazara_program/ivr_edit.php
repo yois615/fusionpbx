@@ -34,7 +34,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('chazara_ivr_add') || permission_exists('chazara_ivr_edit')) {
+	if (permission_exists('chazara_ivr_edit')) {
 		//access granted
 	}
 	else {
@@ -46,71 +46,41 @@
 	$language = new text;
 	$text = $language->get();
 
-//set the action as an add or an update
-	if (is_uuid($_REQUEST["id"])) {
-		$action = "update";
-		$teacher_uuid = $_REQUEST["id"];
-		$page = $_REQUEST['page'];
-	}
-	else {
-		$action = "add";
-	}
-
-//get total extension count from the database, check limit, if defined
-	if ($action == 'add') {
-		if ($_SESSION['limit']['teachers']['numeric'] != '') {
-			$sql = "select count(*) ";
-			$sql .= "from v_chazara_ivrs ";
-			$sql .= "where domain_uuid = :domain_uuid ";
-			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-			$database = new database;
-			$total_extensions = $database->select($sql, $parameters, 'column');
-			unset($sql, $parameters);
-
-			if ($total_extensions >= $_SESSION['limit']['teachers']['numeric']) {
-				message::add($text['message-maximum_teachers'].' '.$_SESSION['limit']['teachers']['numeric'], 'negative');
-				header('Location: teachers.php'.(is_numeric($page) ? '?page='.$page : null));
-				exit;
-			}
-		}
-	}
-
 //get the http values and set them as php variables
 	if (count($_POST) > 0) {
 
 		//get the values from the HTTP POST and save them as PHP variables
-            $ivr_uuid = $_REQUEST["id"];
-			$teacher_uuid = $_POST["teacher_uuid"];
-			$ivr_greeting_recording = $_POST["greeting_recording"];
+			if (empty($_POST["chazara_ivr_uuid"])){
+				$chazara_ivr_uuid = uuid();
+			} else {
+				$chazara_ivr_uuid = $_POST["chazara_ivr_uuid"];
+			}
+			$ivr_greeting_recording = $_POST["ivr_greeting_recording"];
 			$grade_recording = $_POST["grade_recording"];
-			$enabled = $_POST["enabled"];
+			$parallel_class_recordings = $_POST["parallel_class_recordings"];
 	}
 
-//delete the user from the v_extension_users
 
 //process the user data and save it to the database
 	if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 		//set the domain_uuid
-			if (permission_exists('chazara_ivr_domain') && is_uuid($_POST["domain_uuid"])) {
-				$domain_uuid = $_POST["domain_uuid"];
-			}
-			else {
-				$domain_uuid = $_SESSION['domain_uuid'];
-			}
+			$domain_uuid = $_SESSION['domain_uuid'];
+			
 
 		//validate the token
 			$token = new token;
 			if (!$token->validate($_SERVER['PHP_SELF'])) {
 				message::add($text['message-invalid_token'],'negative');
-				header('Location: ivrs.php');
+				header('Location: recordings.php');
 				exit;
 			}
 
 		//check for all required data
 			$msg = '';
-			 if (strlen($greeting_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-main-greeting']."<br>\n"; }
-            if (strlen($enabled) == 0) { $msg .= $text['message-required'].$text['label-enabled']."<br>\n"; }
+			 if (strlen($ivr_greeting_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-main-greeting']."<br>\n"; }
+			 if (strlen($grade_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-grade_greeting']."<br>\n"; }
+
 
             if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
@@ -128,24 +98,38 @@
 		//add or update the database
 			if ($_POST["persistformvar"] != "true") {
 
-				//build the data array
-				//extension does not exist add it
-					if ($action == "add") {
-						$teacher_uuid = uuid();
+				//create the data array
+					$array["chazara_ivrs"][$i]["chazara_ivr_uuid"] = $chazara_ivr_uuid;
+					$array["chazara_ivrs"][$i]["domain_uuid"] = $domain_uuid;
+					$array["chazara_ivrs"][$i]["greeting_recording"] = $ivr_greeting_recording;
+					$array["chazara_ivrs"][$i]["grade_recording"] = $grade_recording;
+
+				//prepare the parallels array
+					if (is_array($parallel_class_recordings)) {
+						foreach ($parallel_class_recordings as $i => $r) {
+							if (strlen($r['recording']) > 0) {
+								if (is_uuid($r['chazara_ivr_recording_uuid'])) {
+									$chazara_ivr_recording_uuid = $r['chazara_ivr_recording_uuid'];
+								}
+								else {
+									$chazara_ivr_recording_uuid = uuid();
+								}
+								$array['chazara_ivrs'][0]['chazara_ivr_recordings'][$i]['chazara_ivr_recording_uuid'] = $chazara_ivr_recording_uuid;
+								$array['chazara_ivrs'][0]['chazara_ivr_recordings'][$i]["chazara_ivr_uuid"] = $chazara_ivr_uuid;
+								$array['chazara_ivrs'][0]['chazara_ivr_recordings'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
+								$array['chazara_ivrs'][0]['chazara_ivr_recordings'][$i]['grade'] = $i;
+								$array['chazara_ivrs'][0]['chazara_ivr_recordings'][$i]['recording'] = $r['recording'];
+							}
+						}
 					}
 
-				//create the data array
-					$array["chazara_ivrs"][$i]["chazara_teacher_uuid"] = $teacher_uuid;
-					$array["chazara_ivrs"][$i]["domain_uuid"] = $domain_uuid;
-					$array["chazara_ivrs"][$i]["user_uuid"] = $_SESSION['user']['user_uuid'];
-					$array["chazara_ivrs"][$i]["pin"] = $pin;
-					$array["chazara_ivrs"][$i]["grade"] = $grade;
-					$array["chazara_ivrs"][$i]["parallel_class_id"] = $parallel_class_id;
-					$array["chazara_ivrs"][$i]["enabled"] = $enabled;
-					$array["chazara_ivrs"][$i]["name"] = $name;
-					$array["chazara_ivrs"][$i]["user_uuid"] = $user_uuid;
-
 // print_r($array); exit;
+
+				//grant temporary permissions
+					$p = new permissions;
+					$p->add('chazara_ivr_recording_add', 'temp');
+					$p->add('chazara_ivr_recording_edit', 'temp');
+
 				//save to the data
 					$database = new database;
 					$database->app_name = 'chazara_program';
@@ -154,37 +138,30 @@
 					$message = $database->message;
 					unset($array);
 
+				//remove temporary permissions
+					$p->delete('chazara_ivr_recording_add', 'temp');
+					$p->delete('chazara_ivr_recording_edit', 'temp');
+
 				//set the message and redirect
-					if ($action == "add") {
-						message::add($text['message-add']);
-					}
-					if ($action == "update") {
-						message::add($text['message-update']);
-					}
-					header("Location: teachers.php".(is_numeric($page) ? '?page='.$page : null));
+
+					message::add($text['message-update']);
+
+					header("Location: recordings.php");
 					exit;
 			}
 	}
 
 //pre-populate the form
-	if (count($_GET) > 0 && $_POST["persistformvar"] != "true") {
-		$teacher_uuid = $_GET["id"];
+	if ($_POST["persistformvar"] != "true") {
 		$sql = "select * from v_chazara_ivrs ";
-        $sql .= "join v_chazara_teachers on  ";
-        $sql .= "v_chazara_teachers.chazara_teacher_uuid=v_chazara_ivrs.teacher_uuid ";
-		$sql .= "where v_chazara_ivrs.chazara_ivr_uuid = :ivr_uuid ";
-		$parameters['ivr_uuid'] = $ivr_uuid;
+		$sql .= "WHERE domain_uuid = :domain_uuid ";
+		$parameters['domain_uuid'] = $_SESSION["domain_uuid"];
 		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && @sizeof($row) != 0) {
-			$domain_uuid = $row["domain_uuid"];
-			$user_uuid = $row["_uuid"];
-			$pin = $row["pin"];
-			$grade = $row["grade"];
-			$parallel_class_id = $row["parallel_class_id"];
-			$enabled = $row["enabled"];
-			$user_uuid = $row["user_uuid"];
-			$name = $row["name"];
+			$chazara_ivr_uuid = $row['chazara_ivr_uuid'];
+			$ivr_greeting_recording = $row['greeting_recording'];
+			$grade_recording = $row['grade_recording'];
 		}
 		unset($sql, $parameters, $row);
 
@@ -192,19 +169,33 @@
 
 
 //set the defaults
+	if (!is_uuid($chazara_ivr_uuid)) {
+		$chazara_ivr_uuid = uuid();
+	}
 
 
 //create token
 	$object = new token;
 	$token = $object->create($_SERVER['PHP_SELF']);
 
-//get the list of teachers for this domain
-	$sql = "select * from v_chazara_teachers ";
+//get the list of parallel recodings for this ivr
+	$sql = "select * from v_chazara_ivr_recordings ";
 	$sql .= "where domain_uuid = :domain_uuid ";
-	$sql .= "order by name asc ";
+	$sql .= "AND chazara_ivr_uuid = :chazara_ivr_uuid ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['chazara_ivr_uuid'] = $chazara_ivr_uuid;
+	$database = new database;
+	$parallel_class_recordings = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
+// Get the list of parallel classes that need a recording
+	$sql = "select grade from v_chazara_teachers ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "GROUP BY grade ";
+	$sql .= "HAVING COUNT(grade) > 1";
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 	$database = new database;
-	$teachers = $database->select($sql, $parameters, 'all');
+	$parallel_grades = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
 //get the recordings
@@ -220,206 +211,136 @@
 
 //begin the page content
 	require_once "resources/header.php";
-	if ($action == "update") {
-	    $document['title'] = $text['title-ivr-edit'];
-	}
-	elseif ($action == "add") {
-		$document['title'] = $text['title-ivr-add'];
-	}
+
+	$document['title'] = $text['title-ivr-edit'];
+
 
 	echo "<form method='post' name='frm' id='frm'>\n";
 
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'>";
-	if ($action == "add") {
-		echo "<b>".$text['header-ivr-add']."</b>";
-	}
-	if ($action == "update") {
-		echo "<b>".$text['header-ivr-edit']."</b>";
-	}
+	echo "<b>".$text['header-ivr-edit']."</b>";
 	echo 	"</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'ivrs.php'.(is_numeric($page) ? '?page='.$page : null)]);
-	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'recordings.php'.(is_numeric($page) ? '?page='.$page : null)]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 
-    //teacher uuid
-        echo "	<tr>";
-        echo "		<td class='vncellreq' valign='top'>".$text['label-teacher-name']."</td>";
-        echo "		<td class='vtable' align='left'>";
-        echo "			<select name=\"user_uuid\" class='formfld' style='width: auto;min-width: 150px;'>\n";
-        echo "			<option value=\"\"></option>\n";
-        foreach($teachers as $field) {
-            if ($teacher_uuid == $field['chazara_teacher_uuid']) {
-                echo "			<option value='".escape($field['chazara_teacher_uuid'])."' selected='selected'>".escape($field['name'])."</option>\n";
-            }
-            else {
-                echo "			<option value='".escape($field['chazara_teacher_uuid'])."' $selected>".escape($field['name'])."</option>\n";
-            }
-        }
-        echo "			</select>";
-        unset($teachers);
-        echo "			<br>\n";
-        echo "			".$text['description-teachers']."\n";
-        echo "		</td>";
-        echo "	</tr>";
+	//Main Greeting
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
+	echo "	".$text['label-ivr-main-greeting']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "<select name='ivr_greeting_recording' id='ivr_greeting_recording' class='formfld'>\n";
+	echo "	<option></option>\n";
+	//recordings
+		$tmp_selected = false;
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if ($ivr_greeting_recording == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($ivr_greeting_recording) > 0) {
+					$tmp_selected = true;
+					echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else if ($ivr_greeting_recording == $recording_filename && strlen($ivr_greeting_recording) > 0) {
+					$tmp_selected = true;
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "	<br />\n";
+	echo $text['description-greet_long']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
-    // Grade
+    // Grade Menu recording
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		echo "    ".$text['label-grade']."\n";
+		echo "    ".$text['label-ivr-grade_greeting']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <input class='formfld' type='text' name='grade' maxlength='255' value=\"".escape($grade)."\">\n";
+		echo "<select name='grade_recording' id='grade_recording' class='formfld'>\n";
+		echo "	<option></option>\n";
+		//recordings
+			$tmp_selected = false;
+			if (is_array($recordings)) {
+				echo "<optgroup label='Recordings'>\n";
+				foreach ($recordings as $row) {
+					$recording_name = $row["recording_name"];
+					$recording_filename = $row["recording_filename"];
+					if ($grade_recording == $recording_filename && strlen($grade_recording) > 0) {
+						$tmp_selected = true;
+						echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+					}
+					else {
+						echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+					}
+				}
+				echo "</optgroup>\n";
+			}
+		echo "	</select>\n";
 		echo "<br />\n";
 		echo $text['description-grade']."\n";
 		echo "</td>\n";
 		echo "</tr>\n";
 
-    // // Parallel Class ID
-	// 	echo "<tr>\n";
-	// 	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	// 	echo "    ".$text['label-parallel_class_id']."\n";
-	// 	echo "</td>\n";
-	// 	echo "<td class='vtable' align='left'>\n";
-	// 	echo "    <input class='formfld' type='text' name='parallel_class_id' maxlength='255' value=\"".escape($parallel_class_id)."\">\n";
-	// 	echo "<br />\n";
-	// 	echo $text['description-parallel_class_id']."\n";
-	// 	echo "</td>\n";
-	// 	echo "</tr>\n";
-
-
-        echo "<tr>\n";
-        echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
-        echo "	".$text['label-ivr-main-greeting']."\n";
-        echo "</td>\n";
-        echo "<td class='vtable' align='left'>\n";
-        if (if_group("superadmin")) {
-            $destination_id = "ivr_greeting_recording";
-            $script = "<script>\n";
-            $script .= "var objs;\n";
-            $script .= "\n";
-            $script .= "function changeToInput".$destination_id."(obj){\n";
-            $script .= "	tb=document.createElement('INPUT');\n";
-            $script .= "	tb.type='text';\n";
-            $script .= "	tb.name=obj.name;\n";
-            $script .= "	tb.className='formfld';\n";
-            $script .= "	tb.setAttribute('id', '".$destination_id."');\n";
-            $script .= "	tb.setAttribute('style', '".$select_style."');\n";
-            if ($on_change != '') {
-                $script .= "	tb.setAttribute('onchange', \"".$on_change."\");\n";
-                $script .= "	tb.setAttribute('onkeyup', \"".$on_change."\");\n";
-            }
-            $script .= "	tb.value=obj.options[obj.selectedIndex].value;\n";
-            $script .= "	document.getElementById('btn_select_to_input_".$destination_id."').style.visibility = 'hidden';\n";
-            $script .= "	tbb=document.createElement('INPUT');\n";
-            $script .= "	tbb.setAttribute('class', 'btn');\n";
-            $script .= "	tbb.setAttribute('style', 'margin-left: 4px;');\n";
-            $script .= "	tbb.type='button';\n";
-            $script .= "	tbb.value=$('<div />').html('&#9665;').text();\n";
-            $script .= "	tbb.objs=[obj,tb,tbb];\n";
-            $script .= "	tbb.onclick=function(){ Replace".$destination_id."(this.objs); }\n";
-            $script .= "	obj.parentNode.insertBefore(tb,obj);\n";
-            $script .= "	obj.parentNode.insertBefore(tbb,obj);\n";
-            $script .= "	obj.parentNode.removeChild(obj);\n";
-            $script .= "	Replace".$destination_id."(this.objs);\n";
-            $script .= "}\n";
-            $script .= "\n";
-            $script .= "function Replace".$destination_id."(obj){\n";
-            $script .= "	obj[2].parentNode.insertBefore(obj[0],obj[2]);\n";
-            $script .= "	obj[0].parentNode.removeChild(obj[1]);\n";
-            $script .= "	obj[0].parentNode.removeChild(obj[2]);\n";
-            $script .= "	document.getElementById('btn_select_to_input_".$destination_id."').style.visibility = 'visible';\n";
-            if ($on_change != '') {
-                $script .= "	".$on_change.";\n";
-            }
-            $script .= "}\n";
-            $script .= "</script>\n";
-            $script .= "\n";
-            echo $script;
-        }
-        echo "<select name='ivr_greeting_recording' id='ivr_greeting_recording' class='formfld'>\n";
-        // echo "	<option></option>\n";
-        //misc optgroup
-
-        //recordings
-            $tmp_selected = false;
-            if (is_array($recordings)) {
-                echo "<optgroup label='Recordings'>\n";
-                foreach ($recordings as &$row) {
-                    $recording_name = $row["recording_name"];
-                    $recording_filename = $row["recording_filename"];
-                    if ($ivr_greeting_recording == $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$recording_filename && strlen($ivr_greeting_recording) > 0) {
-                        $tmp_selected = true;
-                        echo "	<option value='".escape($_SESSION['switch']['recordings']['dir'])."/".escape($_SESSION['domain_name'])."/".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
-                    }
-                    else if ($ivr_greeting_recording == $recording_filename && strlen($ivr_greeting_recording) > 0) {
-                        $tmp_selected = true;
-                        echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
-                    }
-                    else {
-                        echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
-                    }
-                }
-                echo "</optgroup>\n";
-            }
-        //phrases
-
-        //sounds
-
-        //select
-
-
-        echo "	</select>\n";
-        if (if_group("superadmin")) {
-            echo "<input type='button' id='btn_select_to_input_".escape($destination_id)."' class='btn' name='' alt='back' onclick='changeToInput".escape($destination_id)."(document.getElementById(\"".escape($destination_id)."\"));this.style.visibility = \"hidden\";' value='&#9665;'>";
-            unset($destination_id);
-        }
-        echo "	<br />\n";
-        echo $text['description-greet_long']."\n";
-        echo "</td>\n";
-        echo "</tr>\n";
-
-	// if (permission_exists('extension_enabled')) {
-		echo "<tr>\n";
-		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		echo "    ".$text['label-enabled']."\n";
-		echo "</td>\n";
-		echo "<td class='vtable' align='left'>\n";
-		echo "    <select class='formfld' name='enabled'>\n";
-		if ($enabled == "true") {
-			echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+		//Parallel class recordings
+		if (is_array($parallel_grades)) {
+			foreach($parallel_grades as $pg) {
+				$parallel_recording = '';
+				echo "<tr>\n";
+				echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+				echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
+				echo "</td>\n";
+				echo "<td class='vtable' align='left'>\n";
+				// Set row value
+				$select_name = "\"parallel_class_recordings[".$pg["grade"]."][recording]\"";
+				//Prepopluate data
+				foreach($parallel_class_recordings as $pr){
+					if ($pr['grade'] == $pg['grade']) {
+						$parallel_recording = $pr['recording'];
+						break;
+					}
+				}
+				echo "<select name=".$select_name." id=".$select_name." class='formfld'>\n";
+				echo "	<option></option>\n";
+				//recordings
+					$tmp_selected = false;
+					if (is_array($recordings)) {
+						echo "<optgroup label='Recordings'>\n";
+						foreach ($recordings as $row) {
+							$recording_name = $row["recording_name"];
+							$recording_filename = $row["recording_filename"];
+							if ($parallel_recording == $recording_filename && strlen($parallel_recording) > 0) {
+								$tmp_selected = true;
+								echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+							}
+							else {
+								echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+							}
+						}
+						echo "</optgroup>\n";
+					}
+				echo "	</select>\n";
+				echo "<br />\n";
+				echo $text['description-grade']."\n";
+				echo "</td>\n";
+				echo "</tr>\n";
+			}
 		}
-		else {
-			echo "    <option value='true'>".$text['label-true']."</option>\n";
-		}
-		if ($enabled == "false") {
-			echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-		}
-		else {
-			echo "    <option value='false'>".$text['label-false']."</option>\n";
-		}
-		echo "    </select>\n";
-		echo "<br />\n";
-		echo $text['description-enabled']."\n";
-		echo "</td>\n";
-		echo "</tr>\n";
-	// }
 
-	// echo "<tr>\n";
-	// echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	// echo "    ".$text['label-description']."\n";
-	// echo "</td>\n";
-	// echo "<td class='vtable' align='left'>\n";
-	// echo "    <input type='text' class='formfld' name='description' value=\"".$description."\">\n";
-	// echo "<br />\n";
-	// echo $text['description-description']."\n";
-	// echo "</td>\n";
-	// echo "</tr>\n";
 
 	echo "</table>";
 	echo "<br><br>";
@@ -427,26 +348,15 @@
 	if (is_numeric($page)) {
 		echo "<input type='hidden' name='page' value='".$page."'>\n";
 	}
-	if ($action == "update") {
-		echo "<input type='hidden' name='teacher_uuid' value='".escape($teacher_uuid)."'>\n";
-		echo "<input type='hidden' name='id' id='id' value='".escape($teacher_uuid)."'>";
-		if (!permission_exists('extension_domain')) {
-			echo "<input type='hidden' name='domain_uuid' id='domain_uuid' value='".$_SESSION['domain_uuid']."'>";
-		}
-		echo "<input type='hidden' name='delete_type' id='delete_type' value=''>";
-		echo "<input type='hidden' name='delete_uuid' id='delete_uuid' value=''>";
+	echo "<input type='hidden' name='chazara_ivr_uuid' value='".escape($chazara_ivr_uuid)."'>\n";
+	if (!permission_exists('extension_domain')) {
+		echo "<input type='hidden' name='domain_uuid' id='domain_uuid' value='".$_SESSION['domain_uuid']."'>";
 	}
+	
+	
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 
 	echo "</form>";
-	echo "<script>\n";
-
-//hide password fields before submit
-	echo "	function submit_form() {\n";
-	echo "		hide_password_fields();\n";
-	echo "		$('form#frm').submit();\n";
-	echo "	}\n";
-	echo "</script>\n";
 
 //include the footer
 	require_once "resources/footer.php";
