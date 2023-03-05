@@ -345,7 +345,9 @@ if action == "service" then
                 -- Check if still listed as abandoned, if so don't modify base score
                 -- Above probably not necessary: https://github.com/signalwire/freeswitch/blob/master/src/mod/applications/mod_callcenter/mod_callcenter.c#L3108
                 -- Join to queue with correct base score
-                session1:setVariable("cc_base_score", os.time() - callback.start_epoch);
+                if os.time() - callback.start_epoch > 0 then
+                    session1:setVariable("cc_base_score", os.time() - callback.start_epoch);
+                end
                 session1:transfer(queue_extension, "XML", domain_name);
                 session1:destroy();
             elseif dtmf_digits == "2" then
