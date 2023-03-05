@@ -90,7 +90,7 @@ while (true) do
             api:executeString("uuid_broadcast " .. caller_uuid .. " digits/" .. #position_table + number_pending .. ".wav aleg")
         end
         -- TODO: Waiting for a representitive
-        if (callback_profile ~= nil and #position_table + number_pending > 1) then
+        if (callback_profile ~= nil and string.len(callback_profile) > 0 and #position_table + number_pending > 1) then
             api:executeString("uuid_broadcast " .. caller_uuid .. " ivr/ivr-if_you_would_like_us_to_call_back.wav aleg")
             api:executeString("uuid_broadcast " .. caller_uuid .. " digits/1.wav aleg")
         end
