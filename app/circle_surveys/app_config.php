@@ -79,6 +79,12 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'caller_id_name';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'gender';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'age';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_votes';

@@ -41,13 +41,16 @@ function save_vote(vote, sequence_id)
                 end)
             end
         circle_survey_customer_uuid = uuid();
-        local sql = "INSERT INTO v_circle_survey_customer (circle_survey_customer_uuid, caller_id_number, caller_id_name, domain_uuid)";
-        sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid); ";
+        local sql = "INSERT INTO v_circle_survey_customer (circle_survey_customer_uuid, caller_id_number, ";
+        sql = sql .. " caller_id_name, domain_uuid, gender, age)";
+        sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age); ";
         local params = {
             caller_id_name = caller_id_name,
             caller_id_number = caller_id_number,
             domain_uuid = domain_uuid,
-            circle_survey_customer_uuid = circle_survey_customer_uuid
+            circle_survey_customer_uuid = circle_survey_customer_uuid,
+            gender = gender,
+            age = age
         }
         if (debug["sql"]) then
             freeswitch.consoleLog("notice", "[circle_survey_customer] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
@@ -136,6 +139,33 @@ if session:ready() then
     -- Play greeting
     session:streamFile(recordings_dir .. greeting_file);
 end
+
+-- Demographic data
+        session:flushDigits();
+        local exit = false;
+        while (session:ready() and exit == false) do
+            age = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "age.wav",
+                "", "\\d+");
+            if tonumber(age) ~= nil and tonumber(age) > 0 and tonumber(age) < 25 then
+                exit = true;
+            end
+        end
+
+        session:flushDigits();
+        local exit = false;
+        while (session:ready() and exit == false) do
+            local gender_num = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "gender.wav",
+                "", "[12]");
+            if tonumber(gender_num) ~= nil and tonumber(gender_num) > 0 and tonumber(gender_num) < 3 then
+                exit = true;
+                if tonumber(gender_num) == 1 then
+                    gender = "boy";
+                else
+                    gender = "girl"
+                end
+            end
+        end
+
 
 -- loop through questions
 if session:ready() then
