@@ -147,8 +147,8 @@ end
             session:flushDigits();
             local exit = false;
             while (session:ready() and exit == false) do
-                age = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. age_file, "", "\\d+");
-                if tonumber(age) ~= nil and tonumber(age) > 0 and tonumber(age) < 25 then
+                age = session:playAndGetDigits(1, 2, 3, digit_timeout, "#", recordings_dir .. age_file, "", "\\d+");
+                if tonumber(age) ~= nil and tonumber(age) > 3 then
                     exit = true;
                 end
             end
@@ -163,9 +163,9 @@ end
                 if tonumber(gender_num) ~= nil and tonumber(gender_num) > 0 and tonumber(gender_num) < 3 then
                     exit = true;
                     if tonumber(gender_num) == 1 then
-                        gender = "boy";
+                        gender = "male";
                     else
-                        gender = "girl";
+                        gender = "female";
                     end
                 end
             end
