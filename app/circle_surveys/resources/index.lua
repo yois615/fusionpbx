@@ -133,6 +133,8 @@ if session:ready() then
     dbh:query(sql, params, function(row)
         greeting_file = row["greeting"];
         exit_file = row["exit_file"];
+        age_file = row['age_file'];
+        gender_file = row['gender_file'];
         exit_action = row["exit_action"];
     end);
 
@@ -141,27 +143,30 @@ if session:ready() then
 end
 
 -- Demographic data
-        session:flushDigits();
-        local exit = false;
-        while (session:ready() and exit == false) do
-            age = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "age.wav",
-                "", "\\d+");
-            if tonumber(age) ~= nil and tonumber(age) > 0 and tonumber(age) < 25 then
-                exit = true;
+        if session:ready() and age_file ~= nil and string.len(age_file) > 0 then
+            session:flushDigits();
+            local exit = false;
+            while (session:ready() and exit == false) do
+                age = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. age_file, "", "\\d+");
+                if tonumber(age) ~= nil and tonumber(age) > 0 and tonumber(age) < 25 then
+                    exit = true;
+                end
             end
         end
 
-        session:flushDigits();
-        local exit = false;
-        while (session:ready() and exit == false) do
-            local gender_num = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "gender.wav",
-                "", "[12]");
-            if tonumber(gender_num) ~= nil and tonumber(gender_num) > 0 and tonumber(gender_num) < 3 then
-                exit = true;
-                if tonumber(gender_num) == 1 then
-                    gender = "boy";
-                else
-                    gender = "girl"
+        if session:ready() and gender_file ~= nil and string.len(gender_file) > 0 then
+            session:flushDigits();
+            local exit = false;
+            while (session:ready() and exit == false) do
+                local gender_num = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. gender_file,
+                    "", "[12]");
+                if tonumber(gender_num) ~= nil and tonumber(gender_num) > 0 and tonumber(gender_num) < 3 then
+                    exit = true;
+                    if tonumber(gender_num) == 1 then
+                        gender = "boy";
+                    else
+                        gender = "girl";
+                    end
                 end
             end
         end

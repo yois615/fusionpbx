@@ -32,6 +32,10 @@
 
 		$text['label-exit_file']['en-us'] = "Exit recording";
 
+		$text['label-age_file']['en-us'] = "Age question";
+
+		$text['label-gender_file']['en-us'] = "Gender question";
+
 		$text['label-exit_action']['en-us'] = "Exit Action";
 		
 

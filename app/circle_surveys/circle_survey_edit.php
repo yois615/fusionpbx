@@ -52,6 +52,8 @@
 	if (is_array($_POST)) {
 		$greeting = $_POST["greeting"];
 		$exit_file = $_POST["exit_file"];
+		$age_file = $_POST["age_file"];
+		$gender_file = $_POST["gender_file"];
 		$exit_action = $_POST["exit_action"];
 		$description = $_POST["description"];
 		$name = $_POST["name"];
@@ -129,6 +131,8 @@
 			$array['circle_surveys'][0]['description'] = $description;
 			$array['circle_surveys'][0]['greeting'] = $greeting;
 			$array['circle_surveys'][0]['exit_file'] = $exit_file;
+			$array['circle_surveys'][0]['age_file'] = $age_file;
+			$array['circle_surveys'][0]['gender_file'] = $gender_file;
 			$array['circle_surveys'][0]['exit_action'] = $exit_action;
 
 
@@ -220,6 +224,8 @@ $destination = new destinations;
 		$name = $row["name"];
 		$description = $row["description"];
 		$exit_file = $row['exit_file'];
+		$age_file = $row['age_file'];
+		$gender_file = $row['gender_file'];
 		$exit_action = $row['exit_action'];
 	}
 	unset($sql, $parameters, $row);
@@ -337,6 +343,64 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "<br />\n";
 	echo $text['description-greeting']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-age_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='age_file' id='age_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($age_file) > 0 && $age_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<br />\n";
+	echo $text['description-age_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-gender_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='gender_file' id='gender_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($gender_file) > 0 && $gender_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<br />\n";
+	echo $text['description-gender_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

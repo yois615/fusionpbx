@@ -156,6 +156,12 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'age_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'gender_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_action';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
