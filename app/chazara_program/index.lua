@@ -78,12 +78,29 @@ if caller_type == "*" then
     session:execute("transfer", "*732 XML " .. domain_name);
 end
 
--- Play grade menu (TODO max grade)
+-- Play grade menu, first find max grade
+    local sql = [[SELECT MAX(grade) as max_grade FROM v_chazara_teachers
+            WHERE domain_uuid = :domain_uuid]];
+    local params = {
+        domain_uuid = domain_uuid,
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        max_grade = row["max_grade"];
+    end);
+    if max_grade > 9 then
+        grade_max_digits = 2;
+    else
+        grade_max_digits = 1;
+    end
+
 session:flushDigits();
 local exit = false;
 parallel_recording = nil;
 while (session:ready() and exit == false) do
-    grade = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. grade_recording, "", "");
+    grade = session:playAndGetDigits(1, grade_max_digits, 3, digit_timeout, "#", recordings_dir .. grade_recording, "", "");
     if tonumber(grade) ~= nil then
         -- Inspect database if that grade exists, and how many parallels
         local sql = [[SELECT count(chazara_teachers_uuid) as count FROM v_chazara_teachers
@@ -124,31 +141,33 @@ end
 
 
 -- play parallel menu if exists
-session:flushDigits();
-local exit = false;
-while (session:ready() and exit == false) do
-    parallel = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. parallel_recording, "", "");
-    if tonumber(parallel) ~= nil then
-        local sql = [[SELECT chazara_teachers_uuid FROM v_chazara_teachers
-                WHERE domain_uuid = :domain_uuid
-                AND grade = :grade
-                AND parallel = :parallel]];
-        local params = {
-            domain_uuid = domain_uuid,
-            chazara_ivr_uuid = chazara_ivr_uuid,
-            grade = grade,
-            parallel = parallel
-        };
-        if (debug["sql"]) then
-            freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
-        end
-        dbh:query(sql, params, function(row)
-            chazara_teachers_uuid = row["chazara_teachers_uuid"];
-        end);
-        if chazara_teachers_uuid ~= nil and string.len(chazara_teachers_uuid) > 0 then
-            exit = true;
-        else
-            --TODO playback invalid 
+if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
+    session:flushDigits();
+    local exit = false;
+    while (session:ready() and exit == false) do
+        parallel = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. parallel_recording, "", "");
+        if tonumber(parallel) ~= nil then
+            local sql = [[SELECT chazara_teachers_uuid FROM v_chazara_teachers
+                    WHERE domain_uuid = :domain_uuid
+                    AND grade = :grade
+                    AND parallel = :parallel]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_ivr_uuid = chazara_ivr_uuid,
+                grade = grade,
+                parallel = parallel
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                chazara_teachers_uuid = row["chazara_teachers_uuid"];
+            end);
+            if chazara_teachers_uuid ~= nil and string.len(chazara_teachers_uuid) > 0 then
+                exit = true;
+            else
+                --TODO playback invalid 
+            end
         end
     end
 end
