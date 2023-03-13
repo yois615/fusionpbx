@@ -62,6 +62,7 @@ if session:ready() then
 end
 
 -- Play greeting pagd
+::start_menu::
 if session:ready() then
     session:flushDigits();
     local exit = false;
@@ -74,7 +75,7 @@ if session:ready() then
 end
 
 -- Transfer 8 to *732
-if caller_type == "*" then
+if caller_type == "8" then
     session:execute("transfer", "*732 XML " .. domain_name);
 end
 
@@ -96,11 +97,13 @@ end
         grade_max_digits = 1;
     end
 
+::grade_menu::
 session:flushDigits();
 local exit = false;
 parallel_recording = nil;
 while (session:ready() and exit == false) do
     grade = session:playAndGetDigits(1, grade_max_digits, 3, digit_timeout, "#", recordings_dir .. grade_recording, "", "");
+    if grade == "*" then goto start_menu; end;
     if tonumber(grade) ~= nil then
         -- Inspect database if that grade exists, and how many parallels
         local sql = [[SELECT count(chazara_teachers_uuid) as count FROM v_chazara_teachers
@@ -146,6 +149,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
     local exit = false;
     while (session:ready() and exit == false) do
         parallel = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. parallel_recording, "", "");
+        if parallel == "*" then goto grade_menu; end;
         if tonumber(parallel) ~= nil then
             local sql = [[SELECT chazara_teachers_uuid FROM v_chazara_teachers
                     WHERE domain_uuid = :domain_uuid
@@ -173,7 +177,11 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
 end
 
 
--- if teacher mode ask for pin
+
+if caller_type == "2" then
+    -- if teacher mode ask for pin    
+end
+
 -- Ask for recording ID
 -- CHeck DB if exists
 -- If student play recording, if teacher play options.
