@@ -169,6 +169,48 @@ $text['label-recording_name']['ru-ru'] = "Название записи";
 $text['label-recording_name']['sv-se'] = "Namn på inspelning";
 $text['label-recording_name']['uk-ua'] = "Назва запису";
 
+$text['label-file_upload']['en-us'] = "Recording file";
+$text['label-file_upload']['en-gb'] = "Recording file";
+$text['label-file_upload']['ar-eg'] = "";
+$text['label-file_upload']['de-at'] = "Name der Aufnahme"; //copied from de-de
+$text['label-file_upload']['de-ch'] = "Name der Aufnahme"; //copied from de-de
+$text['label-file_upload']['de-de'] = "Name der Aufnahme";
+$text['label-file_upload']['es-cl'] = "Nombre de la grabación";
+$text['label-file_upload']['es-mx'] = "Nombre de la grabación"; //copied from es-cl
+$text['label-file_upload']['fr-ca'] = "Nom de l'enregistrement"; //copied from fr-fr
+$text['label-file_upload']['fr-fr'] = "Nom de l'enregistrement";
+$text['label-file_upload']['he-il'] = "שם הקובץ מדיה";
+$text['label-file_upload']['it-it'] = "Nome Registrazione";
+$text['label-file_upload']['nl-nl'] = "Opnamenaam";
+$text['label-file_upload']['pl-pl'] = "Nazwa nagrania";
+$text['label-file_upload']['pt-br'] = "Nome da gravação"; //copied from pt-pt
+$text['label-file_upload']['pt-pt'] = "Nome da gravação";
+$text['label-file_upload']['ro-ro'] = "";
+$text['label-file_upload']['ru-ru'] = "Название записи";
+$text['label-file_upload']['sv-se'] = "Namn på inspelning";
+$text['label-file_upload']['uk-ua'] = "Назва запису";
+
+$text['message-file_upload']['en-us'] = "Select an audio file";
+$text['message-file_upload']['en-gb'] = "Select an audio file";
+$text['message-file_upload']['ar-eg'] = "";
+$text['message-file_upload']['de-at'] = "Datei hochgeladen"; //copied from de-de
+$text['message-file_upload']['de-ch'] = "Datei hochgeladen"; //copied from de-de
+$text['message-file_upload']['de-de'] = "Datei hochgeladen";
+$text['message-file_upload']['es-cl'] = "Subida de Archivos";
+$text['message-file_upload']['es-mx'] = "Subida de Archivos"; //copied from es-cl
+$text['message-file_upload']['fr-ca'] = "Fichier téléchargé"; //copied from fr-fr
+$text['message-file_upload']['fr-fr'] = "Fichier téléchargé";
+$text['message-file_upload']['he-il'] = "הקובץ הועלה";
+$text['message-file_upload']['it-it'] = "File Caricato";
+$text['message-file_upload']['nl-nl'] = "Bestand opsturen";
+$text['message-file_upload']['pl-pl'] = "Dodany Plik";
+$text['message-file_upload']['pt-br'] = "Arquivo Enviado"; //copied from pt-pt
+$text['message-file_upload']['pt-pt'] = "Arquivo Enviado";
+$text['message-file_upload']['ro-ro'] = "";
+$text['message-file_upload']['ru-ru'] = "Файл загружен";
+$text['message-file_upload']['sv-se'] = "File Uppladdade";
+$text['message-file_upload']['uk-ua'] = "файл Завантажено";
+
 $text['label-play']['en-us'] = "Play";
 $text['label-play']['en-gb'] = "Play";
 $text['label-play']['ar-eg'] = "";
@@ -486,6 +528,28 @@ $text['title-ivr-add']['en-us'] = "Add IVR";
 $text['title-ivr-edit']['en-us'] = "Edit IVR";
 $text['header-ivr-add']['en-us'] = "IVR - Add";
 $text['header-ivr-edit']['en-us'] = "IVR";
+
+
+$text['label-teachers']['en-us'] = "Teacher";
+$text['label-teachers']['en-gb'] = "Teacher";
+$text['label-teachers']['ar-eg'] = "";
+$text['label-teachers']['de-at'] = "Funktionen"; //copied from de-de
+$text['label-teachers']['de-ch'] = "Funktionen"; //copied from de-de
+$text['label-teachers']['de-de'] = "Funktionen";
+$text['label-teachers']['es-cl'] = "Instrumentos";
+$text['label-teachers']['es-mx'] = "Instrumentos"; //copied from es-cl
+$text['label-teachers']['fr-ca'] = "Outils"; //copied from fr-fr
+$text['label-teachers']['fr-fr'] = "Outils";
+$text['label-teachers']['he-il'] = "כלים";
+$text['label-teachers']['it-it'] = "Strumenti";
+$text['label-teachers']['nl-nl'] = "Gereedschappen";
+$text['label-teachers']['pl-pl'] = "Narzędzia";
+$text['label-teachers']['pt-br'] = "Ferramentas"; //copied from pt-pt
+$text['label-teachers']['pt-pt'] = "Ferramentas";
+$text['label-teachers']['ro-ro'] = "";
+$text['label-teachers']['ru-ru'] = "Инструменты";
+$text['label-teachers']['sv-se'] = "Verktyg";
+$text['label-teachers']['uk-ua'] = "Параметри";
 
 
 ?>
