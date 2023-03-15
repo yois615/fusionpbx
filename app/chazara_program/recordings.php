@@ -185,7 +185,7 @@
 	}
 
 //get existing recording uuid
-	$sql = "select r.chazara_recording_uuid, r.recording_id, r.recording_filename ";
+	$sql = "select r.chazara_recording_uuid, r.recording_name, r.recording_filename ";
 	$sql .= "from v_chazara_recordings r ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
 		$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -346,9 +346,9 @@
 	$offset = $rows_per_page * $page;
 
 //get the recordings from the database
-	$sql = "select r.chazara_recording_uuid, r.recording_id, r.recording_filename, ";
-	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, ";
-	$sql .= "t.grade, t.parallel_class_id ";
+	$sql = "select r.chazara_recording_uuid, r.recording_name, r.recording_id, r.recording_filename, ";
+	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.insert_date, ";
+	$sql .= "t.grade, t.parallel_class_id, r.chazara_teacher_uuid, t.name as teacher_name ";
 	$sql .= "from v_chazara_recordings r ";
 	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 	$sql .= "where r.domain_uuid = :domain_uuid ";
@@ -394,7 +394,8 @@
 		echo 	"<input name='a' type='hidden' value='upload'>\n";
 		echo 	"<input name='type' type='hidden' value='rec'>\n";
 		echo 	"<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
-		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','onclick'=>"$(this).fadeOut(250, function(){ $('span#form_upload').fadeIn(250); document.getElementById('ulfile').click(); });"]);
+		// echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','onclick'=>"$(this).fadeOut(250, function(){ $('span#form_upload').fadeIn(250); document.getElementById('ulfile').click(); });"]);
+		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','link'=>'/app/chazara_program/recording_edit.php']);
 		echo 	"<span id='form_upload' style='display: none;'>";
 		echo button::create(['label'=>$text['button-cancel'],'icon'=>$_SESSION['theme']['button_icon_cancel'],'type'=>'button','id'=>'btn_upload_cancel','onclick'=>"$('span#form_upload').fadeOut(250, function(){ document.getElementById('form_upload').reset(); $('#btn_add').fadeIn(250) });"]);
 		echo 		"<input type='text' class='txt' style='width: 100px; cursor: pointer;' id='filename' placeholder='Select...' onclick=\"document.getElementById('ulfile').click(); this.blur();\" onfocus='this.blur();'>";
@@ -454,6 +455,8 @@
 		$col_count++;
 		$col_count++;
 	}
+	echo "<th class='center'>".'Teacher'."</th>\n";
+	$col_count++;
 	echo "<th class='center'>".$text['label-created']."</th>\n";
 	$col_count++;
 	echo "<th class='center'>".$text['label-length']."</th>\n";
@@ -472,6 +475,12 @@
 	if (is_array($recordings) && @sizeof($recordings) != 0) {
 		$x = 0;
 		foreach ($recordings as $row) {
+			$file_name = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['chazara_teacher_uuid']."/".$row['recording_filename'];
+			$file_date = '';
+			if (file_exists($file_name)) {
+				$file_date = date("M d, Y H:i:s", filemtime($file_name));
+			}
+
 			$message_minutes = floor($row['length'] / 60);
 			$message_seconds = $row['length'] % 60;
 			//use International System of Units (SI) - Source: https://en.wikipedia.org/wiki/International_System_of_Units
@@ -487,7 +496,7 @@
 			} else {
 				$parallel = $row['parallel_class_id'];
 			}
-			$subpath = $grade.$parallel."/";
+			$subpath = $row['chazara_teacher_uuid']."/";
 			//playback progress bar
 			if (permission_exists('chazara_recording_play')) {
 				echo "<tr class='list-row' id='recording_progress_bar_".escape($row['chazara_recording_uuid'])."' style='display: none;'><td class='playback_progress_bar_background' style='padding: 0; border: none;' colspan='".$col_count."'><span class='playback_progress_bar' id='recording_progress_".escape($row['chazara_recording_uuid'])."'></span></td><td class='description hide-sm-dn' style='border-bottom: none !important;'></td></tr>\n";
@@ -505,23 +514,19 @@
 			}
 			echo "	<td>";
 			if (permission_exists('chazara_recording_edit')) {
-				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_id'])."</a>";
+				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_name'])."</a>";
 			}
 			else {
-				echo escape($row['recording_id']);
+				echo escape($row['recording_name']);
 			}
 			echo "	</td>\n";
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 				echo "	<td>".$row['grade']."</td>\n";
 				echo "	<td>".$row['parallel_class_id']."</td>\n";
 			}
-			$file_name = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$subpath.$row['recording_filename'];
-			if (file_exists($file_name)) {
-				$file_date = date("M d, Y H:i:s", filemtime($file_name));
-			}
-			else {
-				unset($file_date);
-			}
+			$file_path = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['chazara_teacher_uuid'];
+			$file_name = file_path.'/'.$row['recording_filename'];
+			echo "	<td class='center hide-md-dn'>".$row['teacher_name']."</td>\n";
 			echo "	<td class='center hide-md-dn'>".$file_date."</td>\n";
 			echo "	<td class='center no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
 
