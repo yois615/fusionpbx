@@ -42,15 +42,16 @@ function save_vote(vote, sequence_id)
             end
         circle_survey_customer_uuid = uuid();
         local sql = "INSERT INTO v_circle_survey_customer (circle_survey_customer_uuid, caller_id_number, ";
-        sql = sql .. " caller_id_name, domain_uuid, gender, age)";
-        sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age); ";
+        sql = sql .. " caller_id_name, domain_uuid, gender, age, zip_code)";
+        sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age, :zip_code); ";
         local params = {
             caller_id_name = caller_id_name,
             caller_id_number = caller_id_number,
             domain_uuid = domain_uuid,
             circle_survey_customer_uuid = circle_survey_customer_uuid,
             gender = gender,
-            age = age
+            age = age,
+            zip_code = zip_code
         }
         if (debug["sql"]) then
             freeswitch.consoleLog("notice", "[circle_survey_customer] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
@@ -134,6 +135,7 @@ if session:ready() then
         greeting_file = row["greeting"];
         exit_file = row["exit_file"];
         age_file = row['age_file'];
+        zip_code_file = row['zip_code_file'];
         gender_file = row['gender_file'];
         exit_action = row["exit_action"];
     end);
@@ -170,6 +172,19 @@ end
                 end
             end
         end
+
+        if session:ready() and zip_code_file ~= nil and string.len(zip_code_file) > 0 then
+            session:flushDigits();
+            local exit = false;
+            while (session:ready() and exit == false) do
+                zip_code = session:playAndGetDigits(5, 5, 3, digit_timeout, "#", recordings_dir .. zip_code_file,
+                    "", "\\d+");
+                if tonumber(zip_code) ~= nil and tonumber(zip_code) > 0 then
+                    exit = true;
+                end
+            end
+        end
+
 
 
 -- loop through questions

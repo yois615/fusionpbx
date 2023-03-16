@@ -85,6 +85,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'age';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'zip_code';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_votes';
@@ -160,6 +163,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'gender_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'zip_code_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_action';

@@ -54,6 +54,7 @@
 		$exit_file = $_POST["exit_file"];
 		$age_file = $_POST["age_file"];
 		$gender_file = $_POST["gender_file"];
+		$zip_code_file = $_POST["zip_code_file"];
 		$exit_action = $_POST["exit_action"];
 		$description = $_POST["description"];
 		$name = $_POST["name"];
@@ -133,6 +134,7 @@
 			$array['circle_surveys'][0]['exit_file'] = $exit_file;
 			$array['circle_surveys'][0]['age_file'] = $age_file;
 			$array['circle_surveys'][0]['gender_file'] = $gender_file;
+			$array['circle_surveys'][0]['zip_code_file'] = $zip_code_file;
 			$array['circle_surveys'][0]['exit_action'] = $exit_action;
 
 
@@ -226,6 +228,7 @@ $destination = new destinations;
 		$exit_file = $row['exit_file'];
 		$age_file = $row['age_file'];
 		$gender_file = $row['gender_file'];
+		$zip_code_file = $row['zip_code_file'];
 		$exit_action = $row['exit_action'];
 	}
 	unset($sql, $parameters, $row);
@@ -403,6 +406,36 @@ for ($x = 0; $x < $rows; $x++) {
 	echo $text['description-gender_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-zip_code_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='zip_code_file' id='zip_code_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($zip_code_file) > 0 && $zip_code_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<br />\n";
+	echo $text['description-zip_code_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
 
 	echo "	<tr>";
 	echo "		<td class='vncellreq' valign='top'>".$text['label-survey-questions']."</td>";

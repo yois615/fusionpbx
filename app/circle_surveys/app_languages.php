@@ -36,6 +36,8 @@
 
 		$text['label-gender_file']['en-us'] = "Gender question";
 
+		$text['label-zip_code_file']['en-us'] = "Zip Code question";
+
 		$text['label-exit_action']['en-us'] = "Exit Action";
 		
 
