@@ -106,7 +106,7 @@ function download_send_headers($filename) {
 
 	if ($_GET["action"] == "download") {
 		$sql = "select v.sequence_id as \"Question\", v.vote as \"Vote\",  ";
-		$sql .= "c.caller_id_name as \"Caller ID\", c.caller_id_number as \"Phone Number\" ";
+		$sql .= "c.caller_id_name as \"Caller ID\", c.caller_id_number as \"Phone Number\", ";
 		$sql .= "c.gender as \"Gender\", c.age as \"Age\", c.zip_code as \"Zip Code\" ";
 		$sql .= "FROM v_circle_survey_votes v ";
 		$sql .= "INNER JOIN v_circle_survey_customer c ";
