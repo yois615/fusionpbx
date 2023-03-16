@@ -44,6 +44,40 @@ if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
     session:hangup();
 end
 
+-- Playback callback function
+    function cpb_dtmf_input(session, type, data, arg)
+        if (type == "dtmf") then
+            freeswitch.consoleLog("INFO", "control_playback got digit " .. data['digit'] .. "\n");
+            if (data['digit'] == "*") then
+                exit = true;
+                return 0;
+            elseif (data['digit'] == "1") then
+                return ("seek:-15000");
+            elseif (data['digit'] == "3") then
+                return ("seek:+15000");
+            elseif (data['digit'] == "4") then
+                return ("seek:-60000");
+            elseif (data['digit'] == "6") then
+                return ("seek:+60000");
+            elseif (data['digit'] == "5") then
+                return ("pause");
+            elseif (data['digit'] == "2") then
+                return ("volume:+1");
+            elseif (data['digit'] == "8") then
+                return ("volume:-1");
+            elseif (data['digit'] == "7") then
+                -- https://github.com/signalwire/freeswitch/pull/244
+                return ("speed:-1");
+            elseif (data['digit'] == "9") then
+                return ("speed:+1");
+            elseif (data['digit'] == "0") then
+                return("restart"); --start over
+            else
+                return 0;
+            end
+        end
+    end
+
 -- Get survey config
 if session:ready() then
     local sql = [[SELECT * FROM v_chazara_ivrs
@@ -151,7 +185,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
         parallel = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. parallel_recording, "", "");
         if parallel == "*" then goto grade_menu; end;
         if tonumber(parallel) ~= nil then
-            local sql = [[SELECT chazara_teachers_uuid FROM v_chazara_teachers
+            local sql = [[SELECT chazara_teachers_uuid, pin FROM v_chazara_teachers
                     WHERE domain_uuid = :domain_uuid
                     AND grade = :grade
                     AND parallel = :parallel]];
@@ -166,22 +200,79 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
             end
             dbh:query(sql, params, function(row)
                 chazara_teachers_uuid = row["chazara_teachers_uuid"];
+                pin = row["pin"];
             end);
             if chazara_teachers_uuid ~= nil and string.len(chazara_teachers_uuid) > 0 then
                 exit = true;
             else
-                --TODO playback invalid 
+                session:streamFile(recordings_dir .. "invalid.wav");
             end
         end
     end
 end
 
-
-
 if caller_type == "2" then
-    -- if teacher mode ask for pin    
+    session:flushDigits();
+    local dtmf_digits = session:playAndGetDigits(1, string.len(pin), 3, digit_timeout, "#", recordings_dir .. "enter_pin.wav", recordings_dir .. "invalid.wav", "\\d+");
+    if dtmf_digits == pin then teacher_auth = true; end;
+    else 
+        session:hangup();
+        return;
 end
 
--- Ask for recording ID
--- CHeck DB if exists
--- If student play recording, if teacher play options.
+if teacher_auth ~= true then
+    -- This is the entire student flow
+    while session:ready() do
+        local recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
+        if tonumber(recording_id) == nil then
+            goto grade
+            break
+        else
+        -- Find recording
+            local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_teachers_uuid = :chazara_teachers_uuid
+                    AND recording_id = :recording_id]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_teachers_uuid = chazara_teachers_uuid,
+                recording_id = recording_id,
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                recording_filename = row["recording_filename"];
+                chazara_recording_uuid = fow["chazara_recording_uuid"];
+            end);
+
+            if recording_filename ~= nil and string.len(recording_filename) > 0 then
+                local start_epoch = os.time();
+                -- Play file
+                session:setInputCallback("cpb_dtmf_input", "");
+                session:streamFile(recordings_dir .. chazara_teachers_uuid .. "/" .. recording_filename);
+                session:unsetInputCallback();
+                -- Insert record into CDR
+                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, call_uuid, start_epoch, "; 
+                sql = sql .. "duration, caller_id_number, caller_id_name) "
+                sql = sql .. "values (:chazara_recording_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+                local params = {
+                    chazara_recording_uuid = chazara_recording_uuid,
+                    uuid = uuid,
+                    start_epoch = start_epoch,
+                    caller_id_number = caller_id_number,
+                    caller_id_name = caller_id_name,
+                    duration = os.time() - start_epoch
+                }
+                dbh:query(sql, params);
+            else
+                -- Does not exist
+                session:streamFile(recordings_dir .. "invalid.wav");
+            end
+        end
+    end
+end
+
+if teacher_auth == true then
+   -- This is the teacher flow 
+end
