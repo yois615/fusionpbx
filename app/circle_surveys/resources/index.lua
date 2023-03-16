@@ -25,8 +25,6 @@ domain_uuid = session:getVariable("domain_uuid");
 max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
--- TODO
-voicemail_id = "350";
 
 -- Function to save vote
 function save_vote(vote, sequence_id)
@@ -80,8 +78,6 @@ local recordings_dir = recordings_dir .. "/" .. domain_name .. "/";
 caller_id_name = session:getVariable("caller_id_name");
 caller_id_number = session:getVariable("caller_id_number");
 uuid = session:getVariable("uuid");
-voicemail_message_uuid = uuid;
-voicemail_dir = "/var/lib/freeswitch/storage/voicemail/default/the-circle.corpit.xyz";
 survey_questions = {};
 
 -- Strip E.164 plus sign
@@ -148,10 +144,14 @@ end
         if session:ready() and age_file ~= nil and string.len(age_file) > 0 then
             session:flushDigits();
             local exit = false;
+            local tries = 0;
             while (session:ready() and exit == false) do
                 age = session:playAndGetDigits(1, 2, 3, digit_timeout, "#", recordings_dir .. age_file, "", "\\d+");
                 if tonumber(age) ~= nil and tonumber(age) > 3 then
                     exit = true;
+                else
+                    tries = tries + 1;
+                    if tries == max_tries then session:hangup(); end;
                 end
             end
         end
@@ -159,6 +159,7 @@ end
         if session:ready() and gender_file ~= nil and string.len(gender_file) > 0 then
             session:flushDigits();
             local exit = false;
+            local tries = 0;
             while (session:ready() and exit == false) do
                 local gender_num = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. gender_file,
                     "", "[12]");
@@ -169,6 +170,9 @@ end
                     else
                         gender = "female";
                     end
+                else
+                    tries = tries + 1;
+                    if tries == max_tries then session:hangup(); end;
                 end
             end
         end
@@ -176,11 +180,15 @@ end
         if session:ready() and zip_code_file ~= nil and string.len(zip_code_file) > 0 then
             session:flushDigits();
             local exit = false;
+            local tries = 0;
             while (session:ready() and exit == false) do
                 zip_code = session:playAndGetDigits(5, 5, 3, digit_timeout, "#", recordings_dir .. zip_code_file,
                     "", "\\d+");
                 if tonumber(zip_code) ~= nil and tonumber(zip_code) > 0 then
                     exit = true;
+                else
+                    tries = tries + 1;
+                    if tries == max_tries then session:hangup(); end;
                 end
             end
         end
@@ -212,11 +220,15 @@ if session:ready() then
     for i, question in ipairs(survey_questions) do
         session:flushDigits();
         local exit = false;
+        local tries = 0;
         while (session:ready() and exit == false) do
             dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"],
                 "", "");
             if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= tonumber(question['highest_number']) then
                 exit = true;
+            else
+                tries = tries + 1;
+                if tries == max_tries then session:hangup(); end;
             end
         end
 
