@@ -274,5 +274,39 @@ if teacher_auth ~= true then
 end
 
 if teacher_auth == true then
-   -- This is the teacher flow 
+   -- This is the teacher flow
+   while session:ready() do
+        local recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "teacher_select_class.wav", recordings_dir .. "invalid.wav", "");
+        if tonumber(recording_id) == nil then
+            goto grade
+            break
+        elseif recording_id == "000" then
+            -- Change password
+        else
+        -- Find recording
+            local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_teachers_uuid = :chazara_teachers_uuid
+                    AND recording_id = :recording_id]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_teachers_uuid = chazara_teachers_uuid,
+                recording_id = recording_id,
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                recording_filename = row["recording_filename"];
+                chazara_recording_uuid = fow["chazara_recording_uuid"];
+            end);
+
+            if recording_filename ~= nil and string.len(recording_filename) > 0 then
+                -- if exists ask if listen, append, delete
+            else
+                -- Does not exist, offer to record
+                
+            end
+        end
+    end
 end
