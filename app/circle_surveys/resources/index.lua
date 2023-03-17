@@ -111,7 +111,12 @@ dbh:query(sql, params, function(row)
 end);
 
 if circle_survey_customer_uuid ~= nil then
-    -- TODO you voted already
+    -- You voted already
+    local f = io.open(recordings_dir .. "already_voted.wav", "r");
+    if f ~= nil then 
+        io.close(f)
+        session:streamFile(recordings_dir .. "already_voted.wav");
+    end
     session:hangup();
 end
 
