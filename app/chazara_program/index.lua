@@ -275,6 +275,68 @@ end
 
 if teacher_auth == true then
    -- This is the teacher flow
+    local function record_class()
+        --define uuid function
+            local random = math.random;
+            local function gen_uuid()
+                local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+                return string.gsub(template, '[xy]', function (c)
+                    local v = (c == 'x') and random(0, 0xf) or random(8, 0xb);
+                    return string.format('%x', v);
+                end)
+            end
+            local recording_uuid = gen_uuid();
+            session:streamFile("phrase:voicemail_record_message");
+            session:setInputCallback("on_dtmf", "");
+            session:execute("playback","silence_stream://200");
+            session:streamFile("tone_stream://L=1;%(1000, 0, 640)");
+            os.remove(recordings_dir .. chazara_teachers_uuid .. "/" .. recording_uuid .. ".wav")
+            session:recordFile(recordings_dir .. chazara_teachers_uuid .. "/" .. recording_uuid ..".wav", 3600, 500, 10);
+            session:unsetInputCallback();
+            return recording_uuid;
+        end
+
+        local function verify_recording(recording_uuid)
+            local incomplete = true;
+            local timeout = 0;
+            while (incomplete and timeout < 3 and session:ready()) do
+
+                dtmf_digits = "";
+                session:flushDigits();
+                -- To playback your recording, press 1, to save your recording, press 2.  To append to the end of your recording, press 3. To delete and return to menu, press 4.
+                dtmf_digits = session:playAndGetDigits(0, 1, 3, 3000, "#", recordings_dir .. "verify_recording.wav", "", "\\d+");
+
+                if (not session:ready()) then
+                    --Save a hangup
+                    incomplete = false;
+                    --TODO Save recording function
+                    return;
+                elseif (dtmf_digits == "1") then
+                    session:setInputCallback("cpb_dtmf_input", "");
+                    session:streamFile(recordings_dir .. chazara_teachers_uuid .. "/" .. recording_uuid .. ".wav");
+                    session:unsetInputCallback();
+                elseif (dtmf_digits == "2") then
+                    --TODO Save recording function
+                elseif (dtmf_digits == "3") then
+                    -- apend requires <action application="set" data="RECORD_APPEND=true"/>
+                    session:setVariable("RECORD_APPEND", "true");
+                    session:setInputCallback("on_dtmf", "");
+                    dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", "phrase:voicemail_record_message", "", "\\d+")
+                    dtmf_digits = '';
+                    session:execute("playback", "silence_stream://200");
+                    session:streamFile("tone_stream://L=1;%(500, 0, 640)");
+                    result = session:recordFile(recordings_dir .. chazara_teachers_uuid .. "/" .. recording_uuid .. ".wav", 3600, 500, 10);
+                    session:unsetInputCallback();
+                    session:setVariable("RECORD_APPEND", "false");
+                    timeout = 0;
+                elseif (dtmf_digits == "4") then
+                    incomplete = false;
+                    os.remove(recordings_dir .. chazara_teachers_uuid .. "/" .. recording_uuid .. ".wav");
+                end
+            timeout = timeout + 1;
+        end
+    end
+
    while session:ready() do
         local recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "teacher_select_class.wav", recordings_dir .. "invalid.wav", "");
         if tonumber(recording_id) == nil then
@@ -303,8 +365,11 @@ if teacher_auth == true then
 
             if recording_filename ~= nil and string.len(recording_filename) > 0 then
                 -- if exists ask if listen, append, delete
+                verify_recording(recording_filename);
             else
-                -- Does not exist, offer to record
+                -- Does not exist, begin record
+                chazara_recording_uuid = record_class();
+                verify_recording(chazara_recording_uuid);
                 
             end
         end
