@@ -86,7 +86,7 @@ if (string.sub(caller_id_number, 1, 1) == "+") then
 end
 
 session:answer();
-session:execute("playback", "silence_stream://200");
+session:execute("playback", "silence_stream://300");
 
 -- Reject bad callerID
 if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
