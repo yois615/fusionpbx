@@ -112,10 +112,10 @@ end);
 
 if circle_survey_customer_uuid ~= nil then
     -- You voted already
-    local f = io.open(recordings_dir .. "already_voted.wav", "r");
+    local f = io.open(recordings_dir .. "already-voted.wav", "r");
     if f ~= nil then 
         io.close(f)
-        session:streamFile(recordings_dir .. "already_voted.wav");
+        session:streamFile(recordings_dir .. "already-voted.wav");
     end
     session:hangup();
 end
