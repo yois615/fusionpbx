@@ -40,16 +40,16 @@ function save_vote(vote, sequence_id)
             end
         circle_survey_customer_uuid = uuid();
         local sql = "INSERT INTO v_circle_survey_customer (circle_survey_customer_uuid, caller_id_number, ";
-        sql = sql .. " caller_id_name, domain_uuid, gender, age, zip_code)";
-        sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age, :zip_code); ";
+        sql = sql .. "caller_id_name, domain_uuid, gender, age, zip_code) ";
+        sql = sql .. "values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age, :zip_code); ";
         local params = {
             caller_id_name = caller_id_name,
             caller_id_number = caller_id_number,
             domain_uuid = domain_uuid,
             circle_survey_customer_uuid = circle_survey_customer_uuid,
-            gender = gender,
-            age = age,
-            zip_code = zip_code
+            gender = gender or {},
+            age = age or {},
+            zip_code = zip_code or {}
         }
         if (debug["sql"]) then
             freeswitch.consoleLog("notice", "[circle_survey_customer] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");

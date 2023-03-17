@@ -44,6 +44,7 @@ local function apply_params(db, sql, params)
     if "string"  == t then return db:quote(v)      end
     if "number"  == t then return tostring(v)      end
     if "boolean" == t then return v and '1' or '0' end
+    if type(v) == "table" and next(v) == nil then return 'NULL' end
     if NULL      == v then return 'NULL'           end
     if DEFAULT   == v then return 'DEFAULT'        end
     err = "undefined parameter: " .. param
