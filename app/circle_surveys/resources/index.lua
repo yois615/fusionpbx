@@ -47,9 +47,9 @@ function save_vote(vote, sequence_id)
             caller_id_number = caller_id_number,
             domain_uuid = domain_uuid,
             circle_survey_customer_uuid = circle_survey_customer_uuid,
-            gender = gender or {},
-            age = age or {},
-            zip_code = zip_code or {}
+            gender = gender or 'NULL',
+            age = age or 'NULL',
+            zip_code = zip_code or 'NULL'
         }
         if (debug["sql"]) then
             freeswitch.consoleLog("notice", "[circle_survey_customer] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
