@@ -101,9 +101,13 @@ if session:ready() then
     session:flushDigits();
     local exit = false;
     while (session:ready() and exit == false) do
-        caller_type = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. greeting_recording, "", "[128]");
+        caller_type = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. greeting_recording, "", "[1280]");
         if tonumber(caller_type) ~= nil then
-            exit = true;
+            if dtmf_digits == "0" then
+                session:streamFile(recordings_dir .. "instructions.wav");
+            else
+                exit = true;
+            end
         end
     end
 end
@@ -214,6 +218,7 @@ end
 if caller_type == "2" then
     session:flushDigits();
     local dtmf_digits = session:playAndGetDigits(1, string.len(pin), 3, digit_timeout, "#", recordings_dir .. "enter_pin.wav", recordings_dir .. "invalid.wav", "\\d+");
+    --TODO fix multiple tries and hangup here with bad else statement
     if dtmf_digits == pin then teacher_auth = true; end;
     else 
         session:hangup();
