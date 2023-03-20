@@ -121,6 +121,20 @@
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Seconds of silence to end the recording for the voicemail message.";
 
+		//destination details
+		$y=0;
+		$apps[$x]['destinations'][$y]['type'] = 'array';
+		$apps[$x]['destinations'][$y]['label'] = 'other';
+		$apps[$x]['destinations'][$y]['name'] = 'dialplans';
+		$apps[$x]['destinations'][$y]['field']['name']  = 'name';
+		$apps[$x]['destinations'][$y]['field']['destination'] = 'destination';
+		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "lua:chazara_program.lua";
+		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:lua chazara_program.lua";
+		$apps[$x]['destinations'][$y]['select_label'] = "\${name}";
+		$z=0;
+		$apps[$x]['destinations'][$y]['result']['data'][$z]['name'] = 'chazara_program';
+		$apps[$x]['destinations'][$y]['result']['data'][$z]['destination'] = 'chazara_program';
+
 	//schema details
 		$y=0;
 		$apps[$x]['db'][$y]['table']['name'] = "v_chazara_teachers";
