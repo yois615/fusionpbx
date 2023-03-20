@@ -417,7 +417,7 @@ if teacher_auth == true then
             end
             dbh:query(sql, params, function(row)
                 recording_filename = row["recording_filename"];
-                chazara_recording_uuid = fow["chazara_recording_uuid"];
+                chazara_recording_uuid = row["chazara_recording_uuid"];
             end);
 
             if recording_filename ~= nil and string.len(recording_filename) > 0 then
