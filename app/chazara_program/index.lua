@@ -41,7 +41,7 @@ session:answer();
 if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
     -- TODO play rejection
     -- session:streamFile(audio_dir .. "bad_caller_id.wav");
-    session:hangup();
+    --session:hangup();
 end
 
 -- Playback callback function
@@ -129,7 +129,7 @@ end
     dbh:query(sql, params, function(row)
         max_grade = row["max_grade"];
     end);
-    if max_grade > 9 then
+    if tonumber(max_grade) > 9 then
         grade_max_digits = 2;
     else
         grade_max_digits = 1;
@@ -155,7 +155,7 @@ while (session:ready() and exit == false) do
             freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
         end
         dbh:query(sql, params, function(row)
-            count = row["count"];
+            count = tonumber(row["count"]);
         end);
         if count > 0 then
             exit = true;
@@ -192,7 +192,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
             local sql = [[SELECT chazara_teacher_uuid, pin FROM v_chazara_teachers
                     WHERE domain_uuid = :domain_uuid
                     AND grade = :grade
-                    AND parallel = :parallel]];
+                    AND parallel_class_id = :parallel]];
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_ivr_uuid = chazara_ivr_uuid,
@@ -236,7 +236,7 @@ if teacher_auth ~= true then
     while session:ready() do
         local recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
         if tonumber(recording_id) == nil then
-            goto grade
+            goto grade_menu
             break
         else
         -- Find recording
@@ -384,7 +384,7 @@ if teacher_auth == true then
    while session:ready() do
         recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "teacher_select_class.wav", recordings_dir .. "invalid.wav", "");
         if tonumber(recording_id) == nil then
-            goto grade
+            goto grade_menu
             break
         elseif recording_id == "000" then
             -- Change password
