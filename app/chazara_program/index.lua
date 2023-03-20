@@ -276,6 +276,8 @@ if teacher_auth ~= true then
                     duration = os.time() - start_epoch
                 }
                 dbh:query(sql, params);
+                recording_filename = nil;
+                chazara_recording_uuid = nil;
             else
                 -- Does not exist
                 session:streamFile(recordings_dir .. "invalid.wav");
@@ -429,6 +431,8 @@ if teacher_auth == true then
                 verify_recording(chazara_recording_uuid);
                 
             end
+            recording_filename = nil;
+            chazara_recording_uuid = nil;
         end
     end
 end
