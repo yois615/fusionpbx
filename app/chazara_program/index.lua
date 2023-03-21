@@ -104,8 +104,8 @@ if session:ready() then
     while (session:ready() and exit == false) do
         caller_type = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. greeting_recording, "", "[1280]");
         if tonumber(caller_type) ~= nil then
-            if dtmf_digits == "0" then
-                session:streamFile(recordings_dir .. "instructions.wav");
+            if caller_type == "0" then
+                session:streamFile(recordings_dir .. "system_instructions.wav");
             else
                 exit = true;
             end
@@ -295,7 +295,7 @@ if teacher_auth ~= true then
                 chazara_recording_uuid = nil;
             else
                 -- Does not exist
-                session:streamFile(recordings_dir .. "invalid.wav");
+                session:streamFile(recordings_dir .. "recording_not_available.wav");
             end
         end
     end
