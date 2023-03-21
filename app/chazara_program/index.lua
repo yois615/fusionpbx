@@ -370,6 +370,12 @@ if teacher_auth == true then
                     end
                     dbh:query(sql, params)
 
+                    -- Get file length
+                    local result = io.popen('soxi -D ' .. recordings_dir .. "/" .. chazara_teacher_uuid .. "/" .. recording_filename);
+                    result:flush();
+                    local length = result:read('*n');
+                    result:close();
+
                     -- Save new record
                     local sql = [[INSERT INTO v_chazara_recordings (chazara_recording_uuid, domain_uuid, recording_id, 
                                 recording_name, recording_filename, chazara_teacher_uuid, created_epoch, length) 
@@ -384,7 +390,7 @@ if teacher_auth == true then
                         recording_filename = recording_filename;
                         chazara_teacher_uuid = chazara_teacher_uuid,
                         created_epoch = os.time(),
-                        length = os.execute('soxi -D ' .. recordings_dir .. "/" .. chazara_teacher_uuid .. "/" .. recording_filename);
+                        length = length
                     }
 
                     if (debug["sql"]) then
