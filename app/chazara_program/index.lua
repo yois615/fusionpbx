@@ -163,10 +163,26 @@ while (session:ready() and exit == false) do
         dbh:query(sql, params, function(row)
             count = tonumber(row["count"]);
         end);
-        if count > 0 then
+        if count == 1 then
             exit = true;
+            local sql = [[SELECT chazara_teacher_uuid, pin FROM v_chazara_teachers
+                    WHERE domain_uuid = :domain_uuid
+                    AND grade = :grade]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_ivr_uuid = chazara_ivr_uuid,
+                grade = grade
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                chazara_teacher_uuid = row["chazara_teacher_uuid"];
+                pin = row["pin"];
+            end);
         end
         if count > 1 then
+            exit = true;
             local sql = [[SELECT recording FROM v_chazara_ivr_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_ivr_uuid = :chazara_ivr_uuid
@@ -249,7 +265,7 @@ end
 if teacher_auth ~= true then
     -- This is the entire student flow
     while session:ready() do
-        recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
+        recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
         if tonumber(recording_id) == nil then
             goto grade_menu
             break
@@ -415,13 +431,13 @@ if teacher_auth == true then
     end
 
    while session:ready() do
-        recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout, "#", recordings_dir .. "teacher_select_class.wav", recordings_dir .. "invalid.wav", "");
+        recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "teacher_select_class.wav", recordings_dir .. "invalid.wav", "");
         if tonumber(recording_id) == nil then
             goto grade_menu
             break
         elseif recording_id == "000" then
             -- Change password
-            local new_password = session:playAndGetDigits(4, 7, 3, 3000, "#", recordings_dir .. "choose_password.wav", recordings_dir .. "invalid.wav", "\\d+");
+            local new_password = session:playAndGetDigits(4, 7, 3, 5000, "#", recordings_dir .. "choose_password.wav", recordings_dir .. "invalid.wav", "\\d+");
             if tonumber(new_password) ~= nil then
                 session:say(new_password, "en", "number", "iterated");
                 local sql = [[UPDATE v_chazara_teachers set pin = :pin 
