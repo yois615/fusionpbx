@@ -178,7 +178,7 @@
 		if (permission_exists('recording_edit')) {
 			//if file name is not the same then rename the file
 				if ($recording_filename != $recording_filename_original) {
-					rename($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename_original, $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename);
+					rename($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename_original, $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename);
 				}
 
 			//build array
@@ -286,9 +286,8 @@
 	echo "    ".$text['label-file_name']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <input class='formfld' readonly type='text' name='recording_filename' maxlength='255' value=\"".escape($recording_filename)."\">\n";
+	echo "    <input class='formfld' type='text' name='recording_filename' maxlength='255' value=\"".escape($recording_filename)."\">\n";
 	echo "    <input type='hidden' name='recording_filename_original' value=\"".escape($recording_filename)."\">\n";
-	echo escape($recording_filename);
 	echo "<br />\n";
 	echo $text['message-file']."\n";
 	echo "</td>\n";
