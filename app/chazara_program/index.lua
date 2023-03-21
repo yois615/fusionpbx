@@ -279,11 +279,13 @@ if teacher_auth ~= true then
                 session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename);
                 session:unsetInputCallback();
                 -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, call_uuid, start_epoch, "; 
+                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
                 sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
                 local params = {
                     chazara_recording_uuid = chazara_recording_uuid,
+                    domain_uuid = domain_uuid,
+                    chazara_teacher_uuid = chazara_teacher_uuid,
                     uuid = uuid,
                     start_epoch = start_epoch,
                     caller_id_number = caller_id_number,
