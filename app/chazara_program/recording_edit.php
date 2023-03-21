@@ -121,6 +121,9 @@
 			}
 
 			$recording_length = ceil(shell_exec('soxi -D '.$file_name));
+		} else {
+			$file_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/';
+			$recording_length = ceil(shell_exec('soxi -D '.$file_dir.$recording_filename_original));
 		}
 	}
 
@@ -284,7 +287,7 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "    <input class='formfld' readonly type='text' name='recording_filename' maxlength='255' value=\"".escape($recording_filename)."\">\n";
-	// echo "    <input type='hidden' name='recording_filename_original' value=\"".escape($recording_filename)."\">\n";
+	echo "    <input type='hidden' name='recording_filename_original' value=\"".escape($recording_filename)."\">\n";
 	echo escape($recording_filename);
 	echo "<br />\n";
 	echo $text['message-file']."\n";
@@ -297,7 +300,6 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "    <input class='formfld' type='text' name='recording_id' maxlength='255' value=\"".escape($recording_id)."\">\n";
-	// echo "    <input type='hidden' name='recording_filename_original' value=\"".escape($recording_filename)."\">\n";
 	echo "<br />\n";
 	echo $text['description-recording_id']."\n";
 	echo "</td>\n";
