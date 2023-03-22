@@ -59,10 +59,26 @@
 
 //get the form value and set to php variables
 	if (count($_POST) > 0) {
+		//Get teacher's uuid
+		$sql = "select chazara_teacher_uuid ";
+		$sql .= "from v_chazara_teachers ";
+		$sql .= "WHERE domain_uuid = :domain_uuid ";
+		$sql .= "and user_uuid = :user_uuid ";
+		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+		$parameters['domain_uuid'] = $domain_uuid;
+		
+		$database = new database;
+		$row = $database->select($sql, $parameters, 'row');
+		if (is_array($row) && @sizeof($row) != 0) {
+			$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
+		}
+		unset($sql, $parameters, $row);
+
 		$recording_uuid = $_POST["chazara_recording_uuid"];
 		$recording_filename = $_POST["recording_filename"];
 		$recording_filename_original = $_POST["recording_filename_original"];
-		$chazara_teacher_uuid = $_POST["chazara_teacher_uuid"];
+		$recording_id = $_POST["recording_id"];
+		$chazara_teacher_uuid = $chazara_teacher_uuid;
 		$recording_name = $_POST["recording_name"];
 		$recording_description = $_POST["recording_description"];
 		$recording_length = 0;
@@ -105,6 +121,9 @@
 			}
 
 			$recording_length = ceil(shell_exec('soxi -D '.$file_name));
+		} else {
+			$file_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/';
+			$recording_length = ceil(shell_exec('soxi -D '.$file_dir.$recording_filename_original));
 		}
 	}
 
@@ -159,7 +178,7 @@
 		if (permission_exists('recording_edit')) {
 			//if file name is not the same then rename the file
 				if ($recording_filename != $recording_filename_original) {
-					rename($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename_original, $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename);
+					rename($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename_original, $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename);
 				}
 
 			//build array
@@ -168,6 +187,7 @@
 				}
 				$array['chazara_recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
 				$array['chazara_recordings'][0]['domain_uuid'] = $domain_uuid;
+				$array['chazara_recordings'][0]['recording_id'] = $recording_id;
 				$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
 				$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 				$array['chazara_recordings'][0]['recording_filename'] = $recording_filename;
@@ -193,34 +213,22 @@
 //pre-populate the form
 	if (count($_GET)>0 && $_POST["persistformvar"] != "true") {
 		$recording_uuid = $_GET["id"];
-		$sql = "select r.recording_name, r.recording_filename, r.recording_description, t.name, t.chazara_teacher_uuid  from v_chazara_recordings r ";
-		$sql .= " left join v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
-		$sql .= "where r.domain_uuid = :domain_uuid ";
-		$sql .= "and r.chazara_recording_uuid = :chazara_recording_uuid ";
+		$sql = "select * from v_chazara_recordings ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and chazara_recording_uuid = :chazara_recording_uuid ";
 		$parameters['domain_uuid'] = $domain_uuid;
 		$parameters['chazara_recording_uuid'] = $recording_uuid;
 
 		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && @sizeof($row) != 0) {
-			$chazara_teacher_uuid = $row["chazara_teacher_uuid"];
-			$chazara_teacher_name = $row["name"];
 			$recording_filename = $row["recording_filename"];
 			$recording_name = $row["recording_name"];
 			$recording_description = $row["recording_description"];
+			$recording_id = $row['recording_id'];
 		}
 		unset($sql, $parameters, $row);
 	}
-
-// get teacher list
-	$sql = "select chazara_teacher_uuid, name from v_chazara_teachers ";
-	$sql .= "where domain_uuid = :domain_uuid ";
-	// $sql .= "and user_uuid = :user_uuid ";
-	$parameters['domain_uuid'] = $domain_uuid;
-	// $parameters['recording_uuid'] = $recording_uuid;
-	$database = new database;
-	$teachers = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters);
 
 //create token
 	$object = new token;
@@ -264,26 +272,6 @@
 
 	echo "<tr>\n";
 	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap>\n";
-	echo "    ".$text['label-teachers']."\n";
-	echo "</td>\n";
-	echo "<td width='70%' class='vtable' align='left'>\n";
-	echo "    <select name='chazara_teacher_uuid' class='formfld' \">\n";
-	foreach($teachers as $teacher) {
-		if ($teacher['chazara_teacher_uuid'] == $row['chazara_teacher_uuid']) {
-			echo " <option value=\"".$teacher['chazara_teacher_uuid']."\" selected='selected'>".$teacher['name']."</option>";
-		} else {
-			echo " <option value=\"".$teacher['chazara_teacher_uuid']."\">".$teacher['name']."</option>";
-		}
-	}
-	echo "    </select>\n";
-	echo "<br />\n";
-	echo $text['description-teachers']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-
-	echo "<tr>\n";
-	echo "<td width='30%' class='vncellreq' valign='top' align='left' nowrap>\n";
 	echo "    ".$text['label-recording_name']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
@@ -298,26 +286,37 @@
 	echo "    ".$text['label-file_name']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <input class='formfld' readonly type='text' name='recording_filename' maxlength='255' value=\"".escape($recording_filename)."\">\n";
-	// echo "    <input type='hidden' name='recording_filename_original' value=\"".escape($recording_filename)."\">\n";
-	echo escape($recording_filename);
+	echo "    <input class='formfld' type='text' name='recording_filename' maxlength='255' value=\"".escape($recording_filename)."\">\n";
+	echo "    <input type='hidden' name='recording_filename_original' value=\"".escape($recording_filename)."\">\n";
 	echo "<br />\n";
 	echo $text['message-file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
-	echo "    ".$text['label-file_upload']."\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "    ".$text['label-recording_id']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo 		"<input type='text' class='txt' style='width: 100px; cursor: pointer;' id='filename' placeholder='Select...' onclick=\"document.getElementById('ulfile').click(); this.blur();\" onfocus='this.blur();'>";
-	echo 		"<input type='file' id='ulfile' name='file' style='display: none;' accept='.wav,.mp3,.ogg' onchange=\"document.getElementById('filename').value = this.files.item(0).name; check_file_type(this);\">";
+	echo "    <input class='formfld' type='text' name='recording_id' maxlength='255' value=\"".escape($recording_id)."\">\n";
 	echo "<br />\n";
-	echo $text['message-file_upload']."\n";
+	echo $text['description-recording_id']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
+	if ($recording_filename == null || strlen(trim($recording_filename)) == 0) {
+		echo "<tr>\n";
+		echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-file_upload']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo 		"<input type='text' class='txt' style='width: 100px; cursor: pointer;' id='filename' placeholder='Select...' onclick=\"document.getElementById('ulfile').click(); this.blur();\" onfocus='this.blur();'>";
+		echo 		"<input type='file' id='ulfile' name='file' style='display: none;' accept='.wav,.mp3,.ogg' onchange=\"document.getElementById('filename').value = this.files.item(0).name; check_file_type(this);\">";
+		echo "<br />\n";
+		echo $text['message-file_upload']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";

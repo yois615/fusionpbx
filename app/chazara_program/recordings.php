@@ -52,7 +52,7 @@
 
 			// build full path
 				//Get teacher's private path
-				$sql = "select t.grade, t.parallel_class_id, r.recording_filename ";
+				$sql = "select t.chazara_teacher_uuid, r.recording_filename ";
 				$sql .= "from v_chazara_teachers t INNER JOIN v_chazara_recordings r ";
 				$sql .= "on r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 				$sql .= "WHERE r.chazara_recording_uuid = :chazara_recording_uuid ";
@@ -76,8 +76,9 @@
 					} else {
 						$parallel = $row['parallel_class_id'];
 					}
+					$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
 					$recording_filename = $row['recording_filename'];
-					$full_recording_path = $path."/".$grade.$parallel."/".$recording_filename;
+					$full_recording_path = $path."/".$chazara_teacher_uuid."/".$recording_filename;
 				}
 				unset($sql, $parameters, $row);
 
@@ -131,7 +132,7 @@
 		//Get teacher's path
 			$grade = "00";
 			$parallel = "1";
-			$sql = "select grade, parallel_class_id ";
+			$sql = "select grade, parallel_class_id, chazara_teacher_uuid ";
 			$sql .= "from v_chazara_teachers ";
 			$sql .= "where user_uuid = :user_uuid ";
 			$sql .= "and domain_uuid = :domain_uuid ";
@@ -150,16 +151,17 @@
 				} else {
 					$parallel = $row['parallel_class_id'];
 				}
+				$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
 			}
 			unset($sql, $parameters, $row);
 
 		//make sure the destination directory exists
-			if (!is_dir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel)) {
-				mkdir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel, 0770, false);
+			if (!is_dir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid)) {
+				mkdir($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid, 0770, false);
 			}
 
 		//move the uploaded files
-			$result = move_uploaded_file($_FILES['file']['tmp_name'], $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel.'/'.$recording_filename);
+			$result = move_uploaded_file($_FILES['file']['tmp_name'], $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename);
 
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
@@ -209,7 +211,7 @@
 	if ($_GET['show'] != "all") {
 
 	//Get teacher's path
-		$sql = "select grade, parallel_class_id ";
+		$sql = "select grade, parallel_class_id, chazara_teacher_uuid ";
 		$sql .= "from v_chazara_teachers ";
 		$sql .= "where user_uuid = :user_uuid ";
 		$sql .= "and domain_uuid = :domain_uuid ";
@@ -228,10 +230,11 @@
 			} else {
 				$parallel = $row['parallel_class_id'];
 			}
+			$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
 		}
 		unset($sql, $parameters, $row);
 
-		$current_sound_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$grade.$parallel.'/';
+		$current_sound_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/';
 		if (is_dir($current_sound_dir)) {
 			if ($dh = opendir($current_sound_dir)) {
 				while (($recording_filename = readdir($dh)) !== false) {
@@ -248,13 +251,12 @@
 								$array['chazara_recordings'][0]['domain_uuid'] = $domain_uuid;
 								$array['chazara_recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
 
-								//todo: we need to find correct teacher uuid
-								$array['chazara_recordings'][0]['chazara_teacher_uuid'] = '57bd5741-e5cc-4e7e-b13a-19f3c4a1dc4c';
+								$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
 
 								$array['chazara_recordings'][0]['length'] = $recording_length;
 								$array['chazara_recordings'][0]['recording_id'] = pathinfo($recording_filename, PATHINFO_FILENAME);
 								$array['chazara_recordings'][0]['recording_filename'] = pathinfo($recording_filename, PATHINFO_BASENAME);
-								$array['chazara_recordings'][0]['recording_path'] = $grade.$parallel;
+								//$array['chazara_recordings'][0]['recording_path'] = $grade.$parallel;
 								$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 								$array['chazara_recordings'][0]['recording_description'] = $recording_description;
 							//set temporary permissions
@@ -321,13 +323,15 @@
 
 //get total recordings from the database
 	$sql = "select count(*) from v_chazara_recordings r ";
-	$sql .= "INNER JOIN v_chazara_teachers t ";
-	$sql .= "ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
+	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
+		$sql .= "INNER JOIN v_chazara_teachers t ";
+		$sql .= "ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
+	}
 	$sql .= "where r.domain_uuid = :domain_uuid ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
 		$sql .= "and t.user_uuid = :user_uuid ";
+		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	}
-	$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	$parameters['domain_uuid'] = $domain_uuid;
 	$sql .= $sql_search;
 	$database = new database;
@@ -386,8 +390,12 @@
 	echo "	<div class='heading'><b>".$text['title-recordings']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
 
-	echo button::create(['type'=>'button','label'=>$text['button-teacher-submenu'],'icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/teachers.php']);
-	echo button::create(['type'=>'button','label'=>$text['button-ivr-submenu'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'/app/chazara_program/ivr_edit.php']);
+	if (permission_exists('chazara_teacher_view')) {
+		echo button::create(['type'=>'button','label'=>$text['button-teacher-submenu'],'icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/teachers.php']);
+	}
+	if (permission_exists('chazara_ivr_edit')) {
+		echo button::create(['type'=>'button','label'=>$text['button-ivr-submenu'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'/app/chazara_program/ivr_edit.php']);
+	}
 
 	if (permission_exists('chazara_recording_upload')) {
 		echo 	"<form id='form_upload' class='inline' method='post' enctype='multipart/form-data'>\n";
@@ -448,6 +456,7 @@
 		$col_count++;
 	}
 	echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order);
+	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order);
 	$col_count++;
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 		echo th_order_by('grade', $text['label-grade'], $order_by, $order, $param, "class='shrink'");
@@ -514,12 +523,15 @@
 			}
 			echo "	<td>";
 			if (permission_exists('chazara_recording_edit')) {
-				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_name'])."</a>";
+				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_id'])."</a>";
 			}
 			else {
-				echo escape($row['recording_name']);
+				echo escape($row['recording_id']);
 			}
 			echo "	</td>\n";
+
+			echo "	<td>".$row['recording_name']."</td>\n";
+			
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 				echo "	<td>".$row['grade']."</td>\n";
 				echo "	<td>".$row['parallel_class_id']."</td>\n";

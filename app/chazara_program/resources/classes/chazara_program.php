@@ -117,21 +117,21 @@ if (!class_exists('chazara_program')) {
 								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
 
 									//get filename
-										$sql = "select recording_filename, recording_path from v_chazara_recordings ";
+										$sql = "select recording_filename, chazara_teacher_uuid from v_chazara_recordings ";
 										$sql .= "where domain_uuid = :domain_uuid ";
 										$sql .= "and chazara_recording_uuid = :recording_uuid ";
 										$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 										$parameters['recording_uuid'] = $record['uuid'];
 										$database = new database;
-										$filenames[] = $database->select($sql, $parameters, 'recording_filename, recording_path');
+										$filenames[] = $database->select($sql, $parameters, 'recording_filename, chazara_teacher_uuid');
 										unset($sql, $parameters);
 
 									//build delete array
-										$array[$this->table][$x][$this->uuid_prefix.'recording_uuid'] = $record['uuid'];
-										$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+										$array['chazara_recordings'][$x]['chazara_recording_uuid'] = $record['uuid'];
+										$array['chazara_recordings'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
 								}
 							}
-							// print_r($array);exit;
+
 						//delete the checked rows
 							if (is_array($array) && @sizeof($array) != 0) {
 
@@ -146,7 +146,7 @@ if (!class_exists('chazara_program')) {
 									if (is_array($filenames) && @sizeof($filenames) != 0) {
 										foreach ($filenames as $filename) {
 											foreach($filename as $row) {
-												$filepath = $row['recording_path'].'/'.$row['recording_filename'];
+												$filepath = $row['chazara_teacher_uuid'].'/'.$row['recording_filename'];
 												if (isset($filepath) && strlen($filepath) > 0 && file_exists($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$filepath)) {
 													@unlink($_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/".$filepath);
 												}
