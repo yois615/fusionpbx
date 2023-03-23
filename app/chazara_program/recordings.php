@@ -390,6 +390,9 @@
 	echo "	<div class='heading'><b>".$text['title-recordings']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
 
+	if (permission_exists('chazara_cdrs_view')) {
+		echo button::create(['type'=>'button','label'=>"CDR",'icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/cdrs.php']);
+	}
 	if (permission_exists('chazara_teacher_view')) {
 		echo button::create(['type'=>'button','label'=>$text['button-teacher-submenu'],'icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/teachers.php']);
 	}
