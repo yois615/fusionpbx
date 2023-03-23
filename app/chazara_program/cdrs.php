@@ -101,6 +101,10 @@
 		$param .= "&order_by=".urlencode($order_by)."&order=".urlencode($order);
 	}
 
+	if ($_REQUEST['show'] == "all" && permission_exists('chazara_cdrs_all')) {
+		$param .= "&show=all";
+	}
+
 	//create the sql query to get the xml cdr records
 	if (strlen($order_by) == 0) { $order_by  = "c.start_epoch"; }
 	if (strlen($order) == 0) { $order  = "desc"; }
@@ -136,12 +140,14 @@
 	$sql .= "join v_chazara_teachers t on c.chazara_teacher_uuid = t.chazara_teacher_uuid ";
 	$sql .= "join v_chazara_recordings r on r.chazara_recording_uuid = c.chazara_recording_uuid ";
 	$sql .= "where c.domain_uuid = :domain_uuid ";
-	$sql .= " and t.user_uuid = :user_uuid ";
+	if (!permission_exists('chazara_cdrs_all') || $_GET['show'] != "all") {
+		$sql .= " and t.user_uuid = :user_uuid ";
+		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+	}
 
-	$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	$parameters['domain_uuid'] = $domain_uuid;
 
-	if (strlen($teacher_uuid) > 0) {
+	if (permission_exists('chazara_cdrs_all') && strlen($teacher_uuid) > 0) {
 		$sql .= "and c.chazara_teacher_uuid = :teacher_uuid \n";
 		$parameters['teacher_uuid'] = $teacher_uuid;
 	}
@@ -246,16 +252,6 @@
 	$document['title'] = $text['title-cdrs'];
 	require_once "resources/header.php";
 
-//file type check script
-	echo "<script language='JavaScript' type='text/javascript'>\n";
-	echo "	function check_file_type(file_input) {\n";
-	echo "		file_ext = file_input.value.substr((~-file_input.value.lastIndexOf('.') >>> 0) + 2);\n";
-	echo "		if (file_ext != 'mp3' && file_ext != 'wav' && file_ext != 'ogg' && file_ext != '') {\n";
-	echo "			display_message(\"".$text['message-unsupported_file_type']."\", 'negative', '2750');\n";
-	echo "		}\n";
-	echo "	}\n";
-	echo "</script>";
-
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-cdr']." (".$result_count.")</b></div>\n";
@@ -268,13 +264,18 @@
 		echo button::create(['type'=>'button','label'=>$text['button-ivr-submenu'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'/app/chazara_program/ivr_edit.php']);
 	}
 
+	if (permission_exists('chazara_cdrs_all')) {
+		if ($_GET['show'] == 'all') {
+			echo "		<input type='hidden' name='show' value='all'>";
+		}
+		else {
+			echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'?type=&show=all'.($search != '' ? "&search=".urlencode($search) : null)]);
+		}
+	}
+
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
-
-	if (permission_exists('chazara_recording_delete') && $recordings) {
-		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
-	}
 
 	echo $text['description']."\n";
 	echo "<br /><br />\n";
@@ -285,7 +286,9 @@
 
     echo "<div class='form_grid'>\n";
 
-    // if (permission_exists('xml_cdr_search_extension')) {
+    if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
+		echo "		<input type='hidden' name='show' value='all'>";
+		
         $sql = "select chazara_teacher_uuid, name from v_chazara_teachers ";
         $sql .= "where domain_uuid = :domain_uuid ";
         $sql .= "order by name asc ";
@@ -309,8 +312,8 @@
         echo "		</div>\n";
         echo "	</div>\n";
         unset($sql, $parameters, $result_e, $row, $selected);
-    // }
-    if (permission_exists('xml_cdr_search_caller_id')) {
+     }
+
         echo "	<div class='form_set'>\n";
         echo "		<div class='label'>\n";
         echo "			".$text['label-caller_id']."\n";
@@ -320,8 +323,8 @@
         echo "			<input type='text' class='formfld' name='caller_id_number' style='min-width: 115px; width: 115px;' placeholder=\"".$text['label-number']."\" value='".escape($caller_id_number)."'>\n";
         echo "		</div>\n";
         echo "	</div>\n";
-    }
-    if (permission_exists('xml_cdr_search_start_range')) {
+
+
         echo "	<div class='form_set'>\n";
         echo "		<div class='label'>\n";
         echo "			"."Start Range"."\n";
@@ -331,8 +334,8 @@
         echo "			<input type='text' class='formfld datetimepicker' data-toggle='datetimepicker' data-target='#start_stamp_end' onblur=\"$(this).datetimepicker('hide');\" style='min-width: 115px; width: 115px;' name='start_stamp_end' id='start_stamp_end' placeholder='"."To"."' value='".escape($start_stamp_end)."' autocomplete='off'>\n";
         echo "		</div>\n";
         echo "	</div>\n";
-    }
-    if (permission_exists('xml_cdr_search_duration')) {
+
+
         echo "	<div class='form_set'>\n";
         echo "		<div class='label'>\n";
         echo "			"."Duration"." ("."Sec".")\n";
@@ -342,48 +345,21 @@
         echo "			<input type='text' class='formfld' style='min-width: 75px; width: 75px;' name='duration_max' value='".escape($duration_max)."' placeholder=\"".$text['label-maximum']."\">\n";
         echo "		</div>\n";
         echo "	</div>\n";
-    }
-    if (permission_exists('xml_cdr_search_order')) {
+
+
         echo "	<div class='form_set'>\n";
         echo "		<div class='label'>\n";
         echo "			".$text['label-order']."\n";
         echo "		</div>\n";
         echo "		<div class='field no-wrap'>\n";
         echo "			<select name='order_by' class='formfld'>\n";
-        if (permission_exists('xml_cdr_extension')) {
+        if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
             echo "			<option value='c.chazara_teacher_uuid' ".($order_by == 'c.chazara_teacher_uuid' ? "selected='selected'" : null).">".$text['label-teacher_name']."</option>\n";
         }
-        // if (permission_exists('xml_cdr_all')) {
-        //     echo "			<option value='domain_name' ".($order_by == 'domain_name' ? "selected='selected'" : null).">".$text['label-domain']."</option>\n";
-        // }
-        if (permission_exists('xml_cdr_caller_id_name')) {
-            echo "			<option value='caller_id_name' ".($order_by == 'caller_id_name' ? "selected='selected'" : null).">".$text['label-caller_id_name']."</option>\n";
-        }
-        if (permission_exists('xml_cdr_caller_id_number')) {
-            echo "			<option value='caller_id_number' ".($order_by == 'caller_id_number' ? "selected='selected'" : null).">".$text['label-caller_id_number']."</option>\n";
-        }
-        if (permission_exists('xml_cdr_start')) {
-            echo "			<option value='c.start_epoch' ".($order_by == 'c.start_epoch' || $order_by == '' ? "selected='selected'" : null).">".$text['label-created']."</option>\n";
-        }
-        if (permission_exists('xml_cdr_duration')) {
-            echo "			<option value='duration' ".($order_by == 'duration' ? "selected='selected'" : null).">".$text['label-duration']."</option>\n";
-        }
-        // if (permission_exists('xml_cdr_custom_fields')) {
-        //     if (is_array($_SESSION['cdr']['field'])) {
-        //         echo "			<option value='' disabled='disabled'></option>\n";
-        //         echo "			<optgroup label=\"".$text['label-custom_cdr_fields']."\">\n";
-        //         foreach ($_SESSION['cdr']['field'] as $field) {
-        //             $array = explode(",", $field);
-        //             $field_name = end($array);
-        //             $field_label = ucwords(str_replace("_", " ", $field_name));
-        //             $field_label = str_replace("Sip", "SIP", $field_label);
-        //             if ($field_name != "destination_number") {
-        //                 echo "		<option value='".$field_name."' ".($order_by == $field_name ? "selected='selected'" : null).">".$field_label."</option>\n";
-        //             }
-        //         }
-        //         echo "			</optgroup>\n";
-        //     }
-        // }
+		echo "			<option value='caller_id_name' ".($order_by == 'caller_id_name' ? "selected='selected'" : null).">".$text['label-caller_id_name']."</option>\n";
+		echo "			<option value='caller_id_number' ".($order_by == 'caller_id_number' ? "selected='selected'" : null).">".$text['label-caller_id_number']."</option>\n";
+		echo "			<option value='c.start_epoch' ".($order_by == 'c.start_epoch' || $order_by == '' ? "selected='selected'" : null).">".$text['label-created']."</option>\n";
+		echo "			<option value='duration' ".($order_by == 'duration' ? "selected='selected'" : null).">".$text['label-duration']."</option>\n";
         echo "			</select>\n";
         echo "			<select name='order' class='formfld'>\n";
         echo "				<option value='desc' ".($order == 'desc' ? "selected='selected'" : null).">".$text['label-descending']."</option>\n";
@@ -391,15 +367,11 @@
         echo "			</select>\n";
         echo "		</div>\n";
         echo "	</div>\n";
-    }
 
     echo "</div>\n";
 
     button::$collapse = false;
     echo "<div style='float: right; padding-top: 15px; margin-left: 20px; white-space: nowrap;'>";
-    if (permission_exists('xml_cdr_all') && $_REQUEST['show'] == 'all') {
-        echo "<input type='hidden' name='show' value='all'>\n";
-    }
     echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','link'=>'cdrs.php']);
     echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_save','name'=>'submit']);
     echo "</div>\n";
@@ -416,67 +388,52 @@
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
 	$col_count = 0;
-	if (permission_exists('chazara_recording_delete')) {
-		echo "	<th class='checkbox'>\n";
-		echo "		<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".($recordings ?: "style='visibility: hidden;'").">\n";
-		echo "	</th>\n";
+	echo th_order_by('start_epoch', $text['label-created'], $order_by, $order, null, "class='left'");
+	$col_count++;
+	echo "<th class='left'>".$text['label-callerid_name']."</th>\n";
+	$col_count++;
+	echo "<th class='left'>".$text['label-callerid_number']."</th>\n";
+	$col_count++;
+	if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
+		echo th_order_by('teacher_name', $text['label-teacher_name'], $order_by, $order, $null, "class='left'");
 		$col_count++;
 	}
-	echo th_order_by('call_uuid', $text['label-call_uuid'], $order_by, $order);
+	echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $null, "class='left'");
 	$col_count++;
-	echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $null, "class='center'");
+	echo "<th class='left'>".$text['label-duration']."</th>\n";
 	$col_count++;
-	echo th_order_by('teacher_name', $text['label-teacher_name'], $order_by, $order, $null, "class='center'");
-	$col_count++;
-	echo "<th class='center'>".$text['label-callerid_name']."</th>\n";
-	$col_count++;
-	echo "<th class='center'>".$text['label-callerid_number']."</th>\n";
-	$col_count++;
-	echo "<th class='center'>".$text['label-duration']."</th>\n";
-	$col_count++;
-	echo th_order_by('start_epoch', $text['label-created'], $order_by, $order, null, "class='center'");
-	$col_count++;
+
 	echo "</tr>\n";
 
 	if (is_array($result) && @sizeof($result) != 0) {
 		$x = 0;
 		foreach ($result as $row) {
+			echo "<tr class = 'list-row'>";
 			// print_r($row);
 			$created_time = date("M d, Y H:i:s", substr($row['start_epoch'], 0, 10));
+			echo "	<td class='left'>".$created_time."</td>\n";
 			// print_r($row['start_epoch']); print_r($created_time);
+
+			echo "	<td class='left'>".$row['caller_id_name']."</td>\n";
+			echo "	<td class='left'>".$row['caller_id_number']."</td>\n";
+
+			if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
+				echo "	<td class='left'>".$row['teacher_name']."</td>\n";
+			}
+
+			echo "	<td class='left'>";
+			echo escape($row['recording_id']);
+			echo "	</td>\n";
+
 			$message_minutes = floor($row['duration'] / 60);
 			$message_seconds = $row['duration'] % 60;
 			//use International System of Units (SI) - Source: https://en.wikipedia.org/wiki/International_System_of_Units
 			$row['message_duration_label'] = ($message_minutes > 0 ? $message_minutes.' min' : null).($message_seconds > 0 ? ' '.$message_seconds.' s' : null);
-
-			if (permission_exists('chazara_recording_edit')) {
-				$list_row_url = "recording_edit.php?id=".urlencode($row['chazara_recording_uuid']);
-			}
-			echo "<tr class='list-row' href='".$list_row_url."'>\n";
-			if (permission_exists('chazara_recording_delete')) {
-				echo "	<td class='checkbox'>\n";
-				echo "		<input type='checkbox' name='recordings[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-				echo "		<input type='hidden' name='recordings[$x][uuid]' value='".escape($row['chazara_recording_uuid'])."' />\n";
-				echo "	</td>\n";
-			}
-			echo "	<td>".$row['call_uuid']."</td>\n";
-			echo "	<td class='center'>";
-			// if (permission_exists('chazara_recording_edit')) {
-			// 	echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_id'])."</a>";
-			// }
-			// else {
-				echo escape($row['recording_id']);
-			// }
-			echo "	</td>\n";
-			echo "	<td class='center'>".$row['teacher_name']."</td>\n";
-			echo "	<td class='center'>".$row['caller_id_name']."</td>\n";
-			echo "	<td class='center'>".$row['caller_id_number']."</td>\n";
-			echo "	<td class='center'>".$row['message_duration_label']."</td>\n";
-			echo "	<td class='center'>".$created_time."</td>\n";
+			echo "	<td class='left'>".$row['message_duration_label']."</td>\n";
+			
 			echo "</tr>\n";
 			$x++;
 		}
-		unset($recordings);
 	}
 
 	echo "</table>\n";
@@ -489,96 +446,5 @@
 
 //include the footer
 	require_once "resources/footer.php";
-
-//define the download function (helps safari play audio sources)
-	function range_download($file) {
-		$fp = @fopen($file, 'rb');
-
-		$size   = filesize($file); // File size
-		$length = $size;           // Content length
-		$start  = 0;               // Start byte
-		$end    = $size - 1;       // End byte
-		// Now that we've gotten so far without errors we send the accept range header
-		/* At the moment we only support single ranges.
-		* Multiple ranges requires some more work to ensure it works correctly
-		* and comply with the spesifications: http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html#sec19.2
-		*
-		* Multirange support annouces itself with:
-		* header('Accept-Ranges: bytes');
-		*
-		* Multirange content must be sent with multipart/byteranges mediatype,
-		* (mediatype = mimetype)
-		* as well as a boundry header to indicate the various chunks of data.
-		*/
-		header("Accept-Ranges: 0-$length");
-		// header('Accept-Ranges: bytes');
-		// multipart/byteranges
-		// http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html#sec19.2
-		if (isset($_SERVER['HTTP_RANGE'])) {
-
-			$c_start = $start;
-			$c_end   = $end;
-			// Extract the range string
-			list(, $range) = explode('=', $_SERVER['HTTP_RANGE'], 2);
-			// Make sure the client hasn't sent us a multibyte range
-			if (strpos($range, ',') !== false) {
-				// (?) Shoud this be issued here, or should the first
-				// range be used? Or should the header be ignored and
-				// we output the whole content?
-				header('HTTP/1.1 416 Requested Range Not Satisfiable');
-				header("Content-Range: bytes $start-$end/$size");
-				// (?) Echo some info to the client?
-				exit;
-			}
-			// If the range starts with an '-' we start from the beginning
-			// If not, we forward the file pointer
-			// And make sure to get the end byte if spesified
-			if ($range == '-') {
-				// The n-number of the last bytes is requested
-				$c_start = $size - substr($range, 1);
-			}
-			else {
-				$range  = explode('-', $range);
-				$c_start = $range[0];
-				$c_end   = (isset($range[1]) && is_numeric($range[1])) ? $range[1] : $size;
-			}
-			/* Check the range and make sure it's treated according to the specs.
-			* http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-			*/
-			// End bytes can not be larger than $end.
-			$c_end = ($c_end > $end) ? $end : $c_end;
-			// Validate the requested range and return an error if it's not correct.
-			if ($c_start > $c_end || $c_start > $size - 1 || $c_end >= $size) {
-
-				header('HTTP/1.1 416 Requested Range Not Satisfiable');
-				header("Content-Range: bytes $start-$end/$size");
-				// (?) Echo some info to the client?
-				exit;
-			}
-			$start  = $c_start;
-			$end    = $c_end;
-			$length = $end - $start + 1; // Calculate new content length
-			fseek($fp, $start);
-			header('HTTP/1.1 206 Partial Content');
-		}
-		// Notify the client the byte range we'll be outputting
-		header("Content-Range: bytes $start-$end/$size");
-		header("Content-Length: $length");
-
-		// Start buffered download
-		$buffer = 1024 * 8;
-		while(!feof($fp) && ($p = ftell($fp)) <= $end) {
-			if ($p + $buffer > $end) {
-				// In case we're only outputtin a chunk, make sure we don't
-				// read past the length
-				$buffer = $end - $p + 1;
-			}
-			set_time_limit(0); // Reset time limit for big files
-			echo fread($fp, $buffer);
-			flush(); // Free up memory. Otherwise large files will trigger PHP's memory limit.
-		}
-
-		fclose($fp);
-	}
 
 ?>
