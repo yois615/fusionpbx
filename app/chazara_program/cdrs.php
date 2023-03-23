@@ -65,6 +65,38 @@
 		exit;
 	}
 
+//define functions
+	function array2csv(array &$array) {
+		if (count($array) == 0) {
+			return null;
+		}
+		ob_start();
+		$df = fopen("php://output", 'w');
+		fputcsv($df, array_keys(reset($array)));
+		foreach ($array as $row) {
+			fputcsv($df, $row);
+		}
+		fclose($df);
+		return ob_get_clean();
+	}
+
+	function download_send_headers($filename) {
+		// disable caching
+		$now = gmdate("D, d M Y H:i:s");
+		header("Expires: Tue, 03 Jul 2001 06:00:00 GMT");
+		header("Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate");
+		header("Last-Modified: {$now} GMT");
+
+		// force download
+		header("Content-Type: application/force-download");
+		header("Content-Type: application/octet-stream");
+		header("Content-Type: application/download");
+
+		// disposition / encoding on response body
+		header("Content-Disposition: attachment;filename={$filename}");
+		header("Content-Transfer-Encoding: binary");
+	}
+
 //get post or get variables from http
 	if (count($_REQUEST) > 0) {
 		$teacher_uuid = $_REQUEST["teacher_uuid"];
@@ -212,15 +244,17 @@
 		$sql .= order_by($order_by, $order);
 	}
 
-	//pagination
-	if ($rows_per_page == 0) {
-		$sql .= " limit :limit offset 0 \n";
-		$parameters['limit'] = $_SESSION['cdr']['limit']['numeric'];
-	}
-	else {
-		$sql .= " limit :limit offset :offset \n";
-		$parameters['limit'] = $rows_per_page;
-		$parameters['offset'] = $offset;
+	if (!$_GET["action"] == "download") {
+		//pagination
+		if ($rows_per_page == 0) {
+			$sql .= " limit :limit offset 0 \n";
+			$parameters['limit'] = $_SESSION['cdr']['limit']['numeric'];
+		}
+		else {
+			$sql .= " limit :limit offset :offset \n";
+			$parameters['limit'] = $rows_per_page;
+			$parameters['offset'] = $offset;
+		}
 	}
 
 	$sql = str_replace("  ", " ", $sql);
@@ -236,6 +270,14 @@
     // print_r($result);
     // echo "</pre>";
     // exit;
+
+	if ($_GET["action"] == "download") {
+		download_send_headers("cdr_export_".date("Y-m-d").".csv");
+		echo array2csv($result);
+		exit;
+	}
+
+
 
 	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true, $result_count); //top
 	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page, false, $result_count); //bottom
@@ -269,9 +311,13 @@
 			echo "		<input type='hidden' name='show' value='all'>";
 		}
 		else {
-			echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'?type=&show=all'.($search != '' ? "&search=".urlencode($search) : null)]);
+			echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'?type=&show=all']);
 		}
 	}
+
+	echo button::create(['type'=>'button','label'=>$text['button-export'],
+						'icon'=>$_SESSION['theme']['button_icon_export'],
+						'link'=>'?action=download'. (http_build_query($_GET) ? '&'.http_build_query($_GET) : null)]);
 
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
@@ -288,7 +334,7 @@
 
     if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
 		echo "		<input type='hidden' name='show' value='all'>";
-		
+
         $sql = "select chazara_teacher_uuid, name from v_chazara_teachers ";
         $sql .= "where domain_uuid = :domain_uuid ";
         $sql .= "order by name asc ";
