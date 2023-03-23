@@ -65,6 +65,70 @@
 		exit;
 	}
 
+//get post or get variables from http
+	if (count($_REQUEST) > 0) {
+		$teacher_uuid = $_REQUEST["teacher_uuid"];
+		$caller_id_name = $_REQUEST["caller_id_name"];
+		$caller_id_number = $_REQUEST["caller_id_number"];
+		$start_stamp_begin = $_REQUEST["start_stamp_begin"];
+		$start_stamp_end = $_REQUEST["start_stamp_end"];
+		$duration_min = $_REQUEST["duration_min"];
+		$duration_max = $_REQUEST["duration_max"];
+		$order_by = $_REQUEST["order_by"];
+		$order = $_REQUEST["order"];
+	}
+
+	//validate the order
+	switch ($order) {
+		case 'asc':
+			break;
+		case 'desc':
+			break;
+		default:
+			$order = '';
+	}
+
+	//set the param variable which is used with paging
+	$param = "&teacher_uuid=".urlencode($teacher_uuid);
+	$param .= "&caller_id_name=".urlencode($caller_id_name);
+	$param .= "&caller_id_number=".urlencode($caller_id_number);
+	$param .= "&start_stamp_begin=".urlencode($start_stamp_begin);
+	$param .= "&start_stamp_end=".urlencode($start_stamp_end);
+	$param .= "&duration_min=".urlencode($duration_min);
+	$param .= "&duration_max=".urlencode($duration_max);
+
+	if (isset($order_by)) {
+		$param .= "&order_by=".urlencode($order_by)."&order=".urlencode($order);
+	}
+
+	//create the sql query to get the xml cdr records
+	if (strlen($order_by) == 0) { $order_by  = "c.start_epoch"; }
+	if (strlen($order) == 0) { $order  = "desc"; }
+
+	//limit the number of results
+	if ($_SESSION['cdr']['limit']['numeric'] > 0) {
+		$num_rows = $_SESSION['cdr']['limit']['numeric'];
+	}
+
+	//set the default paging
+	$rows_per_page = $_SESSION['domain']['paging']['numeric'];
+
+	//prepare to page the results
+	//$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50; //set on the page that includes this page
+	if (is_numeric($_GET['page'])) { $page = $_GET['page']; }
+	if (!isset($_GET['page'])) { $page = 0; $_GET['page'] = 0; }
+	$offset = $rows_per_page * $page;
+
+	//set the time zone
+	if (isset($_SESSION['domain']['time_zone']['name'])) {
+		$time_zone = $_SESSION['domain']['time_zone']['name'];
+	}
+	else {
+		$time_zone = date_default_timezone_get();
+	}
+	// $parameters['time_zone'] = $time_zone;
+
+
 //get existing recording uuid
 	$sql = "select c.call_uuid, t.name as teacher_name, r.recording_id,c.caller_id_name, c.caller_id_number, c.start_epoch, c.duration   from v_chazara_cdrs c ";
 	$sql .= "join v_chazara_teachers t on c.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -74,11 +138,84 @@
 
 	$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	$parameters['domain_uuid'] = $domain_uuid;
+
+	// if (strlen($start_stamp_begin) > 0 && strlen($start_stamp_end) > 0) {
+	// 	$sql .= "and c.start_epoch between :start_epoch and :stop_epoch ";
+	// 	$parameters['start_epoch'] = $start_stamp_begin;
+	// 	$parameters['stop_epoch'] = $start_stamp_end;
+	// }
+	// if (strlen($cdr_id) > 0) { 
+	// 	$sql .= "and cdr_id like :cdr_id \n";
+	// 	$parameters['cdr_id'] = '%'.$cdr_id.'%';
+	// }
+	// if (strlen($direction) > 0) {
+	// 	$sql .= "and direction = :direction ";
+	// 	$parameters['direction'] = $direction;
+	// }
+
+	if (strlen($teacher_uuid) > 0) {
+		$sql .= "and c.chazara_teacher_uuid = :teacher_uuid \n";
+		$parameters['teacher_uuid'] = $teacher_uuid;
+	}
+	if (strlen($caller_id_name) > 0) {
+		$mod_caller_id_name = str_replace("*", "%", $caller_id_name);
+		if (strstr($mod_caller_id_name, '%')) {
+			$sql .= "and c.caller_id_name like :caller_id_name \n";
+			$parameters['caller_id_name'] = $mod_caller_id_name;
+		}
+		else {
+			$sql .= "and c.caller_id_name = :caller_id_name \n";
+			$parameters['caller_id_name'] = $mod_caller_id_name;
+		}
+	}
+	if (strlen($caller_id_number) > 0) {
+		$mod_caller_id_number = str_replace("*", "%", $caller_id_number);
+		$mod_caller_id_number = preg_replace("#[^\+0-9.%/]#", "", $mod_caller_id_number);
+		if (strstr($mod_caller_id_number, '%')) {
+			$sql .= "and c.caller_id_number like :caller_id_number \n";
+			$parameters['caller_id_number'] = $mod_caller_id_number;
+		}
+		else {
+			$sql .= "and caller_id_number = :caller_id_number \n";
+			$parameters['caller_id_number'] = $mod_caller_id_number;
+		}
+	}
+	if (strlen($start_stamp_begin) > 0 && strlen($start_stamp_end) > 0) {
+		$sql .= "and c.start_stamp between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
+		$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+		$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
+	}
+	else {
+		if (strlen($start_stamp_begin) > 0) {
+			$sql .= "and c.start_stamp >= :start_stamp_begin \n";
+			$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+		}
+		if (strlen($start_stamp_end) > 0) {
+			$sql .= "and c.start_stamp <= :start_stamp_end \n";
+			$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
+		}
+	}
+	if (is_numeric($duration_min)) {
+		$sql .= "and c.duration >= :duration_min \n";
+		$parameters['duration_min'] = $duration_min;
+	}
+	if (is_numeric($duration_max)) {
+		$sql .= "and c.duration <= :duration_max \n";
+		$parameters['duration_max'] = $duration_max;
+	}
+	//end where
+	if (strlen($order_by) > 0) {
+		$sql .= order_by($order_by, $order);
+	}
+
+	$sql = str_replace("  ", " ", $sql);
+
     // $parameters = array();
     $database = new database;
     $result = $database->select($sql, $parameters, 'all');
 	$result_count = is_array($result) ? sizeof($result) : 0;
-    // print_r($sql); print_r($parameters); 
+	// print_r($database->message);
+    // print_r($sql); print_r($parameters); print_r($result); exit;
     unset($sql, $parameters);
     // echo "<pre>";
     // print_r($result);
@@ -303,11 +440,11 @@
         echo "			"."Teacher"."\n";
         echo "		</div>\n";
         echo "		<div class='field'>\n";
-        echo "			<select class='formfld' name='chazara_teacher_uuid' id='chazara_teacher_uuid'>\n";
+        echo "			<select class='formfld' name='teacher_uuid' id='teacher_uuid'>\n";
         echo "				<option value=''></option>";
         if (is_array($result_e) && @sizeof($result_e) != 0) {
             foreach ($result_e as &$row) {
-                $selected = ($row['chazara_teacher_uuid'] == $chazara_teacher_uuid) ? "selected" : null;
+                $selected = ($row['chazara_teacher_uuid'] == $teacher_uuid) ? "selected" : null;
                 echo "		<option value='".escape($row['chazara_teacher_uuid'])."' ".escape($selected).">".escape($row['name'])."</option>";
             }
         }
@@ -357,11 +494,11 @@
         echo "		<div class='field no-wrap'>\n";
         echo "			<select name='order_by' class='formfld'>\n";
         if (permission_exists('xml_cdr_extension')) {
-            echo "			<option value='extension' ".($order_by == 'extension' ? "selected='selected'" : null).">".$text['label-extension']."</option>\n";
+            echo "			<option value='c.chazara_teacher_uuid' ".($order_by == 'c.chazara_teacher_uuid' ? "selected='selected'" : null).">".$text['label-teacher_name']."</option>\n";
         }
-        if (permission_exists('xml_cdr_all')) {
-            echo "			<option value='domain_name' ".($order_by == 'domain_name' ? "selected='selected'" : null).">".$text['label-domain']."</option>\n";
-        }
+        // if (permission_exists('xml_cdr_all')) {
+        //     echo "			<option value='domain_name' ".($order_by == 'domain_name' ? "selected='selected'" : null).">".$text['label-domain']."</option>\n";
+        // }
         if (permission_exists('xml_cdr_caller_id_name')) {
             echo "			<option value='caller_id_name' ".($order_by == 'caller_id_name' ? "selected='selected'" : null).">".$text['label-caller_id_name']."</option>\n";
         }
@@ -369,27 +506,27 @@
             echo "			<option value='caller_id_number' ".($order_by == 'caller_id_number' ? "selected='selected'" : null).">".$text['label-caller_id_number']."</option>\n";
         }
         if (permission_exists('xml_cdr_start')) {
-            echo "			<option value='start_stamp' ".($order_by == 'start_stamp' || $order_by == '' ? "selected='selected'" : null).">".$text['label-start']."</option>\n";
+            echo "			<option value='c.start_epoch' ".($order_by == 'c.start_epoch' || $order_by == '' ? "selected='selected'" : null).">".$text['label-created']."</option>\n";
         }
         if (permission_exists('xml_cdr_duration')) {
             echo "			<option value='duration' ".($order_by == 'duration' ? "selected='selected'" : null).">".$text['label-duration']."</option>\n";
         }
-        if (permission_exists('xml_cdr_custom_fields')) {
-            if (is_array($_SESSION['cdr']['field'])) {
-                echo "			<option value='' disabled='disabled'></option>\n";
-                echo "			<optgroup label=\"".$text['label-custom_cdr_fields']."\">\n";
-                foreach ($_SESSION['cdr']['field'] as $field) {
-                    $array = explode(",", $field);
-                    $field_name = end($array);
-                    $field_label = ucwords(str_replace("_", " ", $field_name));
-                    $field_label = str_replace("Sip", "SIP", $field_label);
-                    if ($field_name != "destination_number") {
-                        echo "		<option value='".$field_name."' ".($order_by == $field_name ? "selected='selected'" : null).">".$field_label."</option>\n";
-                    }
-                }
-                echo "			</optgroup>\n";
-            }
-        }
+        // if (permission_exists('xml_cdr_custom_fields')) {
+        //     if (is_array($_SESSION['cdr']['field'])) {
+        //         echo "			<option value='' disabled='disabled'></option>\n";
+        //         echo "			<optgroup label=\"".$text['label-custom_cdr_fields']."\">\n";
+        //         foreach ($_SESSION['cdr']['field'] as $field) {
+        //             $array = explode(",", $field);
+        //             $field_name = end($array);
+        //             $field_label = ucwords(str_replace("_", " ", $field_name));
+        //             $field_label = str_replace("Sip", "SIP", $field_label);
+        //             if ($field_name != "destination_number") {
+        //                 echo "		<option value='".$field_name."' ".($order_by == $field_name ? "selected='selected'" : null).">".$field_label."</option>\n";
+        //             }
+        //         }
+        //         echo "			</optgroup>\n";
+        //     }
+        // }
         echo "			</select>\n";
         echo "			<select name='order' class='formfld'>\n";
         echo "				<option value='desc' ".($order == 'desc' ? "selected='selected'" : null).">".$text['label-descending']."</option>\n";
