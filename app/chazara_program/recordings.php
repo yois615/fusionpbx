@@ -608,7 +608,7 @@
 					echo "<audio id='recording_audio_".escape($row['chazara_recording_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['chazara_recording_uuid'])."')\" onended=\"recording_reset('".escape($row['chazara_recording_uuid'])."');\" src=\"".PROJECT_PATH."/app/chazara_program/recordings.php?a=download&type=rec&id=".urlencode($row['chazara_recording_uuid'])."\" type='".$recording_type."'></audio>";
 					echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['chazara_recording_uuid']),'onclick'=>"recording_play('".escape($row['chazara_recording_uuid'])."')"]);
 				}
-				if (permission_exists('recording_download')) {
+				if (permission_exists('chazara_recording_download')) {
 					echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"recordings.php?a=download&type=rec&t=bin&id=".urlencode($row['chazara_recording_uuid'])]);
 				}
 				echo "	</td>\n";
