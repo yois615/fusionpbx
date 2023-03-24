@@ -360,6 +360,10 @@
 		$sql .= "and t.user_uuid = :user_uuid ";
 		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	}
+	elseif (strlen($_REQUEST['teacher_uuid']) > 0) {
+		$sql .= "and r.chazara_teacher_uuid = :teacher_uuid";
+		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
+	}
 	$parameters['domain_uuid'] = $domain_uuid;
 	$sql .= order_by($order_by, $order, 'recording_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
@@ -444,6 +448,52 @@
 
 	echo $text['description']."\n";
 	echo "<br /><br />\n";
+
+
+
+    if (permission_exists('chazara_recording_all') && $_REQUEST['show'] == 'all') {
+
+		//basic search of call detail records
+        $sql = "select chazara_teacher_uuid, name, grade from v_chazara_teachers ";
+        $sql .= "where domain_uuid = :domain_uuid ";
+        $sql .= "order by name asc ";
+        $parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+        $database = new database;
+        $result_e = $database->select($sql, $parameters, 'all');
+		echo "<form name='frm' id='frm' method='get'>\n";
+		echo "<input type='hidden' name='show' value='all'>";
+		echo "<div class='form_grid'>\n";
+        echo "	<div class='form_set'>\n";
+        echo "		<div class='label'>\n";
+        echo "			"."Teacher"."\n";
+        echo "		</div>\n";
+        echo "		<div class='field'>\n";
+        echo "			<select class='formfld' name='teacher_uuid' id='teacher_uuid'>\n";
+        echo "				<option value=''></option>";
+        if (is_array($result_e) && @sizeof($result_e) != 0) {
+            foreach ($result_e as &$row) {
+                $selected = ($row['chazara_teacher_uuid'] == $_REQUEST['teacher_uuid']) ? "selected" : null;
+                echo "		<option value='".escape($row['chazara_teacher_uuid'])."' ".escape($selected).">".escape($row['grade'])."-".escape($row['name'])."</option>";
+            }
+        }
+        echo "			</select>\n";
+        echo "		</div>\n";
+        echo "	</div>\n";
+		echo "</div>\n";
+        unset($sql, $parameters, $result_e, $row, $selected);
+
+		button::$collapse = false;
+		echo "<div style='float: left; padding-top: 15px; margin-left: 20px; white-space: nowrap;'>";
+		echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','link'=>'recordings.php']);
+		echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_save','name'=>'submit']);
+		//echo "</div>\n";
+		echo "<div style='font-size: 85%; padding-top: 12px; margin-bottom: 40px;'>".$text['description_search']."</div>\n";
+
+		echo "</div>\n</form>\n";
+
+		echo "<br /><br />\n";
+
+	}
 
 	echo "<form id='form_list' method='post'>\n";
 	echo "<input type='hidden' id='action' name='action' value=''>\n";
