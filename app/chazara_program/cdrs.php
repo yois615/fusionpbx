@@ -166,7 +166,7 @@
 
 
 //get existing recording uuid
-	$sql_rows = "select c.call_uuid, t.name as teacher_name, r.recording_id,c.caller_id_name, c.caller_id_number, c.start_epoch, c.duration ";
+	$sql_rows = "select c.call_uuid, t.name as teacher_name, t.grade, r.recording_id,c.caller_id_name, c.caller_id_number, c.start_epoch, c.duration ";
 	$sql_cnt = "select count(*) as cnt ";
 	$sql = "from v_chazara_cdrs c ";
 	$sql .= "join v_chazara_teachers t on c.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -464,7 +464,7 @@
 			echo "	<td class='left'>".$row['caller_id_number']."</td>\n";
 
 			if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
-				echo "	<td class='left'>".$row['teacher_name']."</td>\n";
+				echo "	<td class='left'>".$row['grade']."-".$row['teacher_name']."</td>\n";
 			}
 
 			echo "	<td class='left'>";
