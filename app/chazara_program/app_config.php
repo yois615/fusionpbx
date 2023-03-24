@@ -156,7 +156,7 @@
 		$apps[$x]['db'][$y]['table']['name'] = "v_chazara_teachers";
 		$apps[$x]['db'][$y]['table']['parent'] = "";
 		$z=0;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = "chazara_teachers_uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "chazara_teacher_uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";

@@ -129,6 +129,8 @@
 					$p = new permissions;
 					$p->add('chazara_ivr_recording_add', 'temp');
 					$p->add('chazara_ivr_recording_edit', 'temp');
+					$p->add('chazara_ivr_add', 'temp');
+					$p->add('chazara_ivr_edit', 'temp');
 
 				//save to the data
 					$database = new database;
@@ -141,6 +143,8 @@
 				//remove temporary permissions
 					$p->delete('chazara_ivr_recording_add', 'temp');
 					$p->delete('chazara_ivr_recording_edit', 'temp');
+					$p->delete('chazara_ivr_add', 'temp');
+					$p->delete('chazara_ivr_edit', 'temp');
 
 				//set the message and redirect
 
