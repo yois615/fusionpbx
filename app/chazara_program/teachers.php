@@ -135,10 +135,10 @@
     $sql = str_replace('count(*)', '*', $sql);
     if ($order_by == '' || $order_by == 'chazara_teacher_uuid') {
         if ($db_type == 'pgsql') {
-            $sql .= 'order by grade asc order by parallel asc'.$order; //function in app_defaults.php
+            $sql .= 'order by grade asc, parallel_class_id asc'.$order; //function in app_defaults.php
         }
         else {
-            $sql .= 'order by grade asc order by parallel asc'.$order;
+            $sql .= 'order by grade asc, parallel_class_id asc'.$order;
         }
     }
     else {
