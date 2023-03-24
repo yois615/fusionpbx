@@ -335,7 +335,7 @@
     if (permission_exists('chazara_cdrs_all') && $_REQUEST['show'] == 'all') {
 		echo "		<input type='hidden' name='show' value='all'>";
 
-        $sql = "select chazara_teacher_uuid, name from v_chazara_teachers ";
+        $sql = "select chazara_teacher_uuid, name, grade from v_chazara_teachers ";
         $sql .= "where domain_uuid = :domain_uuid ";
         $sql .= "order by name asc ";
         $parameters['domain_uuid'] = $_SESSION['domain_uuid'];
