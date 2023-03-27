@@ -34,7 +34,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('chazara_teacher_add') || permission_exists('chazara_teachers_edit')) {
+	if (permission_exists('chazara_teacher_add') || permission_exists('chazara_teacher_edit')) {
 		//access granted
 	}
 	else {
