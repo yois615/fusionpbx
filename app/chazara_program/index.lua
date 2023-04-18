@@ -345,7 +345,7 @@ if teacher_auth == true then
         local function verify_recording(recording_uuid, recording_filename)
             local incomplete = true;
             local timeout = 0;
-            while (incomplete and timeout < 3 and session:ready()) do
+            while (incomplete and timeout < 3) do
 
                 dtmf_digits = "";
                 session:flushDigits();
