@@ -93,6 +93,7 @@ debug["sql"] = false;
 			if (row.device_uuid_alternate ~= nil) then
 				device_mac_address = row.device_mac_address;
                 device_emergency_cid = row.device_emergency_cid;
+				location = row.device_location;
                 freeswitch.consoleLog("NOTICE", 
                     "[e911] device_mac_address: ".. device_mac_address .. ", device_emergency_cid " .. device_emergency_cid .. "\n");
 			end
@@ -102,4 +103,6 @@ debug["sql"] = false;
 -- If we got a device_emergency_cid then set it
     if (device_emergency_cid ~= nil and string.len(device_emergency_cid) > 0) then
         session:setVariable('effective_caller_id_number', device_emergency_cid);
+		--For BulkVS
+		--session:setVariable('sip_h_X-ng911', location);
     end
