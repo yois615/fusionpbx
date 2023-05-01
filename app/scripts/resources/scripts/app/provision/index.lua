@@ -70,24 +70,29 @@
 	if (not default_dialect) then default_dialect = 'us'; end
 	if (not default_voice) then default_voice = 'callie'; end
 
---get the user id
-	min_digits = 2;
-	max_digits = 20;
-	user_id = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", "phrase:voicemail_enter_id:#", "", "\\d+");
-	--user_id = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-please_enter_extension_followed_by_pound.wav", "", "\\d+");
-
---get the user password
-	min_digits = 2;
-	max_digits = 20;
-	password = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", "phrase:voicemail_enter_pass:#", "", "\\d+");
-	--password = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-please_enter_pin_followed_by_pound.wav", "", "\\d+");
-
 --get the user and domain name from the user argv user@domain
 	sip_from_uri = session:getVariable("sip_from_uri");
 	user_table = explode("@",sip_from_uri);
 	domain_table = explode(":",user_table[2]);
 	user = user_table[1];
 	domain = domain_table[1];
+
+-- Collect user and password from caller if logging in
+	if action == "login" then
+		--get the user id
+			min_digits = 2;
+			max_digits = 20;
+			user_id = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", "phrase:voicemail_enter_id:#", "", "\\d+");
+			--user_id = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-please_enter_extension_followed_by_pound.wav", "", "\\d+");
+
+		--get the user password
+			min_digits = 2;
+			max_digits = 20;
+			password = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", "phrase:voicemail_enter_pass:#", "", "\\d+");
+			--password = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-please_enter_pin_followed_by_pound.wav", "", "\\d+");
+	end
+
+
 
 --show the phone that will be overridden
 	if (sip_from_uri ~= nil) then
@@ -138,12 +143,15 @@
 	end
 
 --authentication failed
-	if (authorized == 'false') then
+	if (action == 'login' and authorized == 'false') then
 		result = session:streamFile(sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/voicemail/vm-fail_auth.wav");
 	end
 
 --this device already has an alternate find the correct device_uuid and then override current one
-	if (authorized == 'true' and action == "login" and device_uuid_alternate ~= nil and device_uuid ~= nil and domain_uuid ~= nil) then
+	if
+	(action == 'logout' and device_uuid ~= nil and domain_uuid ~= nil)
+	or 
+	(authorized == 'true' and action == "login" and device_uuid_alternate ~= nil and device_uuid ~= nil and domain_uuid ~= nil) then
 		local sql = [[SELECT * FROM v_devices ]];
 		sql = sql .. [[WHERE device_uuid_alternate = :device_uuid ]];
 		sql = sql .. [[AND domain_uuid = :domain_uuid ]];
@@ -218,10 +226,10 @@
 	end
 
 --remove the override to the device uuid (logout)
-	if (authorized == 'true' and action == "logout") then
-		if (device_uuid_alternate ~= nil and device_uuid ~= nil and domain_uuid ~= nil) then
+	if (action == "logout") then
+		if (device_uuid ~= nil and domain_uuid ~= nil) then
 			local sql = [[UPDATE v_devices SET device_uuid_alternate = null ]];
-			sql = sql .. [[WHERE device_uuid_alternate = :device_uuid ]];
+			sql = sql .. [[WHERE device_uuid = :device_uuid ]];
 			sql = sql .. [[AND domain_uuid = :domain_uuid ]];
 			local params = {device_uuid = device_uuid, domain_uuid = domain_uuid};
 			if (debug["sql"]) then
@@ -232,7 +240,7 @@
 	end
 
 --found the device send a sync command
-	if (authorized == 'true') then
+	if (authorized == 'true') or (action == 'logout') then
 		--get the sip profile
 			api = freeswitch.API();
 			local sofia_contact = trim(api:executeString("sofia_contact */"..user.."@"..domain));
