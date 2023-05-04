@@ -124,6 +124,7 @@ if ($domains_processed == 1) {
 					}
 					if (strlen($row['queue_cid_prefix']) > 0) {
 						$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".$row['queue_cid_prefix']."#\${caller_id_name}\"/>\n";
+						$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=".$row['queue_cid_prefix']."#\${caller_id_name}\"/>\n";
 					}
 					if (strlen($row['queue_cc_exit_keys']) > 0) {
 						$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".$row['queue_cc_exit_keys']."\"/>\n";
