@@ -123,7 +123,7 @@ if caller_type == "8" then
 end
 
 -- Play grade menu, first find max grade
-    local sql = [[SELECT MAX(grade) as max_grade FROM v_chazara_teachers
+    local sql = [[SELECT DISTINCT MAX(grade) as max_grade, COUNT(grade) as grade_count FROM v_chazara_teachers
             WHERE domain_uuid = :domain_uuid]];
     local params = {
         domain_uuid = domain_uuid,
@@ -133,6 +133,7 @@ end
     end
     dbh:query(sql, params, function(row)
         max_grade = row["max_grade"];
+        grade_count = row["grade_count"];
     end);
     if tonumber(max_grade) > 9 then
         grade_max_digits = 2;
@@ -146,7 +147,21 @@ local exit = false;
 local timeout = 0;
 parallel_recording = nil;
 while (session:ready() and exit == false) do
-    grade = session:playAndGetDigits(1, grade_max_digits, 3, digit_timeout, "#", recordings_dir .. grade_recording, "", "");
+    if tonumber(grade_count) == 1 then
+        -- There is only one grade, skip menu
+        local sql = [[SELECT DISTINCT grade FROM v_chazara_teachers WHERE domain_uuid = :domain_uuid]];
+        local params = {
+            domain_uuid = domain_uuid,
+        };
+        if (debug["sql"]) then
+            freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+        end
+        dbh:query(sql, params, function(row)
+            grade = row["grade"];
+        end);
+    else
+        grade = session:playAndGetDigits(1, grade_max_digits, 3, digit_timeout, "#", recordings_dir .. grade_recording, "", "");
+    end
     if grade == "*" then goto start_menu; end;
     if tonumber(grade) ~= nil then
         -- Inspect database if that grade exists, and how many parallels
