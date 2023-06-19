@@ -143,7 +143,11 @@
 					$obj = new switch_recordings;
 					$obj->delete($array);
 				//redirect
-					header('Location: recordings.php');
+					$header = 'Location: recordings.php';
+					if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+						$header .= "&show=all";
+					}
+					header($header);
 					exit;
 			}
 		}
@@ -152,7 +156,11 @@
 		$token = new token;
 		if (!$token->validate($_SERVER['PHP_SELF'])) {
 			message::add($text['message-invalid_token'],'negative');
-			header('Location: recordings.php');
+			$header = 'Location: recordings.php';
+			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+				$header .= "&show=all";
+			}
+			header($header);
 			exit;
 		}
 
@@ -204,8 +212,12 @@
 				message::add($text['message-update']);
 
 			//redirect
-				header("Location: recordings.php");
-				exit;
+			$header = 'Location: recordings.php';
+			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+				$header .= "&show=all";
+			}
+			header($header);
+			exit;
 		}
 	}
 }
