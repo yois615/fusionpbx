@@ -145,7 +145,7 @@
 				//redirect
 					$header = 'Location: recordings.php';
 					if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-						$header .= "&show=all";
+						$header .= "?show=all";
 					}
 					header($header);
 					exit;
@@ -158,7 +158,7 @@
 			message::add($text['message-invalid_token'],'negative');
 			$header = 'Location: recordings.php';
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-				$header .= "&show=all";
+				$header .= "?show=all";
 			}
 			header($header);
 			exit;
@@ -214,7 +214,7 @@
 			//redirect
 			$header = 'Location: recordings.php';
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-				$header .= "&show=all";
+				$header .= "?show=all";
 			}
 			header($header);
 			exit;
