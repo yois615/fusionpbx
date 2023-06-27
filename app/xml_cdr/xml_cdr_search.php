@@ -282,6 +282,52 @@
 		echo "		</td>";
 		echo "	</tr>\n";
 
+		echo "	<tr>";
+		echo "		<td class='vncell'>".$text['label-queue_name']."</td>";
+		echo "		<td class='vtable'>";
+		echo "			<select class='formfld' name='call_center_queue_uuid' id='call_center_queue_uuid'>\n";
+		echo "				<option value=''></option>";
+		$sql = "select queue_name, call_center_queue_uuid from v_call_center_queues ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "order by queue_name asc";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$database = new database;
+		$call_center_queues = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+		if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
+			foreach ($call_center_queues as &$row) {
+				$selected = ($row['call_center_queue_uuid'] == $call_center_queue_uuid) ? "selected" : null;
+				echo "			<option value='".escape($row['call_center_queue_uuid'])."' ".escape($selected).">".(escape($row['queue_name']))."</option>";
+			}
+		}
+		unset($sql, $parameters, $call_center_queues, $row, $selected);
+		echo "			</select>\n";
+		echo "		</td>";
+		echo "	</tr>";
+
+		echo "	<tr>";
+		echo "		<td class='vncell'>".$text['label-call_center_agent_name']."</td>";
+		echo "		<td class='vtable'>";
+		echo "			<select class='formfld' name='call_center_agent_uuid' id='call_center_agent_uuid'>\n";
+		echo "				<option value=''></option>";
+		$sql = "select call_center_agent_uuid, agent_name from v_call_center_agents ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "order by agent_name asc";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$database = new database;
+		$call_center_agents = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+		if (is_array($call_center_agents) && @sizeof($call_center_agents) != 0) {
+			foreach ($call_center_agents as &$row) {
+				$selected = ($row['call_center_agent_uuid'] == $call_center_agent_uuid) ? "selected" : null;
+				echo "			<option value='".escape($row['call_center_agent_uuid'])."' ".escape($selected).">".(escape($row['agent_name']))."</option>";
+			}
+		}
+		unset($sql, $parameters, $call_center_agents, $row, $selected);
+		echo "			</select>\n";
+		echo "		</td>";
+		echo "	</tr>";
+
 		echo "</table>\n";
 	
 	echo "		</td>";

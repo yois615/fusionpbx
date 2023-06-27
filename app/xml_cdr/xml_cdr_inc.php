@@ -79,6 +79,8 @@
 		$tta_min = $_REQUEST['tta_min'];
 		$tta_max = $_REQUEST['tta_max'];
 		$recording = $_REQUEST['recording'];
+		$call_center_queue_uuid = $_REQUEST["call_center_queue_uuid"];
+		$call_center_agent_uuid = $_REQUEST["call_center_agent_uuid"];
 		$order_by = $_REQUEST["order_by"];
 		$order = $_REQUEST["order"];
 		if (is_array($_SESSION['cdr']['field'])) {
@@ -172,6 +174,8 @@
 	$param .= "&tta_min=".urlencode($tta_min);
 	$param .= "&tta_max=".urlencode($tta_max);
 	$param .= "&recording=".urlencode($recording);
+	$param .= "&call_center_queue_uuid=".urlencode($call_center_queue_uuid);
+	$param .= "&call_center_agent_uuid=".urlencode($call_center_agent_uuid);
 	if (is_array($_SESSION['cdr']['field'])) {
 		foreach ($_SESSION['cdr']['field'] as $field) {
 			$array = explode(",", $field);
@@ -238,12 +242,20 @@
 	$sql .= "e.extension, \n";
 	$sql .= "c.start_stamp, \n";
 	$sql .= "c.end_stamp, \n";
-	$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-	$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
-	$sql .= "c.start_epoch, \n";
 	$sql .= "c.hangup_cause, \n";
 	$sql .= "c.duration, \n";
-	$sql .= "c.billmsec, \n";
+	if (strlen($call_center_agent_uuid) == 0) {
+		$sql .= "c.start_epoch, \n";
+		$sql .= "c.billmsec, \n";
+		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+	} else {
+		$sql .= "c.json->'variables'->>'cc_queue_answered_epoch' as start_epoch, \n";
+		$sql .= "to_char(timezone(:time_zone, to_timestamp(CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC))), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, to_timestamp(CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC))), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "(c.end_epoch - CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC)) * 1000 as billmsec, \n";
+	}
+	
 	$sql .= "c.missed_call, \n";
 	$sql .= "c.record_path, \n";
 	$sql .= "c.record_name, \n";
@@ -304,7 +316,7 @@
 		}
 	}
 	if (strlen($start_epoch) > 0 && strlen($stop_epoch) > 0) {
-		$sql .= "and start_epoch between :start_epoch and :stop_epoch \n";
+		$sql .= "and ".((strlen($call_center_agent_uuid) == 0) ? "start_epoch " : "cc_queue_answered_epoch ")."between :start_epoch and :stop_epoch \n";
 		$parameters['start_epoch'] = $start_epoch;
 		$parameters['stop_epoch'] = $stop_epoch;
 	}
@@ -538,6 +550,16 @@
 	if (strlen($network_addr) > 0) {
 		$sql .= "and network_addr like :network_addr \n";
 		$parameters['network_addr'] = '%'.$network_addr.'%';
+	}
+	if (strlen($call_center_agent_uuid) > 0) {
+		$sql .= "and json->'variables'->>'cc_agent' = :call_center_agent_uuid \n";
+		$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+	}
+	if (strlen($call_center_queue_uuid) > 0) {
+		$sql .= "and json->'variables'->>'call_center_queue_uuid' = :call_center_queue_uuid \n";
+		$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 	}
 	//if (strlen($mos_comparison) > 0 && strlen($mos_score) > 0 ) {
 	//	$sql .= "and rtp_audio_in_mos = :mos_comparison :mos_score ";

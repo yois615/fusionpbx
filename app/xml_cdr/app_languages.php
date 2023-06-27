@@ -1743,6 +1743,10 @@ $text['label-end_date_time']['ru-ru'] = "Конечная дата/время";
 $text['label-end_date_time']['sv-se'] = "Slut Datum/Tid";
 $text['label-end_date_time']['uk-ua'] = "";
 
+$text['label-call_center_agent_name']['en-us'] = "Queue Agent";
+
+$text['label-queue_name']['en-us'] = "Queue Name";
+
 $text['label-duration']['en-us'] = "Duration";
 $text['label-duration']['en-gb'] = "Duration";
 $text['label-duration']['ar-eg'] = "";
