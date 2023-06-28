@@ -306,6 +306,14 @@
 		echo "	</tr>";
 
 		echo "	<tr>";
+		echo "		<td class='vncell'>".$text['label-call_center_abandoned']."</td>";
+		echo "		<td class='vtable'>";
+		echo "      	<input type='checkbox' name='call_center_abandoned' id='call_center_abandoned'>\n";
+		echo "		</td>";
+		echo "	</tr>";
+
+
+		echo "	<tr>";
 		echo "		<td class='vncell'>".$text['label-call_center_agent_name']."</td>";
 		echo "		<td class='vtable'>";
 		echo "			<select class='formfld' name='call_center_agent_uuid' id='call_center_agent_uuid'>\n";

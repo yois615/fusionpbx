@@ -80,6 +80,7 @@
 		$tta_max = $_REQUEST['tta_max'];
 		$recording = $_REQUEST['recording'];
 		$call_center_queue_uuid = $_REQUEST["call_center_queue_uuid"];
+		$call_center_abandoned = $_REQUEST["call_center_abandoned"];
 		$call_center_agent_uuid = $_REQUEST["call_center_agent_uuid"];
 		$order_by = $_REQUEST["order_by"];
 		$order = $_REQUEST["order"];
@@ -175,6 +176,7 @@
 	$param .= "&tta_max=".urlencode($tta_max);
 	$param .= "&recording=".urlencode($recording);
 	$param .= "&call_center_queue_uuid=".urlencode($call_center_queue_uuid);
+	$param .= "&call_center_abandoned=".urlencode($call_center_abandoned);
 	$param .= "&call_center_agent_uuid=".urlencode($call_center_agent_uuid);
 	if (is_array($_SESSION['cdr']['field'])) {
 		foreach ($_SESSION['cdr']['field'] as $field) {
@@ -558,7 +560,11 @@
 	}
 	if (strlen($call_center_queue_uuid) > 0) {
 		$sql .= "and json->'variables'->>'call_center_queue_uuid' = :call_center_queue_uuid \n";
-		$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+		if ($call_center_abandoned != 'on') {
+			$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+		} else {
+			$sql .= "and json->'variables'->>'cc_cause' = 'cancel' \n";
+		}
 		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 	}
 	//if (strlen($mos_comparison) > 0 && strlen($mos_score) > 0 ) {
