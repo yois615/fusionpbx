@@ -832,6 +832,46 @@
 	echo "</table>\n";
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
+	// Queue stats
+	if (strlen($call_center_queue_uuid) > 0) {
+		echo "	<div class='heading'>";
+		echo "<b>".$text['title-call_queue_stats']."</b>";
+		echo "</div>\n";
+		echo "<br>\n";
+
+		$sql = "select AVG(CAST(json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC) \n";
+		$sql .= "- CAST(json->'variables'->>'cc_queue_joined_epoch' AS NUMERIC)) \n";
+		$sql .= "from v_xml_cdr \n";
+		$sql .= "where json->'variables'->>'call_center_queue_uuid' = :call_center_queue_uuid \n";
+		$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+		$sql .= "and CAST(json->'variables'->>'cc_queue_joined_epoch' AS NUMERIC) > :search_period \n";
+		$sql .= "and domain_uuid = :domain_uuid \n";
+		$parameters['domain_uuid'] = $domain_uuid;
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+
+		//One Hour
+		$parameters['search_period'] = time() - 3600;
+		$database = new database;
+		$hour_avg_hold = $database->select($sql, $parameters, 'row');
+		echo "Average hold time over the last hour: " . round($hour_avg_hold['avg']). " seconds";
+		echo "<br>";
+				
+		//One Day
+		$parameters['search_period'] = time() - 86400;
+		$database = new database;
+		$day_avg_hold = $database->select($sql, $parameters, 'row');
+		//print_r($database->message);
+		echo "Average hold time over the last 24 hours: " . round($day_avg_hold['avg']). " seconds";
+		echo "<br>";
+
+		//One Week
+		$parameters['search_period'] = time() - 604800;
+		$database = new database;
+		$week_avg_hold = $database->select($sql, $parameters, 'row');
+		echo "Average hold time over the last week: " . round($week_avg_hold['avg']). " seconds";
+		echo "<br>";
+
+	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 	echo "</form>\n";
 
