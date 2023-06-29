@@ -88,12 +88,42 @@ function download_send_headers($filename) {
 	    $database = new database;
 	    $vote_results = $database->select($sql, $parameters, 'all');
 	    unset($sql, $parameters);
+
+		//delete the voicemails
+		$voicemail_id = '250';
+		//Get the VM uuid
+		$sql = "SELECT voicemail_uuid FROM v_voicemails ";
+		$sql .= "WHERE domain_uuid = :domain_uuid ";
+		$sql .= "AND voicemail_id = :voicemail_id ";
+		$parameters['domain_uuid'] = $_SESSION['domain_name'];
+		$parameters['voicemail_id'] = $voicemail_id;
+		$database = new database;
+		$voicemail_uuid = $database->select($sql, $parameters, 'column');
+		unset($sql, $parameters);
+		if (empty($voicemail_uuid)) {
+			$voicemail_uuid = '8b1f7c2c-46a0-4fcd-b2d7-6ba8c7b52433';
+		}
+
+		//Clean the table
+		$sql = "DELETE FROM v_voicemail_messages ";
+		$sql .= "WHERE voicemail_uuid = :voicemail_uuid ";
+		$parameters['voicemail_uuid'] = $voicemail_uuid;
+		$database = new database;
+		$result = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters, $result);
+
+		// Remove the recordings
+		$file_path = $_SESSION['switch']['voicemail']['dir']."/default/".$_SESSION['domain_name']."/".$voicemail_id;
+		foreach (glob($file_path."/msg_*.*") as $file_name) {
+			@unlink($file_name); //remove all recordings
+		}
 		header('Location: circle_votes.php'.($search != '' ? '?search='.urlencode($search) : null));
 		exit;
 	}
 
 	if ($_GET["action"] == "download") {
-		$sql = "select vote,count(vote) FROM circle_tt_votes GROUP BY vote ORDER BY count DESC ";
+		$sql = "select c.caller_id_name, c.caller_id_number, v.age, v.gender, c.zip, v.vote FROM circle_tt_votes v INNER JOIN circle_customer c ";
+		$sql .= "ON v.customer_id = c.customer_id ORDER BY vote ASC";
 		$database = new database;
 		$vote_results = $database->select($sql, null, 'all');
 		unset($sql, $parameters);

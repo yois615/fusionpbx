@@ -37,6 +37,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'caller_id_name';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'zip';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'circle_tt_votes';
@@ -56,6 +59,12 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'gender';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'age';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 
 ?>
