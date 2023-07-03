@@ -154,6 +154,7 @@ function download_send_headers($filename) {
 	$sql = "select AVG(vote) as vote_average, sequence_id FROM v_circle_survey_votes ";
 	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
 	$sql .= "AND domain_uuid = :domain_uuid ";
+	$sql .= "AND vote > 0 ";
 	$sql .= "GROUP BY sequence_id ";
 	$sql .= order_by($order_by, $order, 'sequence_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
