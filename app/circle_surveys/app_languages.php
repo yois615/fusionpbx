@@ -39,6 +39,12 @@
 		$text['label-zip_code_file']['en-us'] = "Zip Code question";
 
 		$text['label-exit_action']['en-us'] = "Exit Action";
+
+		$text['button-male']['en-us'] = "Male";
+
+		$text['button-female']['en-us'] = "Female";
+
+		$text['button-all']['en-us'] = "All";
 		
 
 ?>

@@ -141,9 +141,16 @@ function download_send_headers($filename) {
 	unset($sql, $parameters);
 
 //get the count
-	$sql = "select count(DISTINCT circle_survey_customer_uuid) from v_circle_survey_votes ";
-	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
-	$sql .= "AND domain_uuid = :domain_uuid ";
+	$sql = "select count(DISTINCT v.circle_survey_customer_uuid) from v_circle_survey_votes v ";
+	$sql .= "INNER JOIN v_circle_survey_customer c ";
+	$sql .= "ON v.circle_survey_customer_uuid = c.circle_survey_customer_uuid ";
+	$sql .= "WHERE v.circle_survey_uuid = :circle_survey_uuid ";
+	if ($_REQUEST['gender'] == "male"){
+		$sql .= "AND c.gender = 'male' ";
+	} elseif ($_REQUEST['gender'] == "female") {
+		$sql .= "AND c.gender = 'female' ";
+	}
+	$sql .= "AND v.domain_uuid = :domain_uuid ";
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 	$database = new database;
@@ -151,11 +158,17 @@ function download_send_headers($filename) {
 	unset($sql, $parameters);
 
 //get the list
-	$sql = "select AVG(vote) as vote_average, sequence_id FROM v_circle_survey_votes ";
-	$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid ";
-	$sql .= "AND domain_uuid = :domain_uuid ";
-	$sql .= "AND vote > 0 ";
-	$sql .= "GROUP BY sequence_id ";
+	$sql = "select AVG(vote) as vote_average, sequence_id FROM v_circle_survey_votes v ";
+	$sql .= "INNER JOIN v_circle_survey_customer c ";
+	$sql .= "ON v.circle_survey_customer_uuid = c.circle_survey_customer_uuid ";
+	$sql .= "WHERE v.circle_survey_uuid = :circle_survey_uuid ";
+	if ($_REQUEST['gender'] == "male"){
+		$sql .= "AND c.gender = 'male' ";
+	} elseif ($_REQUEST['gender'] == "female") {
+		$sql .= "AND c.gender = 'female' ";
+	}
+	$sql .= "AND v.domain_uuid = :domain_uuid ";
+	$sql .= "GROUP BY v.sequence_id ";
 	$sql .= order_by($order_by, $order, 'sequence_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
@@ -180,6 +193,17 @@ function download_send_headers($filename) {
 
 	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_survey.php']);
 	echo button::create(['type'=>'button','label'=>'Pick random winner','link'=>'circle_survey_winner.php?id='.$circle_survey_uuid]);
+
+	if (!$_REQUEST['gender']){
+	echo button::create(['type'=>'button','label'=>$text['button-male'],'link'=>'circle_survey_votes.php?gender=male&id='.$circle_survey_uuid]);
+	echo button::create(['type'=>'button','label'=>$text['button-female'],'link'=>'circle_survey_votes.php?gender=female&id='.$circle_survey_uuid]);
+	} elseif ($_REQUEST['gender'] == "male"){
+		echo button::create(['type'=>'button','label'=>$text['button-all'],'link'=>'circle_survey_votes.php?&id='.$circle_survey_uuid]);
+		echo button::create(['type'=>'button','label'=>$text['button-female'],'link'=>'circle_survey_votes.php?gender=female&id='.$circle_survey_uuid]);
+	} elseif ($_REQUEST['gender'] == "female"){
+		echo button::create(['type'=>'button','label'=>$text['button-male'],'link'=>'circle_survey_votes.php?gender=male&id='.$circle_survey_uuid]);
+		echo button::create(['type'=>'button','label'=>$text['button-all'],'link'=>'circle_survey_votes.php?&id='.$circle_survey_uuid]);
+	}
 
 	if (permission_exists('circle_survey_edit')) {
 		echo button::create(['type'=>'button','label'=>'Configure Survey','link'=>'circle_survey_edit.php?id='.$circle_survey_uuid]);
