@@ -162,6 +162,9 @@
 	echo "		<input type='hidden' name='remote_media_ip' value='".escape($remote_media_ip)."'>\n";
 	echo "		<input type='hidden' name='network_addr' value='".escape($network_addr)."'>\n";
 	echo "		<input type='hidden' name='bridge_uuid' value='".escape($bridge_uuid)."'>\n";
+	echo "		<input type='hidden' name='call_center_queue_uuid' value='".escape($call_center_queue_uuid)."'>\n";
+	echo "		<input type='hidden' name='call_center_abandoned' value='".escape($call_center_abandoned)."'>\n";
+	echo "		<input type='hidden' name='call_center_agent_uuid' value='".escape($call_center_agent_uuid)."'>\n";
 	echo "		<input type='hidden' name='leg' value='".escape($leg)."'>\n";
 	if (permission_exists('xml_cdr_all') && $_REQUEST['show'] == 'all') {
 		echo "	<input type='hidden' name='show' value='all'>\n";
