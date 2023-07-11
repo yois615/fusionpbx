@@ -591,6 +591,9 @@
 	if (permission_exists('xml_cdr_duration')) {
 		echo "<th class='center hide-sm-dn'>".$text['label-duration']."</th>\n";
 		$col_count++;
+		if (strlen($result[0]['agent_talk_time']) > 0) {
+			echo "<th class='center hide-sm-dn'>".$text['label-agent_talk_time']."</th>\n";
+		}
 	}
 	if (permission_exists('xml_cdr_pdd')) {
 		echo "<th class='right hide-md-dn' title=\"".$text['description-pdd']."\">".$text['label-pdd']."</th>\n";
@@ -796,6 +799,9 @@
 				//duration
 					if (permission_exists('xml_cdr_duration')) {
 						$content .= "	<td class='middle center hide-sm-dn'>".gmdate("G:i:s", $seconds)."</td>\n";
+						if (strlen($result[0]['agent_talk_time']) > 0) {
+							$content .= "	<td class='middle center hide-sm-dn'>".(($row['agent_talk_time'] >= 0) ? $row['agent_talk_time']."s" : "&nbsp;")."</td>\n";
+						}
 					}
 				//pdd (post dial delay)
 					if (permission_exists("xml_cdr_pdd")) {

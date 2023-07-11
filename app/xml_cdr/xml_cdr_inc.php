@@ -246,16 +246,22 @@
 	$sql .= "c.end_stamp, \n";
 	$sql .= "c.hangup_cause, \n";
 	$sql .= "c.duration, \n";
-	if (strlen($call_center_agent_uuid) == 0) {
+	if (strlen($call_center_agent_uuid) == 0 && strlen($call_center_queue_uuid) == 0) {
 		$sql .= "c.start_epoch, \n";
 		$sql .= "c.billmsec, \n";
 		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
 		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
-	} else {
+	} elseif (strlen($call_center_agent_uuid) > 0) {
 		$sql .= "c.json->'variables'->>'cc_queue_answered_epoch' as start_epoch, \n";
 		$sql .= "to_char(timezone(:time_zone, to_timestamp(CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC))), 'DD Mon YYYY') as start_date_formatted, \n";
 		$sql .= "to_char(timezone(:time_zone, to_timestamp(CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC))), 'HH12:MI:SS am') as start_time_formatted, \n";
 		$sql .= "(c.end_epoch - CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC)) * 1000 as billmsec, \n";
+	} elseif (strlen($call_center_queue_uuid) > 0) {
+		$sql .= "c.start_epoch, \n";
+		$sql .= "c.billmsec, \n";
+		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "(c.end_epoch - CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC)) as agent_talk_time, \n";
 	}
 	
 	$sql .= "c.missed_call, \n";

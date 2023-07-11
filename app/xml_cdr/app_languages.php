@@ -1749,6 +1749,8 @@ $text['label-queue_name']['en-us'] = "Queue Name";
 
 $text['label-call_center_abandoned']['en-us'] = "CC Abandoned";
 
+$text['label-agent_talk_time']['en-us'] = "CC talk time";
+
 $text['title-call_queue_stats']['en-us'] = "Call Center Queue Stats";
 
 $text['label-duration']['en-us'] = "Duration";
