@@ -800,7 +800,7 @@
 					if (permission_exists('xml_cdr_duration')) {
 						$content .= "	<td class='middle center hide-sm-dn'>".gmdate("G:i:s", $seconds)."</td>\n";
 						if (strlen($result[0]['agent_talk_time']) > 0) {
-							$content .= "	<td class='middle center hide-sm-dn'>".(($row['agent_talk_time'] >= 0) ? $row['agent_talk_time']."s" : "&nbsp;")."</td>\n";
+							$content .= "	<td class='middle center hide-sm-dn'>".(($row['agent_talk_time'] >= 0) ? gmdate("G:i:s", $row['agent_talk_time']) : "&nbsp;")."</td>\n";
 						}
 					}
 				//pdd (post dial delay)
