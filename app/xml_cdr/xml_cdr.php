@@ -842,18 +842,20 @@
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
 	// Queue stats
+	// We need to take into account json->'variables'->>'transfer_history' to figure the talk time of previous agents.
+	
 	if (strlen($call_center_queue_uuid) > 0) {
 		echo "	<div class='heading'>";
 		echo "<b>".$text['title-call_queue_stats']."</b>";
 		echo "</div>\n";
 		echo "<br>\n";
 
-		$sql = "select AVG(CAST(json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC) \n";
-		$sql .= "- CAST(json->'variables'->>'cc_queue_joined_epoch' AS NUMERIC)) \n";
+		$sql = "select AVG(cc_queue_answered_epoch \n";
+		$sql .= "- cc_queue_joined_epoch) \n";
 		$sql .= "from v_xml_cdr \n";
-		$sql .= "where json->'variables'->>'call_center_queue_uuid' = :call_center_queue_uuid \n";
-		$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
-		$sql .= "and CAST(json->'variables'->>'cc_queue_joined_epoch' AS NUMERIC) > :search_period \n";
+		$sql .= "where call_center_queue_uuid = :call_center_queue_uuid \n";
+		$sql .= "and cc_cause = 'answered' \n";
+		$sql .= "and cc_queue_joined_epoch > :search_period \n";
 		$sql .= "and domain_uuid = :domain_uuid \n";
 		$parameters['domain_uuid'] = $domain_uuid;
 		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;

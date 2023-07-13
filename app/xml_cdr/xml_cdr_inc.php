@@ -252,16 +252,17 @@
 		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
 		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
 	} elseif (strlen($call_center_agent_uuid) > 0) {
-		$sql .= "c.json->'variables'->>'cc_queue_answered_epoch' as start_epoch, \n";
-		$sql .= "to_char(timezone(:time_zone, to_timestamp(CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC))), 'DD Mon YYYY') as start_date_formatted, \n";
-		$sql .= "to_char(timezone(:time_zone, to_timestamp(CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC))), 'HH12:MI:SS am') as start_time_formatted, \n";
-		$sql .= "(c.end_epoch - CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC)) * 1000 as billmsec, \n";
+		$sql .= "c.cc_queue_answered_epoch as start_epoch, \n";
+		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) * 1000 as billmsec, \n";
 	} elseif (strlen($call_center_queue_uuid) > 0) {
 		$sql .= "c.start_epoch, \n";
 		$sql .= "c.billmsec, \n";
-		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
-		$sql .= "(c.end_epoch - CAST(c.json->'variables'->>'cc_queue_answered_epoch' AS NUMERIC)) as agent_talk_time, \n";
+		$sql .= "c.cc_queue_joined_epoch, c.cc_queue_answered_epoch, \n";
+		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) as agent_talk_time, \n";
 	}
 	
 	$sql .= "c.missed_call, \n";
@@ -560,16 +561,16 @@
 		$parameters['network_addr'] = '%'.$network_addr.'%';
 	}
 	if (strlen($call_center_agent_uuid) > 0) {
-		$sql .= "and json->'variables'->>'cc_agent' = :call_center_agent_uuid \n";
-		$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+		$sql .= "and cc_agent = :call_center_agent_uuid \n";
+		$sql .= "and cc_cause = 'answered' \n";
 		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
 	}
 	if (strlen($call_center_queue_uuid) > 0) {
-		$sql .= "and json->'variables'->>'call_center_queue_uuid' = :call_center_queue_uuid \n";
+		$sql .= "and call_center_queue_uuid = :call_center_queue_uuid \n";
 		if ($call_center_abandoned != 'on') {
-			$sql .= "and json->'variables'->>'cc_cause' = 'answered' \n";
+			$sql .= "and cc_cause = 'answered' \n";
 		} else {
-			$sql .= "and json->'variables'->>'cc_cause' = 'cancel' \n";
+			$sql .= "and cc_cause = 'cancel' \n";
 		}
 		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 	}
