@@ -842,7 +842,6 @@
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
 	// Queue stats
-	// We need to take into account json->'variables'->>'transfer_history' to figure the talk time of previous agents.
 	
 	if (strlen($call_center_queue_uuid) > 0) {
 		echo "	<div class='heading'>";
@@ -850,38 +849,38 @@
 		echo "</div>\n";
 		echo "<br>\n";
 
-		$sql = "select AVG(cc_queue_answered_epoch \n";
+		$sql = "select COUNT(*), AVG(cc_queue_answered_epoch \n";
 		$sql .= "- cc_queue_joined_epoch) \n";
 		$sql .= "from v_xml_cdr \n";
 		$sql .= "where call_center_queue_uuid = :call_center_queue_uuid \n";
 		$sql .= "and cc_cause = 'answered' \n";
-		$sql .= "and cc_queue_joined_epoch > :search_period \n";
 		$sql .= "and domain_uuid = :domain_uuid \n";
+		if (strlen($start_stamp_begin) > 0 && strlen($start_stamp_end) > 0) {
+			$sql .= "and timezone(:time_zone, to_timestamp(cc_queue_joined_epoch)) between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
+			$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+			$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
+			$parameters['time_zone'] = $time_zone;
+		}
+		else {
+			if (strlen($start_stamp_begin) > 0) {
+				$sql .= "and timezone(:time_zone, to_timestamp(cc_queue_joined_epoch)) >= :start_stamp_begin \n";
+				$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+				$parameters['time_zone'] = $time_zone;
+			}
+			if (strlen($start_stamp_end) > 0) {
+				$sql .= "and timezone(:time_zone, to_timestamp(cc_queue_joined_epoch)) <= :start_stamp_end \n";
+				$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
+				$parameters['time_zone'] = $time_zone;
+			}
+		}
 		$parameters['domain_uuid'] = $domain_uuid;
 		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 
-		//One Hour
-		$parameters['search_period'] = time() - 3600;
 		$database = new database;
-		$hour_avg_hold = $database->select($sql, $parameters, 'row');
-		echo "Average hold time over the last hour: " . round($hour_avg_hold['avg']). " seconds";
+		$cc_stats = $database->select($sql, $parameters, 'row');
+		echo "Average hold time over the search period: " . round($cc_stats['avg']). " seconds, Total Calls: " . $cc_stats['count'];
 		echo "<br>";
-				
-		//One Day
-		$parameters['search_period'] = time() - 86400;
-		$database = new database;
-		$day_avg_hold = $database->select($sql, $parameters, 'row');
-		//print_r($database->message);
-		echo "Average hold time over the last 24 hours: " . round($day_avg_hold['avg']). " seconds";
-		echo "<br>";
-
-		//One Week
-		$parameters['search_period'] = time() - 604800;
-		$database = new database;
-		$week_avg_hold = $database->select($sql, $parameters, 'row');
-		echo "Average hold time over the last week: " . round($week_avg_hold['avg']). " seconds";
-		echo "<br>";
-
+		unset ($sql, $param, $cc_stats);
 	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 	echo "</form>\n";
