@@ -849,8 +849,8 @@
 		echo "</div>\n";
 		echo "<br>\n";
 
-		$sql = "select COUNT(*), AVG(cc_queue_answered_epoch \n";
-		$sql .= "- cc_queue_joined_epoch) \n";
+		$sql = "select COUNT(*), COUNT(DISTINCT cc_agent) as agent_count, \n";
+		$sql .= "AVG(cc_queue_answered_epoch - cc_queue_joined_epoch) \n";
 		$sql .= "from v_xml_cdr \n";
 		$sql .= "where call_center_queue_uuid = :call_center_queue_uuid \n";
 		$sql .= "and cc_cause = 'answered' \n";
@@ -878,7 +878,7 @@
 
 		$database = new database;
 		$cc_stats = $database->select($sql, $parameters, 'row');
-		echo "Average hold time over the search period: " . round($cc_stats['avg']). " seconds, Total Calls: " . $cc_stats['count'];
+		echo "Average hold time over the search period: " . round($cc_stats['avg']). " seconds, Total Calls: " . $cc_stats['count'] . ", Agent Count: " . $cc_stats['agent_count'];
 		echo "<br>";
 		unset ($sql, $param, $cc_stats);
 	}
