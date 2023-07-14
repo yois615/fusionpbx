@@ -105,6 +105,8 @@ $text['title-call_center_queues']['ru-ru'] = "Очереди Колл-центр
 $text['title-call_center_queues']['sv-se'] = "Call Center Kö:er";
 $text['title-call_center_queues']['uk-ua'] = "Черги кол-центра";
 
+$text['title-call_queue_stats']['en-us'] = "Call Center Queue Stats";
+
 $text['title-call_center_queue_edit']['en-us'] = "Call Center Queue";
 $text['title-call_center_queue_edit']['en-gb'] = "Call Center Queue";
 $text['title-call_center_queue_edit']['ar-eg'] = "";
