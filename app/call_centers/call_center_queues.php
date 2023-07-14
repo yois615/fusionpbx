@@ -288,7 +288,7 @@
 	echo "</div>\n";
 	echo "<br>\n";
 
-	$sql = "select AVG(c.cc_queue_answered_epoch \n";
+	$sql = "select COUNT(*), AVG(c.cc_queue_answered_epoch \n";
 	$sql .= "- c.cc_queue_joined_epoch), q.queue_name \n";
 	$sql .= "from v_xml_cdr c \n";
 	$sql .= "INNER JOIN v_call_center_queues q ON c.call_center_queue_uuid = q.call_center_queue_uuid \n";
@@ -304,7 +304,8 @@
 	$hour_avg_holds = $database->select($sql, $parameters, 'all');
 	echo "<b>Average hold time over the last hour:</b><br>\n";
 	foreach ($hour_avg_holds as $row) {
-		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds<br>";
+		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds, ";
+		echo "Total Calls: " . $row['count'] ."<br>";
 	}
 	
 	echo "<br>";
@@ -316,7 +317,8 @@
 	//print_r($database->message);
 	echo "<b>Average hold time over the last 24 hours:</b><br>\n";
 	foreach ($day_avg_holds as $row) {
-		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds<br>";
+		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds, ";
+		echo "Total Calls: " . $row['count'] ."<br>";
 	} 
 	echo "<br>";
 
@@ -326,7 +328,8 @@
 	$week_avg_holds = $database->select($sql, $parameters, 'all');
 	echo "<b>Average hold time over the last week:</b><br>\n";
 	foreach ($week_avg_holds as $row){
-		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds<br>";
+		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds, ";
+		echo "Total Calls: " . $row['count'] ."<br>";
 	} 
 	echo "<br>";
 
