@@ -523,6 +523,9 @@ $text['description-ivr']['en-us'] = "Chazara IVRs";
 $text['label-teacher-name']['en-us'] = "Teacher";
 $text['label-ivr-main-greeting']['en-us'] = "Main Greeting";
 $text['label-ivr-grade_greeting']['en-us'] = "Grade Recording";
+$text['label-ivr-masechta_greeting']['en-us'] = "Masechta Recording";
+$text['label-ivr-daf_greeting']['en-us'] = "Daf Recording";
+
 
 $text['title-ivr-add']['en-us'] = "Add IVR";
 $text['title-ivr-edit']['en-us'] = "Edit IVR";
@@ -551,5 +554,12 @@ $text['label-teachers']['ru-ru'] = "Инструменты";
 $text['label-teachers']['sv-se'] = "Verktyg";
 $text['label-teachers']['uk-ua'] = "Параметри";
 
+$text['label-daf']['en-us'] = "Daf";
+
+$text['label-mesechta']['en-us'] = "Mesechta";
+
+$text['label-daf_start_line'] = "Daf Starting Line";
+
+$text['label-daf_end_line'] = "Daf Ending Line";
 
 ?>

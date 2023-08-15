@@ -30,6 +30,14 @@ caller_id_name = session:getVariable("caller_id_name");
 caller_id_number = session:getVariable("caller_id_number");
 uuid = session:getVariable("uuid");
 
+--load lazy settings library
+local Settings = require "resources.functions.lazy_settings";
+
+--get the system settings
+	local settings = Settings.new(dbh, domain_name, domain_uuid);
+	daf_mode = settings:get('chazara', 'daf_mode', 'boolean') or 'false';
+	
+
 -- Strip E.164 plus sign
 if (string.sub(caller_id_number, 1, 1) == "+") then
     caller_id_number = string.sub(caller_id_number, 2);

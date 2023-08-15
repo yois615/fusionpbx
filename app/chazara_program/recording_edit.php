@@ -196,6 +196,8 @@
 				$array['chazara_recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
 				$array['chazara_recordings'][0]['domain_uuid'] = $domain_uuid;
 				$array['chazara_recordings'][0]['recording_id'] = $recording_id;
+				$array['chazara_recordings'][0]['daf_start_line'] = $daf_start_line;
+				$array['chazara_recordings'][0]['daf_end_line'] = $daf_end_line;
 				$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
 				$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 				$array['chazara_recordings'][0]['recording_filename'] = $recording_filename;
@@ -238,6 +240,8 @@
 			$recording_name = $row["recording_name"];
 			$recording_description = $row["recording_description"];
 			$recording_id = $row['recording_id'];
+			$daf_start_line = $row['daf_start_line'];
+			$daf_end_line = $row['daf_end_line'];
 		}
 		unset($sql, $parameters, $row);
 	}
@@ -305,16 +309,38 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "    ".$text['label-recording_id']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "    <input class='formfld' type='text' name='recording_id' maxlength='255' value=\"".escape($recording_id)."\">\n";
-	echo "<br />\n";
-	echo $text['description-recording_id']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if ($_SESSION['chazara']['daf-mode']['boolean']) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-daf_start_line']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='numeric' name='daf_start_line' maxlength='255' value=\"".escape($daf_start_line)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-daf_end_line']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='numeric' name='daf_end_line' maxlength='255' value=\"".escape($daf_end_line)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	} else {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-recording_id']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='text' name='recording_id' maxlength='255' value=\"".escape($recording_id)."\">\n";
+		echo "<br />\n";
+		echo $text['description-recording_id']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	if ($recording_filename == null || strlen(trim($recording_filename)) == 0) {
 		echo "<tr>\n";
