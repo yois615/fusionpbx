@@ -272,7 +272,11 @@
     // Grade Menu recording
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		echo "    ".$text['label-ivr-grade_greeting']."\n";
+		if ($_SESSION['chazara']['daf-mode']['boolean']) {
+			echo "    ".$text['label-ivr-masechta_greeting']."\n";	
+		} else {
+			echo "    ".$text['label-ivr-grade_greeting']."\n";
+		}
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		echo "<select name='grade_recording' id='grade_recording' class='formfld'>\n";
@@ -306,7 +310,11 @@
 				$parallel_recording = '';
 				echo "<tr>\n";
 				echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-				echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
+				if ($_SESSION['chazara']['daf-mode']['boolean']) {
+					echo "    ".$text['label-ivr-daf_greeting']." ".$pg["grade"]."\n";
+				} else {
+					echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
+				}
 				echo "</td>\n";
 				echo "<td class='vtable' align='left'>\n";
 				// Set row value
