@@ -277,7 +277,7 @@ if daf_mode then
     local exit = false;
     local timeout = 0;
     while (session:ready() and exit == false) do
-        daf = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. daf_recording, "", "");
+        daf = session:playAndGetDigits(1, 3, 3, 2500, "#", recordings_dir .. daf_recording, "", "");
         if daf == "*" then goto grade_menu; end;
         if tonumber(daf) ~= nil then
             -- Validate that we have such a daf
@@ -311,7 +311,7 @@ if daf_mode then
     local exit = false;
     local timeout = 0;
     while (session:ready() and exit == false) do
-        amud = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. amud_recording, "", "");
+        amud = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. amud_recording, "", "[12*]");
         if amud == "*" then goto grade_menu; end;
         if tonumber(amud) ~= nil then
             local sql = [[SELECT DISTINCT daf_amud FROM v_chazara_recordings
@@ -319,6 +319,8 @@ if daf_mode then
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND daf_number = :daf
                     AND daf_amud = :amud]];
+	    if amud == "1" then amud = "a"; end
+	    if amud == "2" then amud = "b"; end
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_teacher_uuid = chazara_teacher_uuid,
