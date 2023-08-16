@@ -525,6 +525,7 @@ $text['label-ivr-main-greeting']['en-us'] = "Main Greeting";
 $text['label-ivr-grade_greeting']['en-us'] = "Grade Recording";
 $text['label-ivr-masechta_greeting']['en-us'] = "Masechta Recording";
 $text['label-ivr-daf_greeting']['en-us'] = "Daf Recording";
+$text['label-ivr-amud_greeting']['en-us'] = "Amud Recording";
 
 
 $text['title-ivr-add']['en-us'] = "Add IVR";

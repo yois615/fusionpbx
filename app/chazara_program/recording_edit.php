@@ -81,6 +81,10 @@
 		$chazara_teacher_uuid = $chazara_teacher_uuid;
 		$recording_name = $_POST["recording_name"];
 		$recording_description = $_POST["recording_description"];
+		$daf_number = $_POST["daf_number"];
+		$daf_amud = $_POST["daf_amud"];
+		$daf_start_line = $_POST["daf_start_line"];
+		$daf_end_line = $_POST["daf_end_line"];
 		$recording_length = 0;
 		$uploaded = 1;
 		if(!file_exists($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
@@ -196,6 +200,8 @@
 				$array['chazara_recordings'][0]['chazara_recording_uuid'] = $recording_uuid;
 				$array['chazara_recordings'][0]['domain_uuid'] = $domain_uuid;
 				$array['chazara_recordings'][0]['recording_id'] = $recording_id;
+				$array['chazara_recordings'][0]['daf_number'] = $daf_number;
+				$array['chazara_recordings'][0]['daf_amud'] = $daf_amud;
 				$array['chazara_recordings'][0]['daf_start_line'] = $daf_start_line;
 				$array['chazara_recordings'][0]['daf_end_line'] = $daf_end_line;
 				$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
@@ -240,6 +246,8 @@
 			$recording_name = $row["recording_name"];
 			$recording_description = $row["recording_description"];
 			$recording_id = $row['recording_id'];
+			$daf_number = $row['daf_number'];
+			$daf_amud = $row['daf_amud'];
 			$daf_start_line = $row['daf_start_line'];
 			$daf_end_line = $row['daf_end_line'];
 		}
@@ -310,6 +318,30 @@
 	echo "</tr>\n";
 
 	if ($_SESSION['chazara']['daf-mode']['boolean']) {
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-daf_number']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='numeric' name='daf_number' maxlength='255' value=\"".escape($daf_number)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-daf_amud']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <select class='formfld' name='daf_amud' id='daf_amud'>\n";
+		echo "    	<option value='a' selected='".$daf_amud == 'a' ? "selected" : "" ."'>a</option>\n";
+		echo "    	<option value='b' selected='".$daf_amud == 'b' ? "selected" : "" ."'>b</option>\n";
+		echo "     </select>\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 		echo "    ".$text['label-daf_start_line']."\n";

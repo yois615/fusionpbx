@@ -58,6 +58,8 @@
 			$ivr_greeting_recording = $_POST["ivr_greeting_recording"];
 			$grade_recording = $_POST["grade_recording"];
 			$parallel_class_recordings = $_POST["parallel_class_recordings"];
+			$daf_recording = $_POST["daf_recording"];
+			$amud_recording = $_POST["amud_recording"];
 	}
 
 
@@ -103,6 +105,8 @@
 					$array["chazara_ivrs"][0]["domain_uuid"] = $domain_uuid;
 					$array["chazara_ivrs"][0]["greeting_recording"] = $ivr_greeting_recording;
 					$array["chazara_ivrs"][0]["grade_recording"] = $grade_recording;
+					$array["chazara_ivrs"][0]["daf_recording"] = $daf_recording;
+					$array["chazara_ivrs"][0]["amud_recording"] = $amud_recording;
 
 				//prepare the parallels array
 					if (is_array($parallel_class_recordings)) {
@@ -166,6 +170,8 @@
 			$chazara_ivr_uuid = $row['chazara_ivr_uuid'];
 			$ivr_greeting_recording = $row['greeting_recording'];
 			$grade_recording = $row['grade_recording'];
+			$daf_recording = $row['daf_recording'];
+			$amud_recording = $row['amud_recording'];
 		}
 		unset($sql, $parameters, $row);
 
@@ -304,56 +310,117 @@
 		echo "</td>\n";
 		echo "</tr>\n";
 
-		//Parallel class recordings
-		if (is_array($parallel_grades)) {
-			foreach($parallel_grades as $pg) {
-				$parallel_recording = '';
-				echo "<tr>\n";
-				echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-				if ($_SESSION['chazara']['daf-mode']['boolean']) {
-					echo "    ".$text['label-ivr-daf_greeting']." ".$pg["grade"]."\n";
-				} else {
-					echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
-				}
-				echo "</td>\n";
-				echo "<td class='vtable' align='left'>\n";
-				// Set row value
-				$select_name = "\"parallel_class_recordings[".$pg["grade"]."][recording]\"";
-				//Prepopluate data
-				foreach($parallel_class_recordings as $pr){
-					if ($pr['grade'] == $pg['grade']) {
-						$parallel_recording = $pr['recording'];
-						$chazara_ivr_recording_uuid = $pr['chazara_ivr_recording_uuid'];
-						break;
-					}
-				}
-				echo "<select name=".$select_name." id=".$select_name." class='formfld'>\n";
-				echo "	<option></option>\n";
-				//recordings
-					$tmp_selected = false;
-					if (is_array($recordings)) {
-						echo "<optgroup label='Recordings'>\n";
-						foreach ($recordings as $row) {
-							$recording_name = $row["recording_name"];
-							$recording_filename = $row["recording_filename"];
-							if ($parallel_recording == $recording_filename && strlen($parallel_recording) > 0) {
-								$tmp_selected = true;
-								echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
-							}
-							else {
-								echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
-							}
+		// daf-mode
+		if ($_SESSION['chazara']['daf-mode']['boolean']) {
+			// Daf Menu recording
+			echo "<tr>\n";
+			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";	
+			echo "    ".$text['label-ivr-daf_greeting']."\n";	
+			echo "</td>\n";
+			echo "<td class='vtable' align='left'>\n";
+			echo "<select name='daf_recording' id='daf_recording' class='formfld'>\n";
+			echo "	<option></option>\n";
+			//recordings
+				$tmp_selected = false;
+				if (is_array($recordings)) {
+					echo "<optgroup label='Recordings'>\n";
+					foreach ($recordings as $row) {
+						$recording_name = $row["recording_name"];
+						$recording_filename = $row["recording_filename"];
+						if ($daf_recording == $recording_filename && strlen($daf_recording) > 0) {
+							$tmp_selected = true;
+							echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
 						}
-						echo "</optgroup>\n";
+						else {
+							echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+						}
 					}
-				echo "	</select>\n";
-				if (strlen($chazara_ivr_recording_uuid) > 0) {
-					echo "		<input name=\"parallel_class_recordings[".$pg["grade"]."][chazara_ivr_recording_uuid]\" type='hidden' value=\"".escape($chazara_ivr_recording_uuid)."\">\n";
+					echo "</optgroup>\n";
 				}
-				echo "<br />\n";
-				echo $text['description-grade']."\n";
-				echo "</td>\n";
-				echo "</tr>\n";
+			echo "	</select>\n";
+			echo "<br />\n";
+			echo "</td>\n";
+			echo "</tr>\n";
+
+			// Amud menu recording
+			echo "<tr>\n";
+			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";	
+			echo "    ".$text['label-ivr-amud_greeting']."\n";	
+			echo "</td>\n";
+			echo "<td class='vtable' align='left'>\n";
+			echo "<select name='amud_recording' id='amud_recording' class='formfld'>\n";
+			echo "	<option></option>\n";
+			//recordings
+				$tmp_selected = false;
+				if (is_array($recordings)) {
+					echo "<optgroup label='Recordings'>\n";
+					foreach ($recordings as $row) {
+						$recording_name = $row["recording_name"];
+						$recording_filename = $row["recording_filename"];
+						if ($amud_recording == $recording_filename && strlen($amud_recording) > 0) {
+							$tmp_selected = true;
+							echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+						}
+						else {
+							echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+						}
+					}
+					echo "</optgroup>\n";
+				}
+			echo "	</select>\n";
+			echo "<br />\n";
+			echo "</td>\n";
+			echo "</tr>\n";
+
+		} else {
+
+			//Parallel class recordings
+			if (is_array($parallel_grades)) {
+				foreach($parallel_grades as $pg) {
+					$parallel_recording = '';
+					echo "<tr>\n";
+					echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+					echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
+					echo "</td>\n";
+					echo "<td class='vtable' align='left'>\n";
+					// Set row value
+					$select_name = "\"parallel_class_recordings[".$pg["grade"]."][recording]\"";
+					//Prepopluate data
+					foreach($parallel_class_recordings as $pr){
+						if ($pr['grade'] == $pg['grade']) {
+							$parallel_recording = $pr['recording'];
+							$chazara_ivr_recording_uuid = $pr['chazara_ivr_recording_uuid'];
+							break;
+						}
+					}
+					echo "<select name=".$select_name." id=".$select_name." class='formfld'>\n";
+					echo "	<option></option>\n";
+					//recordings
+						$tmp_selected = false;
+						if (is_array($recordings)) {
+							echo "<optgroup label='Recordings'>\n";
+							foreach ($recordings as $row) {
+								$recording_name = $row["recording_name"];
+								$recording_filename = $row["recording_filename"];
+								if ($parallel_recording == $recording_filename && strlen($parallel_recording) > 0) {
+									$tmp_selected = true;
+									echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+								}
+								else {
+									echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+								}
+							}
+							echo "</optgroup>\n";
+						}
+					echo "	</select>\n";
+					if (strlen($chazara_ivr_recording_uuid) > 0) {
+						echo "		<input name=\"parallel_class_recordings[".$pg["grade"]."][chazara_ivr_recording_uuid]\" type='hidden' value=\"".escape($chazara_ivr_recording_uuid)."\">\n";
+					}
+					echo "<br />\n";
+					echo $text['description-grade']."\n";
+					echo "</td>\n";
+					echo "</tr>\n";
+				}
 			}
 		}
 
