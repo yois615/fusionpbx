@@ -555,7 +555,9 @@ $text['label-teachers']['ru-ru'] = "Инструменты";
 $text['label-teachers']['sv-se'] = "Verktyg";
 $text['label-teachers']['uk-ua'] = "Параметри";
 
-$text['label-daf']['en-us'] = "Daf";
+$text['label-daf_number']['en-us'] = "Daf";
+
+$text['label-daf_amud']['en-us'] = "Amud";
 
 $text['label-mesechta']['en-us'] = "Mesechta";
 

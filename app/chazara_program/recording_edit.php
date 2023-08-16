@@ -317,14 +317,14 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if ($_SESSION['chazara']['daf-mode']['boolean']) {
+	if ($_SESSION['chazara']['daf_mode']['boolean']) {
 
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 		echo "    ".$text['label-daf_number']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <input class='formfld' type='numeric' name='daf_number' maxlength='255' value=\"".escape($daf_number)."\">\n";
+		echo "    <input class='formfld' type='number' name='daf_number' maxlength='255' value=\"".escape($daf_number)."\">\n";
 		echo "<br />\n";
 		echo "</td>\n";
 		echo "</tr>\n";
@@ -335,8 +335,8 @@
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		echo "    <select class='formfld' name='daf_amud' id='daf_amud'>\n";
-		echo "    	<option value='a' selected='".$daf_amud == 'a' ? "selected" : "" ."'>a</option>\n";
-		echo "    	<option value='b' selected='".$daf_amud == 'b' ? "selected" : "" ."'>b</option>\n";
+		echo "    	<option value='a' ".($daf_amud == 'a' ? "selected" : "").">a</option>\n";
+		echo "    	<option value='b' ".($daf_amud == 'b' ? "selected" : "").">b</option>\n";
 		echo "     </select>\n";
 		echo "<br />\n";
 		echo "</td>\n";
@@ -344,20 +344,20 @@
 
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-		echo "    ".$text['label-daf_start_line']."\n";
+		echo "    Daf Starting Line\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <input class='formfld' type='numeric' name='daf_start_line' maxlength='255' value=\"".escape($daf_start_line)."\">\n";
+		echo "    <input class='formfld' type='number' name='daf_start_line' maxlength='255' value=\"".escape($daf_start_line)."\">\n";
 		echo "<br />\n";
 		echo "</td>\n";
 		echo "</tr>\n";
 
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-		echo "    ".$text['label-daf_end_line']."\n";
+		echo "    Daf Ending Line\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <input class='formfld' type='numeric' name='daf_end_line' maxlength='255' value=\"".escape($daf_end_line)."\">\n";
+		echo "    <input class='formfld' type='number' name='daf_end_line' maxlength='255' value=\"".escape($daf_end_line)."\">\n";
 		echo "<br />\n";
 		echo "</td>\n";
 		echo "</tr>\n";

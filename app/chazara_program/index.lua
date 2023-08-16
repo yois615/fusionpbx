@@ -283,12 +283,11 @@ if daf_mode then
             -- Validate that we have such a daf
             local sql = [[SELECT DISTINCT daf_number FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
-                    AND grade = :grade
-                    and daf = :daf]];
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+                    and daf_number = :daf]];
             local params = {
                 domain_uuid = domain_uuid,
-                chazara_ivr_uuid = chazara_ivr_uuid,
-                grade = grade,
+                chazara_teacher_uuid = chazara_teacher_uuid,
                 daf = daf
             };
             if (debug["sql"]) then
@@ -317,13 +316,12 @@ if daf_mode then
         if tonumber(amud) ~= nil then
             local sql = [[SELECT DISTINCT daf_amud FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
-                    AND grade = :grade
-                    AND daf = :daf
-                    AND amud = :amud]];
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+                    AND daf_number = :daf
+                    AND daf_amud = :amud]];
             local params = {
                 domain_uuid = domain_uuid,
-                chazara_ivr_uuid = chazara_ivr_uuid,
-                grade = grade,
+                chazara_teacher_uuid = chazara_teacher_uuid,
                 daf = daf,
                 amud = amud
             };
@@ -379,12 +377,12 @@ if teacher_auth ~= true then
         else
         -- Find recording
         if daf_mode then
-            local sql = [[SELECT MIN(daf_start_line), recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+            local sql = [[SELECT MIN(daf_end_line), recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND grade = :grade
                     AND daf = :daf
                     AND amud = :amud
-                    AND daf_start_line >= :recording_id]];
+                    AND daf_end_line >= :recording_id]];
             local params = {
                 domain_uuid = domain_uuid,
                 grade = grade,
