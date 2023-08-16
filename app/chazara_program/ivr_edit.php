@@ -278,7 +278,7 @@
     // Grade Menu recording
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		if ($_SESSION['chazara']['daf-mode']['boolean']) {
+		if ($_SESSION['chazara']['daf_mode']['boolean']) {
 			echo "    ".$text['label-ivr-masechta_greeting']."\n";	
 		} else {
 			echo "    ".$text['label-ivr-grade_greeting']."\n";
@@ -310,8 +310,8 @@
 		echo "</td>\n";
 		echo "</tr>\n";
 
-		// daf-mode
-		if ($_SESSION['chazara']['daf-mode']['boolean']) {
+		// daf_mode
+		if ($_SESSION['chazara']['daf_mode']['boolean']) {
 			// Daf Menu recording
 			echo "<tr>\n";
 			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";	
