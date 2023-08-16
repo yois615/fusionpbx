@@ -277,8 +277,9 @@ if daf_mode then
     local exit = false;
     local timeout = 0;
     while (session:ready() and exit == false) do
-        daf = session:playAndGetDigits(1, 3, 3, 2500, "#", recordings_dir .. daf_recording, "", "");
+        daf = session:playAndGetDigits(1, 3, 3, 2500, "#", recordings_dir .. daf_recording, "silence_stream://500", "");
         if daf == "*" then goto grade_menu; end;
+	daf = daf:match("0*(%d+)");
         if tonumber(daf) ~= nil then
             -- Validate that we have such a daf
             local sql = [[SELECT DISTINCT daf_number FROM v_chazara_recordings
@@ -369,7 +370,7 @@ if teacher_auth ~= true then
     -- This is the entire student flow
     while session:ready() do
         if daf_mode then
-            recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_line.wav", recordings_dir .. "invalid.wav", "");
+            recording_id = session:playAndGetDigits(1, 2, 4, 2500, "#", recordings_dir .. "student_select_line.wav", "silence_stream://500", "");
         else
             recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
         end
@@ -379,18 +380,19 @@ if teacher_auth ~= true then
         else
         -- Find recording
         if daf_mode then
-            local sql = [[SELECT MIN(daf_end_line), recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+            local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
-                    AND grade = :grade
-                    AND daf = :daf
-                    AND amud = :amud
-                    AND daf_end_line >= :recording_id]];
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+                    AND daf_number = :daf
+                    AND daf_amud = :amud
+		    AND daf_start_line <= :recording_id
+                    AND daf_end_line >= :recording_id LIMIT 1]];
             local params = {
                 domain_uuid = domain_uuid,
-                grade = grade,
+                chazara_teacher_uuid = chazara_teacher_uuid,
                 daf = daf,
                 amud = amud,
-                recording_id = recording_id
+		recording_id = recording_id
             };
             if (debug["sql"]) then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
