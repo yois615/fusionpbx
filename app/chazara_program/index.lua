@@ -99,6 +99,8 @@ if session:ready() then
     dbh:query(sql, params, function(row)
         greeting_recording = row["greeting_recording"];
         grade_recording = row["grade_recording"];
+        daf_recording = row["daf_recording"];
+        amud_recording = row["amud_recording"];
         chazara_ivr_uuid = row["chazara_ivr_uuid"];
     end);
 end
@@ -269,6 +271,84 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
     end
 end
 
+-- Daf-mode
+if daf_mode then
+    session:flushDigits();
+    local exit = false;
+    local timeout = 0;
+    while (session:ready() and exit == false) do
+        daf = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. daf_recording, "", "");
+        if daf == "*" then goto grade_menu; end;
+        if tonumber(daf) ~= nil then
+            -- Validate that we have such a daf
+            local sql = [[SELECT DISTINCT daf_number FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND grade = :grade
+                    and daf = :daf]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_ivr_uuid = chazara_ivr_uuid,
+                grade = grade,
+                daf = daf
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                daf_number = row["daf_number"];
+            end);
+            if daf_number ~= nil and string.len(daf_number) > 0 then
+                exit = true;
+            else
+                session:streamFile(recordings_dir .. "invalid.wav");
+            end
+        end
+        timeout = timeout + 1;
+        if timeout > 3 then
+            session:hangup();
+        end
+    end
+
+    local exit = false;
+    local timeout = 0;
+    while (session:ready() and exit == false) do
+        amud = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. amud_recording, "", "");
+        if amud == "*" then goto grade_menu; end;
+        if tonumber(amud) ~= nil then
+            local sql = [[SELECT DISTINCT daf_amud FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND grade = :grade
+                    AND daf = :daf
+                    AND amud = :amud]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_ivr_uuid = chazara_ivr_uuid,
+                grade = grade,
+                daf = daf,
+                amud = amud
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                daf_amud = row["daf_amud"];
+            end);
+            if daf_amud ~= nil and string.len(daf_amud) > 0 then
+                exit = true;
+            else
+                session:streamFile(recordings_dir .. "invalid.wav");
+            end
+        end
+        timeout = timeout + 1;
+        if timeout > 3 then
+            session:hangup();
+        end
+    end
+
+
+end
+
+
 if caller_type == "2" then
     local tries = 0;
     while (session:ready() and tries < 3) do
@@ -288,12 +368,38 @@ end
 if teacher_auth ~= true then
     -- This is the entire student flow
     while session:ready() do
-        recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
+        if daf_mode then
+            recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_line.wav", recordings_dir .. "invalid.wav", "");
+        else
+            recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
+        end
         if tonumber(recording_id) == nil then
             goto grade_menu
             break
         else
         -- Find recording
+        if daf_mode then
+            local sql = [[SELECT MIN(daf_start_line), recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND grade = :grade
+                    AND daf = :daf
+                    AND amud = :amud
+                    AND daf_start_line >= :recording_id]];
+            local params = {
+                domain_uuid = domain_uuid,
+                grade = grade,
+                daf = daf,
+                amud = amud,
+                recording_id = recording_id
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                recording_filename = row["recording_filename"];
+                chazara_recording_uuid = row["chazara_recording_uuid"];
+            end);
+        else
             local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
@@ -310,6 +416,7 @@ if teacher_auth ~= true then
                 recording_filename = row["recording_filename"];
                 chazara_recording_uuid = row["chazara_recording_uuid"];
             end);
+        end
 
             if recording_filename ~= nil and string.len(recording_filename) > 0 then
                 local start_epoch = os.time();
