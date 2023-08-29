@@ -266,7 +266,11 @@
 		echo "    ".$text['label-grade']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <input class='formfld' type='text' name='grade' maxlength='255' value=\"".escape($grade)."\">\n";
+		if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+			echo "    <input class='formfld' type='text' name='grade' maxlength='255' value=\"".escape($grade)."\">\n";
+		} else {
+			echo "    <input class='formfld' type='text' name='grade' maxlength='255' value='1' readonly>\n";
+		}
 		echo "<br />\n";
 		echo $text['description-grade']."\n";
 		echo "</td>\n";
@@ -275,7 +279,11 @@
     // Parallel Class ID
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		echo "    ".$text['label-parallel_class_id']."\n";
+		if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+			echo "    ".$text['label-parallel_class_id']."\n";
+		} else {
+			echo "    ".$text['label-masechta_id']."\n";
+		}
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		echo "    <input class='formfld' type='text' name='parallel_class_id' maxlength='255' value=\"".escape($parallel_class_id)."\">\n";

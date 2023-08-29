@@ -561,8 +561,10 @@ $text['label-daf_amud']['en-us'] = "Amud";
 
 $text['label-mesechta']['en-us'] = "Mesechta";
 
-$text['label-daf_start_line'] = "Daf Starting Line";
+$text['label-daf_start_line']['en-us'] = "Daf Starting Line";
 
-$text['label-daf_end_line'] = "Daf Ending Line";
+$text['label-daf_end_line']['en-us'] = "Daf Ending Line";
+
+$text['label-masechta_id']['en-us'] = "Mesechta ID"
 
 ?>
