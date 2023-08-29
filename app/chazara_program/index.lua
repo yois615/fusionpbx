@@ -394,7 +394,7 @@ if teacher_auth ~= true then
                 chazara_teacher_uuid = chazara_teacher_uuid,
                 daf = daf,
                 amud = amud,
-		recording_id = recording_id
+		        recording_id = recording_id
             };
             if (debug["sql"]) then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
@@ -403,6 +403,35 @@ if teacher_auth ~= true then
                 recording_filename = row["recording_filename"];
                 chazara_recording_uuid = row["chazara_recording_uuid"];
             end);
+
+            -- If there's not recording found, maybe it's from the end of the previous amud
+            if recording_filename == nil or string.len(recording_filename) == 0 then
+                local tmp_daf = daf
+                local tmp_amud = "a"
+                if amud == "a" then
+                    tmp_amud = "b"
+                    tmp_daf = tonumber(daf) - 1
+                end 
+                local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+                    AND daf_number = :daf
+                    AND daf_amud = :amud
+                    ORDER BY daf_start_line desc LIMIT 1]];
+                local params = {
+                    domain_uuid = domain_uuid,
+                    chazara_teacher_uuid = chazara_teacher_uuid,
+                    daf = tmp_daf,
+                    amud = tmp_amud,
+                };
+                if (debug["sql"]) then
+                    freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+                end
+                dbh:query(sql, params, function(row)
+                    recording_filename = row["recording_filename"];
+                    chazara_recording_uuid = row["chazara_recording_uuid"];
+                end);   
+            end
         else
             local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
