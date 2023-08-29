@@ -133,7 +133,7 @@ if caller_type == "8" then
 end
 
 -- Play grade menu, first find max grade
-    local sql = [[SELECT DISTINCT MAX(grade) as max_grade, COUNT(grade) as grade_count FROM v_chazara_teachers
+    local sql = [[SELECT MAX(grade) as max_grade, COUNT(DISTINCT grade) as grade_count FROM v_chazara_teachers
             WHERE domain_uuid = :domain_uuid]];
     local params = {
         domain_uuid = domain_uuid,

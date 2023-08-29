@@ -138,7 +138,7 @@
 			$recording_uuid = uuid();
 		}
 	//delete the recording
-		if (permission_exists('recording_delete')) {
+		if (permission_exists('chazara_recording_delete')) {
 			if ($_POST['action'] == 'delete' && is_uuid($recording_uuid)) {
 				//prepare
 					$array[0]['checked'] = 'true';
@@ -187,7 +187,7 @@
 
 	//update the database
 	if ($_POST["persistformvar"] != "true") {
-		if (permission_exists('recording_edit')) {
+		if (permission_exists('chazara_recording_edit')) {
 			//if file name is not the same then rename the file
 				if ($recording_filename != $recording_filename_original) {
 					rename($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename_original, $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/'.$recording_filename);
@@ -280,7 +280,7 @@
 	echo "	<div class='heading'><b>".$text['title-edit']."</b></div>\n";
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'recordings.php']);
-	if (permission_exists('recording_delete')) {
+	if (permission_exists('chazara_recording_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>'margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
@@ -288,7 +288,7 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	if (permission_exists('recording_delete')) {
+	if (permission_exists('chazara_recording_delete')) {
 		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','name'=>'action','value'=>'delete','onclick'=>"modal_close();"])]);
 	}
 

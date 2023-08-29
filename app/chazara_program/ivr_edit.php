@@ -81,7 +81,9 @@
 		//check for all required data
 			$msg = '';
 			 if (strlen($ivr_greeting_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-main-greeting']."<br>\n"; }
-			 if (strlen($grade_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-grade_greeting']."<br>\n"; }
+			 if (!$_SESSION['chazara']['daf_mode']['boolean']) { 
+			 	if (strlen($grade_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-grade_greeting']."<br>\n"; }
+			 }
 
 
             if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
