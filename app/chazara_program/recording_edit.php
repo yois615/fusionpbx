@@ -110,14 +110,37 @@
 
 			//make sure the destination directory exists
 			$file_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid;
+			$sox_file_dir = $file_dir.'/sox';
 			if (!is_dir($file_dir)) {
 				mkdir($file_dir, 0770, false);
 			}
+			if (!is_dir($sox_file_dir)) {
+				mkdir($sox_file_dir, 0770, false);
+			}
 
-			$file_name = $file_dir.'/'.$recording_filename;
+			$file_name = $file_dir.'/'.pathinfo($recording_filename, PATHINFO_FILENAME).'.wav';
+			$sox_file_name = $sox_file_dir.'/'.$recording_filename;
 
 			//move the uploaded files
-			$result = move_uploaded_file($_FILES['file']['tmp_name'], $file_name);
+			$result = move_uploaded_file($_FILES['file']['tmp_name'], $sox_file_name);
+
+			exec('sox '.$sox_file_name.' -b 16 -r 8000 -c 1 '.$file_name, $out, $return_code);
+
+			//Delete sox tmp file
+			unlink($sox_file_name);
+
+			if ($return_code != 0) {
+				message::add('Uploaded file in unsupported audio format','negative');
+				$header = 'Location: recordings.php';
+				if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+					$header .= "?show=all";
+				}
+				header($header);
+				exit;
+			}
+
+			//We've changed the filename, use the new one
+			$recording_filename = pathinfo($recording_filename, PATHINFO_FILENAME).'.wav';
 
 			//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
