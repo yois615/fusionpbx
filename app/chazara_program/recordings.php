@@ -235,7 +235,7 @@
 		unset($sql, $parameters, $row);
 
 		$current_sound_dir = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$chazara_teacher_uuid.'/';
-		if (is_dir($current_sound_dir)) {
+		if (is_dir($current_sound_dir) && !empty($chazara_teacher_uuid)) {
 			if ($dh = opendir($current_sound_dir)) {
 				while (($recording_filename = readdir($dh)) !== false) {
 					if (filetype($current_sound_dir.$recording_filename) == "file") {
@@ -515,7 +515,10 @@
 		echo "	</th>\n";
 		$col_count++;
 	}
-	echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order);
+	if (!$_SESSION['chazara']['daf_mode']['boolean']){
+		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order);
+		$col_count++;
+	}
 	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order);
 	$col_count++;
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
@@ -592,15 +595,13 @@
 				echo "		<input type='hidden' name='recordings[$x][uuid]' value='".escape($row['chazara_recording_uuid'])."' />\n";
 				echo "	</td>\n";
 			}
-			echo "	<td>";
-			if (permission_exists('chazara_recording_edit')) {
-				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['recording_id'])."</a>";
-			}
-			else {
+			
+			if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+				echo "	<td>";
 				echo escape($row['recording_id']);
+				echo "	</td>\n";
 			}
-			echo "	</td>\n";
-
+			
 			echo "	<td>".$row['recording_name']."</td>\n";
 			
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
