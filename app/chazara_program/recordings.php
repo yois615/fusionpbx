@@ -352,6 +352,9 @@
 //get the recordings from the database
 	$sql = "select r.chazara_recording_uuid, r.recording_name, r.recording_id, r.recording_filename, ";
 	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.insert_date, ";
+	if ($_SESSION['chazara']['daf_mode']['boolean']) {
+		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, ";
+	}
 	$sql .= "t.grade, t.parallel_class_id, r.chazara_teacher_uuid, t.name as teacher_name ";
 	$sql .= "from v_chazara_recordings r ";
 	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -365,7 +368,11 @@
 		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
 	}
 	$parameters['domain_uuid'] = $domain_uuid;
-	$sql .= order_by($order_by, $order, 'recording_id', 'asc');
+	if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+		$sql .= order_by($order_by, $order, 'recording_id', 'asc');
+	} else {
+		$sql .= order_by($order_by, $order, 'daf_number', 'asc');
+	}
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
 	$recordings = $database->select($sql, $parameters, 'all');
@@ -517,6 +524,14 @@
 		$col_count++;
 		$col_count++;
 	}
+	if ($_SESSION['chazara']['daf_mode']['boolean']) {
+		echo "<th class='center'>".$text['label-daf_number']."</th>\n";
+		$col_count++;
+		echo "<th class='center'>".$text['label-daf_amud']."</th>\n";
+		$col_count++;
+		echo "<th class='center'>Lines</th>\n";
+		$col_count++;
+	}
 	echo "<th class='center'>".'Teacher'."</th>\n";
 	$col_count++;
 	echo "<th class='center'>".$text['label-created']."</th>\n";
@@ -591,6 +606,11 @@
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 				echo "	<td>".$row['grade']."</td>\n";
 				echo "	<td>".$row['parallel_class_id']."</td>\n";
+			}
+			if (_SESSION['chazara']['daf_mode']['boolean']) {
+				echo "	<td>".$row['daf_number']."</td>\n";
+				echo "	<td>".$row['daf_amud']."</td>\n";
+				echo "	<td>".$row['daf_start_line']."-".$row['daf_end_line']."</td>\n";
 			}
 			$file_path = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['chazara_teacher_uuid'];
 			$file_name = file_path.'/'.$row['recording_filename'];

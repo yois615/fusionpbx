@@ -233,6 +233,7 @@ end
 
 
 -- play parallel menu if exists
+-- If we're in daf_mode, the parallel is the masechta
 if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
     session:flushDigits();
     local exit = false;
