@@ -386,8 +386,9 @@ if teacher_auth ~= true then
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND daf_number = :daf
                     AND daf_amud = :amud
-		    AND daf_start_line <= :recording_id
-                    AND daf_end_line >= :recording_id LIMIT 1]];
+		            AND daf_start_line <= :recording_id
+                    AND daf_end_line >= :recording_id
+                    ORDER BY daf_start_line desc LIMIT 1]];
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_teacher_uuid = chazara_teacher_uuid,
