@@ -106,6 +106,9 @@
 			$recording_filename = str_replace('..', '', $recording_filename);
 			$recording_filename = str_replace(' ', '_', $recording_filename);
 			$recording_filename = str_replace("'", '', $recording_filename);
+			$recording_filename = str_replace("(", '_', $recording_filename);
+			$recording_filename = str_replace(")", '_', $recording_filename);
+			$recording_filename = str_replace(".WAV", '.wav', $recording_filename);
 			$recording_name = str_replace("'", '', $recording_name);
 
 			//make sure the destination directory exists
