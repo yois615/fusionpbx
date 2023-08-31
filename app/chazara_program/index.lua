@@ -36,6 +36,12 @@ local Settings = require "resources.functions.lazy_settings";
 --get the system settings
 	local settings = Settings.new(dbh, domain_name, domain_uuid);
 	daf_mode = settings:get('chazara', 'daf_mode', 'boolean') or 'false';
+
+    if daf_mode == 'true' then
+        daf_mode = true;
+    else
+        daf_mode = false;
+    end
 	
 
 -- Strip E.164 plus sign

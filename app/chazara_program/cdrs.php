@@ -167,6 +167,9 @@
 
 //get existing recording uuid
 	$sql_rows = "select c.call_uuid, t.name as teacher_name, t.grade, r.recording_id,c.caller_id_name, c.caller_id_number, c.start_epoch, c.duration ";
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+		$sql_rows .= ", r.daf_number, r.daf_amud, r.daf_start_line ";
+	}
 	$sql_cnt = "select count(*) as cnt ";
 	$sql = "from v_chazara_cdrs c ";
 	$sql .= "join v_chazara_teachers t on c.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -444,8 +447,16 @@
 		echo th_order_by('teacher_name', $text['label-teacher_name'], $order_by, $order, $null, "class='left'");
 		$col_count++;
 	}
-	echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $null, "class='left'");
-	$col_count++;
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $null, "class='left'");
+		$col_count++;
+	} else {
+		// Daf and line
+		echo th_order_by('daf_number', $text['label-daf_number'], $order_by, $order, $null, "class='left'");
+		$col_count++;
+		echo "<th class='left'>".$text['label-daf_start_line']."</th>\n";
+		$col_count++;
+	}
 	echo "<th class='left'>".$text['label-duration']."</th>\n";
 	$col_count++;
 
@@ -467,9 +478,19 @@
 				echo "	<td class='left'>".$row['grade']."-".$row['teacher_name']."</td>\n";
 			}
 
-			echo "	<td class='left'>";
-			echo escape($row['recording_id']);
-			echo "	</td>\n";
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+				echo "	<td class='left'>";
+				echo escape($row['recording_id']);
+				echo "	</td>\n";
+			} else {
+				echo "	<td class='left'>";
+				echo escape($row['daf_number'].$row['daf_amud']);
+				echo "	</td>\n";
+				echo "	<td class='left'>";
+				//line
+				echo escape($row['daf_start_line']);
+				echo "	</td>\n";
+			}
 
 			$message_minutes = floor($row['duration'] / 60);
 			$message_seconds = $row['duration'] % 60;
