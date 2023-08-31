@@ -343,7 +343,7 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if ($_SESSION['chazara']['daf_mode']['boolean']) {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";

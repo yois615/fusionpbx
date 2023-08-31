@@ -352,7 +352,7 @@
 //get the recordings from the database
 	$sql = "select r.chazara_recording_uuid, r.recording_name, r.recording_id, r.recording_filename, ";
 	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.insert_date, ";
-	if ($_SESSION['chazara']['daf_mode']['boolean']) {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, ";
 	}
 	$sql .= "t.grade, t.parallel_class_id, r.chazara_teacher_uuid, t.name as teacher_name ";
@@ -368,7 +368,7 @@
 		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
 	}
 	$parameters['domain_uuid'] = $domain_uuid;
-	if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
 		$sql .= order_by($order_by, $order, 'recording_id', 'asc');
 	} else {
 		$sql .= order_by($order_by, $order, 'daf_number', 'asc');
@@ -515,7 +515,7 @@
 		echo "	</th>\n";
 		$col_count++;
 	}
-	if (!$_SESSION['chazara']['daf_mode']['boolean']){
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false"){
 		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order);
 		$col_count++;
 	}
@@ -527,7 +527,7 @@
 		$col_count++;
 		$col_count++;
 	}
-	if ($_SESSION['chazara']['daf_mode']['boolean']) {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 		echo "<th class='center'>".$text['label-daf_number']."</th>\n";
 		$col_count++;
 		echo "<th class='center'>".$text['label-daf_amud']."</th>\n";
@@ -596,7 +596,7 @@
 				echo "	</td>\n";
 			}
 			
-			if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
 				echo "	<td>";
 				echo escape($row['recording_id']);
 				echo "	</td>\n";

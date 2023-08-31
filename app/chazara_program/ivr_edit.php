@@ -81,7 +81,7 @@
 		//check for all required data
 			$msg = '';
 			 if (strlen($ivr_greeting_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-main-greeting']."<br>\n"; }
-			 if (!$_SESSION['chazara']['daf_mode']['boolean']) { 
+			 if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") { 
 			 	if (strlen($grade_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-grade_greeting']."<br>\n"; }
 			 }
 
@@ -278,7 +278,7 @@
 	echo "</tr>\n";
 
     // Grade Menu recording
-	if (!$_SESSION['chazara']['daf_mode']['boolean']) {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-ivr-grade_greeting']."\n";
@@ -316,7 +316,7 @@
 			$parallel_recording = '';
 			echo "<tr>\n";
 			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-			if ($_SESSION['chazara']['daf_mode']['boolean']) {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 				echo "    ".$text['label-ivr-masechta_greeting']."\n";	
 			} else {
 				echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
@@ -364,7 +364,7 @@
 	}
 
 		// daf_mode
-		if ($_SESSION['chazara']['daf_mode']['boolean']) {
+		if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 			// Daf Menu recording
 			echo "<tr>\n";
 			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";	
