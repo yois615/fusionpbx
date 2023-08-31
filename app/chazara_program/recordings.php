@@ -608,7 +608,7 @@
 				echo "	<td>".$row['grade']."</td>\n";
 				echo "	<td>".$row['parallel_class_id']."</td>\n";
 			}
-			if (_SESSION['chazara']['daf_mode']['boolean']) {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 				echo "	<td>".$row['daf_number']."</td>\n";
 				echo "	<td>".$row['daf_amud']."</td>\n";
 				echo "	<td>".$row['daf_start_line']."-".$row['daf_end_line']."</td>\n";
