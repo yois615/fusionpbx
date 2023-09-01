@@ -40,8 +40,8 @@ function save_vote(vote, sequence_id)
             end
         circle_survey_customer_uuid = uuid();
         local sql = "INSERT INTO v_circle_survey_customer (circle_survey_customer_uuid, caller_id_number, ";
-        sql = sql .. "caller_id_name, domain_uuid, gender, age, zip_code) ";
-        sql = sql .. "values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age, :zip_code); ";
+        sql = sql .. " caller_id_name, domain_uuid, gender, age, zip_code)";
+        sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age, :zip_code); ";
         local params = {
             caller_id_name = caller_id_name,
             caller_id_number = caller_id_number,
@@ -205,7 +205,8 @@ end
 if session:ready() then
     local sql = [[SELECT * FROM v_circle_survey_questions
         WHERE domain_uuid = :domain_uuid
-        AND circle_survey_uuid = :circle_survey_uuid]];
+        AND circle_survey_uuid = :circle_survey_uuid
+    	ORDER BY sequence_id]];
     local params = {
         domain_uuid = domain_uuid,
         circle_survey_uuid = circle_survey_uuid
