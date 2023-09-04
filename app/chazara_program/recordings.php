@@ -332,6 +332,11 @@
 		$sql .= "and t.user_uuid = :user_uuid ";
 		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
 	}
+	$sql .= $sql_search;
+	if (strlen($_REQUEST['teacher_uuid']) > 0) {
+		$sql .= "and r.chazara_teacher_uuid = :teacher_uuid";
+		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
+	}
 	$parameters['domain_uuid'] = $domain_uuid;
 	$sql .= $sql_search;
 	$database = new database;
@@ -341,7 +346,7 @@
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	$param = "&search=".urlencode($search);
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-		$param .= "&show=all&teacher_uuid=".urlencode($chazara_teacher_uuid);
+		$param .= "&show=all&teacher_uuid=".escape($_REQUEST['teacher_uuid']);
 	}
 	$param .= "&order_by=".$order_by."&order=".$order;
 	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
