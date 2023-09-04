@@ -6,9 +6,9 @@
 
 //includes files
 	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
 
 //check permisions
-	require_once "resources/check_auth.php";
 	if (permission_exists('xml_cdr_view')) {
 		//access granted
 	}
@@ -27,6 +27,7 @@
 			$assigned_extensions[$assigned_extension['extension_uuid']] = $assigned_extension['user'];
 		}
 	}
+	unset($assigned_extension);
 
 //if also viewing system status, show more recent calls (more room avaialble)
 	$recent_limit = (is_array($selected_blocks) && in_array('counts', $selected_blocks)) ? 10 : 5;
@@ -84,49 +85,45 @@
 
 //add doughnut chart
 	?>
-	<div style='display: flex; flex-wrap: wrap; justify-content: center; padding-bottom: 20px;'>
-		<div style='width: 175px; height: 175px;'><canvas id='recent_calls_chart'></canvas></div>
+	<div style='display: flex; flex-wrap: wrap; justify-content: center; padding-bottom: 20px;' onclick="$('#hud_recent_calls_details').slideToggle('fast');">
+		<canvas id='recent_calls_chart' width='175px' height='175px'></canvas>
 	</div>
 
 	<script>
-		var recent_calls_chart_context = document.getElementById('recent_calls_chart').getContext('2d');
-
-		const recent_calls_chart_data = {
-			datasets: [{
-				data: ['<?php echo $num_rows; ?>', 0.00001],
-				backgroundColor: ['<?php echo $_SESSION['dashboard']['recent_calls_chart_main_background_color']['text']; ?>',
-				'<?php echo $_SESSION['dashboard']['missed_calls_chart_sub_background_color']['text']; ?>'],
-				borderColor: '<?php echo $_SESSION['dashboard']['recent_calls_chart_border_color']['text']; ?>',
-				borderWidth: '<?php echo $_SESSION['dashboard']['recent_calls_chart_border_width']['text']; ?>',
-				cutout: chart_cutout
-			}]
-		};
-
-		const recent_calls_chart_config = {
-			type: 'doughnut',
-			data: recent_calls_chart_data,
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					chart_counter: {
-						chart_text: '<?php echo $num_rows; ?>'
-					},
-					legend: {
-						display: false
-					},
-					title: {
-						display: true,
-						text: '<?php echo $text['label-recent_calls']; ?>'
-					}
-				}
-			},
-			plugins: [chart_counter],
-		};
-
 		const recent_calls_chart = new Chart(
-			recent_calls_chart_context,
-			recent_calls_chart_config
+			document.getElementById('recent_calls_chart').getContext('2d'),
+			{
+				type: 'doughnut',
+				data: {
+					datasets: [{
+						data: ['<?php echo $num_rows; ?>', 0.00001],
+						backgroundColor: [
+							'<?php echo $_SESSION['dashboard']['recent_calls_chart_main_background_color']['text']; ?>',
+							'<?php echo $_SESSION['dashboard']['recent_calls_chart_sub_background_color']['text']; ?>'
+						],
+						borderColor: '<?php echo $_SESSION['dashboard']['recent_calls_chart_border_color']['text']; ?>',
+						borderWidth: '<?php echo $_SESSION['dashboard']['recent_calls_chart_border_width']['text']; ?>',
+						cutout: chart_cutout
+					}]
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						chart_counter: {
+							chart_text: '<?php echo $num_rows; ?>'
+						},
+						legend: {
+							display: false
+						},
+						title: {
+							display: true,
+							text: '<?php echo $text['label-recent_calls']; ?>'
+						}
+					}
+				},
+				plugins: [chart_counter],
+			}
 		);
 	</script>
 	<?php
@@ -156,7 +153,7 @@
 			file_exists($theme_image_path."icon_cdr_local_failed.png")
 			) ? true : false;
 
-		foreach($result as $index => $row) {
+		foreach ($result as $index => $row) {
 			if ($index + 1 > $recent_limit) { break; } //only show limit
 			$tmp_year = date("Y", strtotime($row['start_stamp']));
 			$tmp_month = date("M", strtotime($row['start_stamp']));

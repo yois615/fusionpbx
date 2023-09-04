@@ -335,6 +335,12 @@
 														$array['dialplans'][$x]['dialplan_details'][$y]['dialplan_detail_break'] = $row['@attributes']['break'];
 													}
 													$array['dialplans'][$x]['dialplan_details'][$y]['dialplan_detail_group'] = $group;
+													if (isset($row['@attributes']['enabled'])) {
+														$array['dialplans'][$x]['dialplan_details'][$y]['dialplan_detail_enabled'] = $row['@attributes']['enabled'];
+													}
+													else {
+														$array['dialplans'][$x]['dialplan_details'][$y]['dialplan_detail_enabled'] = 'true';
+													}
 													$y++;
 
 													if (is_array($row['action']) || is_array($row['anti-action'])) {
@@ -656,7 +662,6 @@
 							}
 							if (is_uuid($this->uuid)) {
 								$sql .= "and p.dialplan_uuid = :dialplan_uuid \n";
-								$sql .= "and s.dialplan_uuid = :dialplan_uuid \n";
 								$parameters['dialplan_uuid'] = $this->uuid;
 							}
 							$sql .= "and (s.dialplan_detail_enabled = 'true' or s.dialplan_detail_enabled is null) \n";
