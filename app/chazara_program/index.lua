@@ -36,12 +36,6 @@ local Settings = require "resources.functions.lazy_settings";
 --get the system settings
 	local settings = Settings.new(dbh, domain_name, domain_uuid);
 	daf_mode = settings:get('chazara', 'daf_mode', 'boolean') or 'false';
-
-    if daf_mode == 'true' then
-        daf_mode = true;
-    else
-        daf_mode = false;
-    end
 	
 
 -- Strip E.164 plus sign
@@ -279,7 +273,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
 end
 
 -- Daf-mode
-if daf_mode then
+if daf_mode == "true" then
     session:flushDigits();
     local exit = false;
     local timeout = 0;
@@ -376,7 +370,7 @@ end
 if teacher_auth ~= true then
     -- This is the entire student flow
     while session:ready() do
-        if daf_mode then
+        if daf_mode == "true" then
             recording_id = session:playAndGetDigits(1, 2, 4, 2500, "#", recordings_dir .. "student_select_line.wav", "silence_stream://500", "");
         else
             recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
@@ -386,7 +380,7 @@ if teacher_auth ~= true then
             break
         else
         -- Find recording
-        if daf_mode then
+        if daf_mode == "true" then
             local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
