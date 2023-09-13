@@ -35,7 +35,11 @@ local Settings = require "resources.functions.lazy_settings";
 
 --get the system settings
 	local settings = Settings.new(dbh, domain_name, domain_uuid);
-	daf_mode = settings:get('chazara', 'daf_mode', 'boolean') or 'false';
+	daf_mode = settings:get('chazara', 'daf_mode', 'boolean');
+
+    if daf_mode == nil or string.len(daf_mode) == 0 then
+        daf_mode = "false";
+    end
 	
 
 -- Strip E.164 plus sign
@@ -274,6 +278,7 @@ end
 
 -- Daf-mode
 if daf_mode == "true" then
+    freeswitch.consoleLog("WARNING", "We are in daf_mode " .. daf_mode .. "\n")
     session:flushDigits();
     local exit = false;
     local timeout = 0;
