@@ -55,7 +55,7 @@ function Settings.new(db, domain_name, domain_uuid)
 	self._db = db
 	self._domain_name = domain_name
 	self._domain_uuid = domain_uuid
-	self._use_cache	 = not cache.settings
+	self._use_cache	 = false
 
 	return self
 end
@@ -79,6 +79,9 @@ function Settings:get(category, subcategory, name)
 		local key = self:_cache_key(category, subcategory, name)
 
 		v = cache.get(key)
+		if (debug["sql"]) then
+			freeswitch.consoleLog("notice", "[settings_get] a: " .. v .. "\n");
+		end
 		if v then
 			if v ~= NONE and name == 'array' then
 				v = split(v, '/+/', true)
@@ -148,6 +151,9 @@ function Settings:_load(category, subcategory, name)
 
 		db:query(sql, params, function(row)
 			found = true;
+			if (debug["sql"]) then
+				freeswitch.consoleLog("notice", "[default_setting] SQL: "..sql.."; params:" .. json.encode(params) .. row.default_setting_value .. "\n");
+			end
 			self:set(
 				row.default_setting_category,
 				row.default_setting_subcategory,
