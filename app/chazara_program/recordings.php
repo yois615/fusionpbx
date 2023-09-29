@@ -376,7 +376,7 @@
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
 		$sql .= order_by($order_by, $order, 'recording_id', 'asc');
 	} else {
-		$sql .= order_by($order_by, $order, 'daf_number', 'asc');
+		$sql .= order_by($order_by, $order, ['daf_number', 'daf_amud', 'daf_start_line'], 'asc');
 	}
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
