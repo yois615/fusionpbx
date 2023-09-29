@@ -170,7 +170,7 @@
 					$array[0]['checked'] = 'true';
 					$array[0]['uuid'] = $recording_uuid;
 				//delete
-					$obj = new switch_recordings;
+					$obj = new chazara_program;
 					$obj->delete($array);
 				//redirect
 					$header = 'Location: recordings.php';
