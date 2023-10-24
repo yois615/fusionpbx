@@ -60,20 +60,41 @@
 //get the form value and set to php variables
 	if (count($_POST) > 0) {
 		//Get teacher's uuid
-		$sql = "select chazara_teacher_uuid ";
-		$sql .= "from v_chazara_teachers ";
-		$sql .= "WHERE domain_uuid = :domain_uuid ";
-		$sql .= "and user_uuid = :user_uuid ";
-		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
-		$parameters['domain_uuid'] = $domain_uuid;
-		
-		$database = new database;
-		$row = $database->select($sql, $parameters, 'row');
-		if (is_array($row) && @sizeof($row) != 0) {
-			$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
-		}
-		unset($sql, $parameters, $row);
 
+		// If we're show all, we don't know what teacher, so we base off the recording
+		if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+			if ($action == 'add') {
+				echo "You cannot add a recording as an administrator.<br>We don't know what teacher to assign it to.<br>";
+				exit;
+			}
+
+			$sql = "select chazara_teacher_uuid ";
+			$sql .= "from v_chazara_recordings ";
+			$sql .= "WHERE chazara_recording_uuid = :chazara_recording_uuid ";
+			$parameters['chazara_recording_uuid'] = $_GET['id'];
+			
+			$database = new database;
+			$row = $database->select($sql, $parameters, 'row');
+			if (is_array($row) && @sizeof($row) != 0) {
+				$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
+			}
+			unset($sql, $parameters, $row);
+		} else {
+			// If we're not show all, we know the teacher from the session
+			$sql = "select chazara_teacher_uuid ";
+			$sql .= "from v_chazara_teachers ";
+			$sql .= "WHERE domain_uuid = :domain_uuid ";
+			$sql .= "and user_uuid = :user_uuid ";
+			$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+			$parameters['domain_uuid'] = $domain_uuid;
+			
+			$database = new database;
+			$row = $database->select($sql, $parameters, 'row');
+			if (is_array($row) && @sizeof($row) != 0) {
+				$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
+			}
+			unset($sql, $parameters, $row);
+		}
 		$recording_uuid = $_POST["chazara_recording_uuid"];
 		$recording_filename = $_POST["recording_filename"];
 		$recording_filename_original = $_POST["recording_filename_original"];
