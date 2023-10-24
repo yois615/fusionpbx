@@ -348,6 +348,7 @@
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 		$param .= "&show=all&teacher_uuid=".escape($_REQUEST['teacher_uuid']);
 	}
+	$order_params = $param;
 	$param .= "&order_by=".$order_by."&order=".$order;
 	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
 	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
@@ -521,14 +522,14 @@
 		$col_count++;
 	}
 	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true"){
-		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $param);
+		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $order_params);
 		$col_count++;
 	}
-	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order, $param);
+	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order, $order_params);
 	$col_count++;
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-		echo th_order_by('grade', $text['label-grade'], $order_by, $order, $param, "class='shrink'");
-		echo th_order_by('parallel_class_id', $text['label-parallel'], $order_by, $order, $param, "class='shrink'");
+		echo th_order_by('grade', $text['label-grade'], $order_by, $order, $order_params, "class='shrink'");
+		echo th_order_by('parallel_class_id', $text['label-parallel'], $order_by, $order, $order_params, "class='shrink'");
 		$col_count++;
 		$col_count++;
 	}
