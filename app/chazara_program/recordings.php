@@ -520,11 +520,11 @@
 		echo "	</th>\n";
 		$col_count++;
 	}
-	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false"){
-		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order);
+	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true"){
+		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $param);
 		$col_count++;
 	}
-	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order);
+	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order, $param);
 	$col_count++;
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
 		echo th_order_by('grade', $text['label-grade'], $order_by, $order, $param, "class='shrink'");

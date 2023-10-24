@@ -37,8 +37,10 @@ local Settings = require "resources.functions.lazy_settings";
 	local settings = Settings.new(dbh, domain_name, domain_uuid);
 	daf_mode = settings:get('chazara', 'daf_mode', 'boolean');
 
-    if daf_mode == nil or string.len(daf_mode) == 0 then
-        daf_mode = "false";
+    if daf_mode ~= nil and daf_mode == "true" then
+        daf_mode = true;
+    else
+        daf_mode = false;
     end
 	
 
