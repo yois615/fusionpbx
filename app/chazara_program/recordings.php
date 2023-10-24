@@ -374,7 +374,7 @@
 		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
 	}
 	$parameters['domain_uuid'] = $domain_uuid;
-	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true") {
 		$sql .= order_by($order_by, $order, 'recording_id', 'asc');
 	} else {
 		$sql .= order_by($order_by, $order, ['daf_number', 'daf_amud', 'daf_start_line'], 'asc');
