@@ -601,7 +601,7 @@
 				echo "	</td>\n";
 			}
 			
-			if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] != "true") {
 				echo "	<td>";
 				echo escape($row['recording_id']);
 				echo "	</td>\n";
