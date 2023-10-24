@@ -127,7 +127,7 @@
 			//move the uploaded files
 			$result = move_uploaded_file($_FILES['file']['tmp_name'], $sox_file_name);
 
-			exec('sox '.$sox_file_name.' -b 16 -r 8000 -c 1 '.$file_name, $out, $return_code);
+			exec('sox '.$sox_file_name.' -b 16 -r 16000 -c 1 '.$file_name, $out, $return_code);
 
 			//Delete sox tmp file
 			unlink($sox_file_name);
