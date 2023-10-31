@@ -353,7 +353,7 @@
 			}
 			$dialplan_xml .= "		<action application=\"set\" data=\"cc_export_vars=\${cc_export_vars},call_center_queue_uuid,sip_h_Alert-Info\"/>\n";
 			$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
-			if ($queue_announce_position && is_numeric($queue_announce_frequency)) {
+			if ($queue_announce_position == 'true' && is_numeric($queue_announce_frequency)) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"result=\${luarun(app/call_centers/resources/scripts/announce-position.lua ";
 				$dialplan_xml .= "\${uuid} ".$call_center_queue_uuid." ".($queue_announce_frequency * 1000)."})\"/>\n";
 			}
