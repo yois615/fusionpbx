@@ -106,6 +106,9 @@
 		$remote_media_ip = $_REQUEST["remote_media_ip"];
 		$network_addr = $_REQUEST["network_addr"];
 		$bridge_uuid = $_REQUEST["network_addr"];
+		$call_center_queue_uuid = $_REQUEST["call_center_queue_uuid"];
+		$call_center_abandoned = $_REQUEST["call_center_abandoned"];
+		$call_center_agent_uuid = $_REQUEST["call_center_agent_uuid"];
 		$order_by = $_REQUEST["order_by"];
 		$order = $_REQUEST["order"];
 		if (strlen($_REQUEST["mos_comparison"]) > 0) {
@@ -193,6 +196,20 @@
 	if (strlen($context) > 0) {
 		$sql_where_ands[] = "context like :context";
 		$parameters['context'] = '%'.$context.'%';
+	}
+	if (strlen($call_center_agent_uuid) > 0) {
+		$sql_where_ands[] = "cc_agent = :call_center_agent_uuid";
+		$sql_where_ands[] = "cc_cause = 'answered'";
+		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+	}
+	if (strlen($call_center_queue_uuid) > 0) {
+		$sql_where_ands[] = "call_center_queue_uuid = :call_center_queue_uuid";
+		if ($call_center_abandoned != 'on') {
+			$sql_where_ands[] = "cc_cause = 'answered'";
+		} else {
+			$sql_where_ands[] = "cc_cause = 'cancel'";
+		}
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 	}
 	/*
 	if (strlen($start_stamp_begin) > 0 && strlen($start_stamp_end) > 0) {
