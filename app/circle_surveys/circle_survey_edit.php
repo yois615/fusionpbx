@@ -457,7 +457,7 @@ for ($x = 0; $x < $rows; $x++) {
 	$x = 0;
 	foreach ($survey_questions as $row) {
 		if (strlen($row['recording']) == 0) { $row['recording'] = ""; }
-		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "9"; }
+		if (strlen($row['highest_number']) == 0) { $row['highest_number'] = "5"; }
 		$row['sequence_id'] = $x + 1 ;
 
 		if (strlen($row['circle_survey_question_uuid']) > 0) {
