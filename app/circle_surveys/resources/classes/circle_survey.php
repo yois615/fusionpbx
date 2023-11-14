@@ -102,6 +102,14 @@ if (!class_exists('circle_survey')) {
 									$database = new database;
 									$database->select($sql, $parameters, 'all');
 									unset($sql, $parameters);
+
+									// Clear questions from table
+									$sql = "DELETE FROM v_circle_survey_questions ";
+									$sql .= "WHERE circle_survey_uuid = :circle_survey_uuid";
+									$parameters['circle_survey_uuid'] = $record['uuid'];
+									$database = new database;
+									$database->select($sql, $parameters, 'all');
+									unset($sql, $parameters);
 								}
 							}
 
