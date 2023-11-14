@@ -105,15 +105,18 @@ function download_send_headers($filename) {
 	}
 
 	if ($_GET["action"] == "download") {
-		$sql = "select v.sequence_id as \"Question\", v.vote as \"Vote\",  ";
+		$sql = "select v.sequence_id as \"Question\", v.vote as \"Vote\",  q.description as \"Description\", ";
 		$sql .= "c.caller_id_name as \"Caller ID\", c.caller_id_number as \"Phone Number\", ";
 		$sql .= "c.gender as \"Gender\", c.age as \"Age\", c.zip_code as \"Zip Code\" ";
 		$sql .= "FROM v_circle_survey_votes v ";
 		$sql .= "INNER JOIN v_circle_survey_customer c ";
 		$sql .= "ON v.circle_survey_customer_uuid = c.circle_survey_customer_uuid ";
+		$sql .= "INNER JOIN v_circle_survey_questions q ";
+		$sql .= "ON v.sequence_id = q.sequence_id ";
 		$sql .= "WHERE v.circle_survey_uuid = :circle_survey_uuid ";
+		$sql .= "AND q.circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "AND v.domain_uuid = :domain_uuid ";
-		$sql .= "ORDER BY sequence_id ASC ";
+		$sql .= "ORDER BY v.sequence_id ASC ";
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 		$database = new database;
@@ -158,17 +161,21 @@ function download_send_headers($filename) {
 	unset($sql, $parameters);
 
 //get the list
-	$sql = "select AVG(vote) as vote_average, sequence_id FROM v_circle_survey_votes v ";
+	$sql = "select AVG(vote) as vote_average, COUNT(vote) as vote_count, v.sequence_id, q.description, ";
+	$sql .= "((CAST(SUM(CASE when vote = 0 then 1 else 0 end) AS DECIMAL) / COUNT(vote)) * 100) AS percent_zero FROM v_circle_survey_votes v ";
 	$sql .= "INNER JOIN v_circle_survey_customer c ";
 	$sql .= "ON v.circle_survey_customer_uuid = c.circle_survey_customer_uuid ";
+	$sql .= "INNER JOIN v_circle_survey_questions q ";
+	$sql .= "ON v.sequence_id = q.sequence_id ";
 	$sql .= "WHERE v.circle_survey_uuid = :circle_survey_uuid ";
+	$sql .= "AND q.circle_survey_uuid = :circle_survey_uuid ";
 	if ($_REQUEST['gender'] == "male"){
 		$sql .= "AND c.gender = 'male' ";
 	} elseif ($_REQUEST['gender'] == "female") {
 		$sql .= "AND c.gender = 'female' ";
 	}
 	$sql .= "AND v.domain_uuid = :domain_uuid ";
-	$sql .= "GROUP BY v.sequence_id ";
+	$sql .= "GROUP BY v.sequence_id, q.description ";
 	$sql .= order_by($order_by, $order, 'sequence_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
@@ -233,7 +240,10 @@ function download_send_headers($filename) {
 	echo "<tr class='list-header'>\n";
 	
 	echo th_order_by('sequence_id', $text['label-circle_survey_sequence'], $order_by, $order);
+	echo "<th>Description</th>";
 	echo th_order_by('vote_average', $text['label-circle_survey_average'], $order_by, $order);
+	echo "<th>Votes Count</th>";
+	echo "<th>Percent Zero</th>";
 	echo "</tr>\n";
 
 	if (is_array($survey_results) && @sizeof($survey_results) != 0) {
@@ -241,7 +251,10 @@ function download_send_headers($filename) {
 		foreach ($survey_results as $row) {		
 			echo "<tr class='list-row'>\n";
 			echo "	<td>".escape($row['sequence_id'])."</td>\n";
-            echo "	<td>".round(floatval($row['vote_average']), 3)."</td>\n";			
+			echo "	<td>".escape($row['description'])."</td>\n";
+            echo "	<td>".round(floatval($row['vote_average']), 3)."</td>\n";
+			echo "	<td>".escape($row['vote_count'])."</td>\n";
+			echo "  <td>".round(floatval($row['percent_zero']), 3)."</td>\n";
 			echo "</tr>\n";
 			$x++;
 		}

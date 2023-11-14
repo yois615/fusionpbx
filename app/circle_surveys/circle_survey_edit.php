@@ -100,6 +100,7 @@
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['sequence_id'] = $r['sequence_id'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['recording'] = $r['recording'];
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['description'] = $r['description'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['highest_number'] = $r['highest_number'];
 					}
 				}
@@ -446,6 +447,7 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "					<td class='vtable'>".$text['label-circle_survey_sequence']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-recording']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-highest-number']."</td>\n";
+	echo "					<td class='vtable'>".$text['label-survey-description']."</td>\n";
 
 	if ($show_destination_delete) {
 		echo "					<td class='vtable edit_delete_checkbox_all' onmouseover=\"swap_display('delete_label_destinations', 'delete_toggle_destinations');\" onmouseout=\"swap_display('delete_label_destinations', 'delete_toggle_destinations');\">\n";
@@ -503,6 +505,10 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 		echo "					</select>\n";
 		echo "				</td>\n";
+
+		echo "<td class='vtable' style='position: relative;' align='left'>\n";
+		echo "		<input class=\"formfld\" style=\"width: 250px; \" name=\"survey_questions[".$x."][description]\"' value=\"".escape($row['description'])."\">\n";
+		echo "</td>\n";
 
 		if ($show_destination_delete) {
 			if (!empty($row['circle_survey_question_uuid'])) {
