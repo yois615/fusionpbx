@@ -245,9 +245,32 @@ if (!class_exists('circle_survey')) {
 											$array[$this->table][$x] = $row;
 
 										//overwrite
-											$array[$this->table][$x][$this->uuid_prefix.'uuid'] = uuid();
-											$array[$this->table][$x]['bridge_description'] = trim($row['bridge_description'].' ('.$text['label-copy'].')');
+											$new_survey_uuid = uuid();
+											$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $new_survey_uuid;
+											$array[$this->table][$x]['name'] = trim($row['name'].' ('.$text['label-copy'].')');
 
+											//ivr menu options sub table
+											$sql_2 = "select * from v_circle_survey_questions where circle_survey_uuid = :circle_survey_uuid";
+											$parameters_2['circle_survey_uuid'] = $row['circle_survey_uuid'];
+											$database = new database;
+											$rows_2 = $database->select($sql_2, $parameters_2, 'all');
+											if (is_array($rows_2) && @sizeof($rows_2) != 0) {
+												foreach ($rows_2 as $row_2) {
+
+													//copy data
+														$array['circle_survey_questions'][$y] = $row_2;
+
+													//overwrite
+														$array['circle_survey_questions'][$y]['circle_survey_question_uuid'] = uuid();
+														$array['circle_survey_questions'][$y]['circle_survey_uuid'] = $new_survey_uuid;
+
+													//increment
+														$y++;
+
+												}
+											}
+											unset($sql_2, $parameters_2, $rows_2, $row_2);
+										}
 									}
 								}
 								unset($sql, $parameters, $rows, $row);
@@ -255,6 +278,10 @@ if (!class_exists('circle_survey')) {
 
 						//save the changes and set the message
 							if (is_array($array) && @sizeof($array) != 0) {
+
+								$p = new permissions;
+								$p->add('circle_survey_question_add', 'temp');
+								$p->add('circle_survey_add', 'temp');
 
 								//save the array
 									$database = new database;
@@ -266,12 +293,15 @@ if (!class_exists('circle_survey')) {
 								//set message
 									message::add($text['message-copy']);
 
+								$p->delete('circle_survey_question_add', 'temp');
+								$p->delete('circle_survey_add', 'temp');
+
 							}
 							unset($records);
 					}
 
 			}
-		}
+		
 
 		public function delete_questions($records) {
 
