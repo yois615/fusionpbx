@@ -112,13 +112,32 @@ dbh:query(sql, params, function(row)
 end);
 
 if circle_survey_customer_uuid ~= nil then
-    -- You voted already
-    local f = io.open(recordings_dir .. "already-voted.wav", "r");
-    if f ~= nil then 
-        io.close(f)
-        session:streamFile(recordings_dir .. "already-voted.wav");
+    -- Did you vote already this week?
+    local sql = [[SELECT count(vote) FROM v_circle_survey_votes
+            WHERE domain_uuid = :domain_uuid
+            AND circle_survey_uuid = :circle_survey_uuid 
+            AND circle_survey_customer_uuid = :circle_survey_customer_uuid]];
+    local params = {
+        domain_uuid = domain_uuid,
+        circle_survey_customer_uuid = circle_survey_customer_uuid,
+        circle_survey_uuid = circle_survey_uuid
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice",
+            "[circle_survey_customer] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
     end
-    session:hangup();
+    dbh:query(sql, params, function(row)
+        voted_already = row["count"];
+    end);
+    if tonumber(voted_already) ~= nil and tonumber(voted_already) > 0 then
+        -- You voted already
+        local f = io.open(recordings_dir .. "already-voted.wav", "r");
+        if f ~= nil then 
+            io.close(f)
+            session:streamFile(recordings_dir .. "already-voted.wav");
+        end
+        session:hangup();
+    end
 end
 
 -- Get survey config
@@ -206,7 +225,7 @@ if session:ready() then
     local sql = [[SELECT * FROM v_circle_survey_questions
         WHERE domain_uuid = :domain_uuid
         AND circle_survey_uuid = :circle_survey_uuid
-    	ORDER BY sequence_id]];
+	ORDER BY sequence_id]];
     local params = {
         domain_uuid = domain_uuid,
         circle_survey_uuid = circle_survey_uuid
