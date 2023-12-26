@@ -348,7 +348,7 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 	echo "	</select>\n";
 	echo "</td>\n";
-	echo "<br />\n";
+	echo "<td>\n";
 	echo $text['description-greeting']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -377,7 +377,7 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 	echo "	</select>\n";
 	echo "</td>\n";
-	echo "<br />\n";
+	echo "<td>\n";
 	echo $text['description-age_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -406,7 +406,7 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 	echo "	</select>\n";
 	echo "</td>\n";
-	echo "<br />\n";
+	echo "<td>\n";
 	echo $text['description-gender_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -435,7 +435,7 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 	echo "	</select>\n";
 	echo "</td>\n";
-	echo "<br />\n";
+	echo "<td>\n";
 	echo $text['description-zip_code_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -464,7 +464,7 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 	echo "	</select>\n";
 	echo "</td>\n";
-	echo "<br />\n";
+	echo "<td>\n";
 	echo $text['description-question_answered_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
