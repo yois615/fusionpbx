@@ -158,6 +158,7 @@ if session:ready() then
         age_file = row['age_file'];
         zip_code_file = row['zip_code_file'];
         gender_file = row['gender_file'];
+        question_answered_file = row['question_answered_file'];
         exit_action = row["exit_action"];
     end);
 
@@ -259,6 +260,9 @@ if session:ready() then
         end
 
         if tonumber(dtmf_digits) ~= nil then
+            if question_answered_file ~= nil and string.len(question_answered_file) > 0 then
+                session:streamFile(recordings_dir .. question_answered_file);
+            end
             save_vote(dtmf_digits, i)
         end
     end

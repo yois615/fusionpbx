@@ -168,6 +168,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'zip_code_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'question_answered_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_action';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;

@@ -38,6 +38,10 @@
 
 		$text['label-zip_code_file']['en-us'] = "Zip Code question";
 
+		$text['label-question_answered_file']['en-us'] = "Question Answered recording";
+
+		$text['description-question_answered_file']['en-us'] = "This recording will be played when the user answers a question.";
+
 		$text['label-exit_action']['en-us'] = "Exit Action";
 
 		$text['button-male']['en-us'] = "Male";
