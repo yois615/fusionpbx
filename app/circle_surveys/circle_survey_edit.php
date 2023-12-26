@@ -87,8 +87,17 @@
 			}
 
 		//prepare the recordings array
+			$msg = '';
 			if (is_array($survey_questions)) {
+				$sequence_ids = array();
 				foreach ($survey_questions as $i => $r) {
+					if (in_array($r['sequence_id'], $sequence_ids)) {
+						//duplicate sequence_id
+						$msg .= "Duplicate sequence id detected.<br>\n";
+					}
+					else {
+						$sequence_ids[] = $r['sequence_id'];
+					}
 					if (strlen($r['recording']) > 0) {
 						if (is_uuid($r['circle_survey_question_uuid'])) {
 							$circle_survey_question_uuid = $r['circle_survey_question_uuid'];
@@ -107,8 +116,17 @@
 				}
 			}
 
+			// Check that no question is missing in the sequence
+			$all_sequence_id = range(1,max($sequence_ids));                                                    
+
+			// use array_diff to get the missing elements 
+			$missing = array_diff($all_sequence_id, $sequence_ids);
+
+			if (count($missing) > 0) {
+				$msg .= "Missing sequence id detected.<br>\n";
+			}
+
 		//check for all required data
-			$msg = '';
 			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
 			if (!is_array($array['circle_surveys'][0]['circle_survey_questions']) || sizeof($array['circle_surveys'][0]['circle_survey_questions']) == 0) {
 				$msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; 
@@ -499,7 +517,7 @@ for ($x = 0; $x < $rows; $x++) {
 		}
 		echo "			<tr>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
-		echo "		<input class=\"formfld\" style=\"width: 50px; text-align: center;\" name=\"survey_questions[".$x."][sequence_id]\" readonly=\"readonly\"' value=\"".escape($row['sequence_id'])."\">\n";
+		echo "		<input class=\"formfld\" style=\"width: 50px; text-align: center;\" name=\"survey_questions[".$x."][sequence_id]\" value=\"".escape($row['sequence_id'])."\">\n";
 		echo "</td>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
 		echo "<select name=\"survey_questions[".$x."][recording]\" class='formfld'>\n";
