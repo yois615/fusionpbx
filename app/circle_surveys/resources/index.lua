@@ -249,8 +249,14 @@ if session:ready() then
         local exit = false;
         local tries = 0;
         while (session:ready() and exit == false) do
-            dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"],
+            if question['recording_suffix'] ~= nil and string.len(question['recording_suffix']) > 0 then
+                session:streamFile(recordings_dir .. question['recording']);
+                dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording_suffix"],
                 "", "");
+            else
+                dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"],
+                "", "");
+            end
             if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= tonumber(question['highest_number']) then
                 exit = true;
             else

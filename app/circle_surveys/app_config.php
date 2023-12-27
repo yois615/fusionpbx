@@ -207,6 +207,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'recording';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'recording_suffix';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'description';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;

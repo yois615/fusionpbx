@@ -110,6 +110,7 @@
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['sequence_id'] = $r['sequence_id'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['recording'] = $r['recording'];
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['recording_suffix'] = $r['recording_suffix'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['description'] = $r['description'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['highest_number'] = $r['highest_number'];
 					}
@@ -314,8 +315,8 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	echo "<table class='list'>\n";
-	echo "<tr class='list-header'>\n";
+	//echo "<table class='list'>\n";
+	//echo "<tr class='list-header'>\n";
 	
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 
@@ -492,10 +493,11 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "		<td class='vncellreq' valign='top'>".$text['label-survey-questions']."</td>";
 	echo "		<td class='vtable' align='left'>";
 
-	echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
+	echo "			<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "				<tr>\n";
 	echo "					<td class='vtable'>".$text['label-circle_survey_sequence']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-recording']."</td>\n";
+	echo "					<td class='vtable'>Recording Suffix</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-highest-number']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-description']."</td>\n";
 
@@ -520,7 +522,7 @@ for ($x = 0; $x < $rows; $x++) {
 		echo "		<input class=\"formfld\" style=\"width: 50px; text-align: center;\" name=\"survey_questions[".$x."][sequence_id]\" value=\"".escape($row['sequence_id'])."\">\n";
 		echo "</td>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
-		echo "<select name=\"survey_questions[".$x."][recording]\" class='formfld'>\n";
+		echo "<select name=\"survey_questions[".$x."][recording]\" class='formfld' style=\"width: 250px;\">\n";
 		echo "	<option></option>\n";
 			//recordings
 			if (is_array($recordings)) {
@@ -540,6 +542,26 @@ for ($x = 0; $x < $rows; $x++) {
 		echo "	</select>\n";
 		echo "</td>\n";
 
+		echo "<td class='vtable' style='position: relative;' align='left'>\n";
+		echo "<select name=\"survey_questions[".$x."][recording_suffix]\" class='formfld' style=\"width: 250px;\">\n";
+		echo "	<option></option>\n";
+			//recordings
+			if (is_array($recordings)) {
+				echo "<optgroup label='Recordings'>\n";
+				foreach ($recordings as $recording) {
+					$recording_name = $recording["recording_name"];
+					$recording_filename = $recording["recording_filename"];
+					if (strlen($row['recording_suffix']) > 0 && $row['recording_suffix'] == $recording_filename) {
+						echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+					}
+					else {
+						echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+					}
+				}
+				echo "</optgroup>\n";
+			}
+		echo "	</select>\n";
+		echo "</td>\n";
 
 		echo "				<td class='formfld'>\n";
 		echo "					<select name=\"survey_questions[".$x."][highest_number]\" class='formfld' style='width:55px'>\n";
