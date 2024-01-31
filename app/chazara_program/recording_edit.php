@@ -95,6 +95,11 @@
 			}
 			unset($sql, $parameters, $row);
 		}
+
+		// If we have no $chazara_teacher_uuid, and the action is add, get it from the post
+		if ((empty($chazara_teacher_uuid) || strlen($chazara_teacher_uuid) == 0) && permission_exists('chazara_recording_all')) {
+			$chazara_teacher_uuid = $_POST["chazara_teacher_uuid"];
+		}
 		$recording_uuid = $_POST["chazara_recording_uuid"];
 		$recording_filename = $_POST["recording_filename"];
 		$recording_filename_original = $_POST["recording_filename_original"];
@@ -363,6 +368,49 @@
 	echo $text['message-file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
+
+	if (permission_exists('chazara_recording_all') && $action == 'add') {
+		//check if teacher id in session
+		$sql = "select chazara_teacher_uuid ";
+		$sql .= "from v_chazara_teachers ";
+		$sql .= "WHERE domain_uuid = :domain_uuid ";
+		$sql .= "and user_uuid = :user_uuid ";
+		$parameters['user_uuid'] = $_SESSION['user']['user_uuid'];
+		$parameters['domain_uuid'] = $domain_uuid;
+		
+		$database = new database;
+		$row = $database->select($sql, $parameters, 'row');
+		if (is_array($row) && @sizeof($row) != 0) {
+			$chazara_teacher_uuid = $row['chazara_teacher_uuid'];
+		}
+		unset($sql, $parameters, $row);
+			
+		if (empty($chazara_teacher_uuid) || strlen($chazara_teacher_uuid) == 0) {
+			$sql = "select chazara_teacher_uuid, name, grade from v_chazara_teachers ";
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$sql .= "order by name asc ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$database = new database;
+			$result_e = $database->select($sql, $parameters, 'all');
+			echo "<tr>\n";
+			echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+			echo "Teacher";
+			echo "</td>\n";
+			echo "<td class='vtable' align='left'>\n";
+			echo "			<select class='formfld' name='chazara_teacher_uuid' id='chazara_teacher_uuid'>\n";
+			echo "				<option value=''></option>";
+			if (is_array($result_e) && @sizeof($result_e) != 0) {
+				foreach ($result_e as &$row) {
+					$selected = ($row['chazara_teacher_uuid'] == $_REQUEST['chazara_teacher_uuid']) ? "selected" : null;
+					echo "		<option value='".escape($row['chazara_teacher_uuid'])."' ".escape($selected).">".escape($row['grade'])."-".escape($row['name'])."</option>";
+				}
+			}
+			echo "			</select>\n";
+			echo "</td>\n";
+			echo "</tr>\n";
+			unset($sql, $parameters, $result_e, $row, $selected);
+		}
+	}
 
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 
