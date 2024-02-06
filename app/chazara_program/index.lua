@@ -245,7 +245,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
     local exit = false;
     local timeout = 0;
     while (session:ready() and exit == false) do
-        parallel = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. parallel_recording, "", "");
+        parallel = session:playAndGetDigits(1, 2, 3, 2500, "#", recordings_dir .. parallel_recording, "", "");
         if parallel == "*" then goto grade_menu; end;
         if tonumber(parallel) ~= nil then
             local sql = [[SELECT chazara_teacher_uuid, pin FROM v_chazara_teachers
