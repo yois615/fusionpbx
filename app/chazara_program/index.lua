@@ -228,11 +228,11 @@ while (session:ready() and exit == false) do
             dbh:query(sql, params, function(row)
                 parallel_recording = row["recording"];
             end);
-        end
-        if tonumber(max_parallel) > 9 then
-            parallel_max_digits = 2;
-        else
-            parallel_max_digits = 1;
+            if tonumber(max_parallel) ~= nil and tonumber(max_parallel) > 9 then
+                parallel_max_digits = 2;
+            else
+                parallel_max_digits = 1;
+            end
         end
     end
     timeout = timeout + 1
