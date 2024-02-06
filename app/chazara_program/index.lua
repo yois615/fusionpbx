@@ -181,7 +181,7 @@ while (session:ready() and exit == false) do
     if grade == "*" then goto start_menu; end;
     if tonumber(grade) ~= nil then
         -- Inspect database if that grade exists, and how many parallels
-        local sql = [[SELECT count(chazara_teacher_uuid) as count FROM v_chazara_teachers
+        local sql = [[SELECT count(chazara_teacher_uuid) as count, MAX(parallel_class_id) as max_parallel FROM v_chazara_teachers
                 WHERE domain_uuid = :domain_uuid
                 AND grade = :grade]];
         local params = {
@@ -193,6 +193,7 @@ while (session:ready() and exit == false) do
         end
         dbh:query(sql, params, function(row)
             count = tonumber(row["count"]);
+            max_parallel = tonumber(row["max_parallel"]);
         end);
         if count == 1 then
             exit = true;
@@ -230,6 +231,11 @@ while (session:ready() and exit == false) do
                 parallel_recording = row["recording"];
             end);
         end
+        if tonumber(max_parallel) > 9 then
+            parallel_max_digits = 2;
+        else
+            parallel_max_digits = 1;
+        end
     end
     timeout = timeout + 1
     if timeout > 3 then
@@ -245,7 +251,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
     local exit = false;
     local timeout = 0;
     while (session:ready() and exit == false) do
-        parallel = session:playAndGetDigits(1, 2, 3, 2500, "#", recordings_dir .. parallel_recording, "", "");
+        parallel = session:playAndGetDigits(1, parallel_max_digits, 3, 2500, "#", recordings_dir .. parallel_recording, "", "");
         if parallel == "*" then goto grade_menu; end;
         if tonumber(parallel) ~= nil then
             local sql = [[SELECT chazara_teacher_uuid, pin FROM v_chazara_teachers
