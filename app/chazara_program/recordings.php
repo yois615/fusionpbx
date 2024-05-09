@@ -359,7 +359,7 @@
 	$sql = "select r.chazara_recording_uuid, r.recording_name, r.recording_id, r.recording_filename, ";
 	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.insert_date, ";
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
-		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, ";
+		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, r.chapter, ";
 	}
 	$sql .= "t.grade, t.parallel_class_id, r.chazara_teacher_uuid, t.name as teacher_name ";
 	$sql .= "from v_chazara_recordings r ";
@@ -377,7 +377,7 @@
 	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true") {
 		$sql .= order_by($order_by, $order, 'recording_id', 'asc');
 	} else {
-		$sql .= order_by($order_by, $order, ['daf_number', 'daf_amud', 'daf_start_line'], 'asc');
+		$sql .= order_by($order_by, $order, ['chapter', 'daf_number', 'daf_amud', 'daf_start_line'], 'asc');
 	}
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
@@ -535,6 +535,8 @@
 		$col_count++;
 	}
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+		echo "<th class='center'>".$text['label-chapter']."</th>\n";
+		$col_count++;
 		echo "<th class='center'>".$text['label-daf_number']."</th>\n";
 		$col_count++;
 		echo "<th class='center'>".$text['label-daf_amud']."</th>\n";
@@ -616,6 +618,7 @@
 				echo "	<td>".$row['parallel_class_id']."</td>\n";
 			}
 			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+				echo "	<td>".$row['chapter']."</td>\n";
 				echo "	<td>".$row['daf_number']."</td>\n";
 				echo "	<td>".$row['daf_amud']."</td>\n";
 				echo "	<td>".$row['daf_start_line']."-".$row['daf_end_line']."</td>\n";

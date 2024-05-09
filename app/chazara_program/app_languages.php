@@ -557,6 +557,8 @@ $text['label-teachers']['uk-ua'] = "Параметри";
 
 $text['label-daf_number']['en-us'] = "Daf";
 
+$text['label-chapter']['en-us'] = "Perek";
+
 $text['label-daf_amud']['en-us'] = "Amud";
 
 $text['label-mesechta']['en-us'] = "Mesechta";

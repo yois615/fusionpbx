@@ -168,7 +168,7 @@
 //get existing recording uuid
 	$sql_rows = "select c.call_uuid, t.name as teacher_name, t.grade, r.recording_id,c.caller_id_name, c.caller_id_number, c.start_epoch, c.duration ";
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
-		$sql_rows .= ", r.daf_number, r.daf_amud, r.daf_start_line ";
+		$sql_rows .= ", r.chapter, r.daf_number, r.daf_amud, r.daf_start_line ";
 	}
 	$sql_cnt = "select count(*) as cnt ";
 	$sql = "from v_chazara_cdrs c ";
@@ -452,6 +452,8 @@
 		$col_count++;
 	} else {
 		// Daf and line
+		echo "<th class='left'>".$text['label-chapter']."</th>\n";
+		$col_count++;
 		echo th_order_by('daf_number', $text['label-daf_number'], $order_by, $order, $null, "class='left'");
 		$col_count++;
 		echo "<th class='left'>".$text['label-daf_start_line']."</th>\n";
@@ -483,6 +485,9 @@
 				echo escape($row['recording_id']);
 				echo "	</td>\n";
 			} else {
+				echo "	<td class='left'>";
+				echo escape($row['chapter'].$row['daf_amud']);
+				echo "	</td>\n";
 				echo "	<td class='left'>";
 				echo escape($row['daf_number'].$row['daf_amud']);
 				echo "	</td>\n";

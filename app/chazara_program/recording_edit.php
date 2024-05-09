@@ -104,6 +104,7 @@
 		$recording_filename = $_POST["recording_filename"];
 		$recording_filename_original = $_POST["recording_filename_original"];
 		$recording_id = $_POST["recording_id"];
+		$chapter = $_POST["chapter"];
 		$chazara_teacher_uuid = $chazara_teacher_uuid;
 		$recording_name = $_POST["recording_name"];
 		$recording_description = $_POST["recording_description"];
@@ -256,6 +257,7 @@
 				$array['chazara_recordings'][0]['daf_amud'] = $daf_amud;
 				$array['chazara_recordings'][0]['daf_start_line'] = $daf_start_line;
 				$array['chazara_recordings'][0]['daf_end_line'] = $daf_end_line;
+				$array['chazara_recordings'][0]['chapter'] = $chapter;
 				$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
 				$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 				$array['chazara_recordings'][0]['recording_filename'] = $recording_filename;
@@ -302,6 +304,7 @@
 			$daf_amud = $row['daf_amud'];
 			$daf_start_line = $row['daf_start_line'];
 			$daf_end_line = $row['daf_end_line'];
+			$chapter = $row['chapter'];
 		}
 		unset($sql, $parameters, $row);
 	}
@@ -413,6 +416,16 @@
 	}
 
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-chapter']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='number' name='chapter' maxlength='255' value=\"".escape($chapter)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
