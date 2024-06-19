@@ -38,6 +38,10 @@
 
 		$text['label-zip_code_file']['en-us'] = "Zip Code question";
 
+		$text['label-reason_file']['en-us'] = "Reason for vote question";
+
+		$text['label-ask_reason_below']['en-us'] = "Ask for reason below this vote";
+
 		$text['label-question_answered_file']['en-us'] = "Question Answered recording";
 
 		$text['description-question_answered_file']['en-us'] = "This recording will be played when the user answers a question.";

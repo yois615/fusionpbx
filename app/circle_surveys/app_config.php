@@ -96,6 +96,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'reason';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_survey_customer_uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
@@ -173,6 +176,12 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_action';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'reason_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'ask_reason_below';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
 
 		$y++;

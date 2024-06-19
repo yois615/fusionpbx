@@ -27,7 +27,7 @@ digit_timeout = 5000;
 max_len_seconds = 15;
 
 -- Function to save vote
-function save_vote(vote, sequence_id)
+function save_vote(vote, reason, sequence_id)
     if (circle_survey_customer_uuid == nil) then
         --define uuid function
             local random = math.random;
@@ -57,15 +57,24 @@ function save_vote(vote, sequence_id)
         dbh:query(sql, params);
     end
     -- save the vote
-    local sql = "INSERT INTO v_circle_survey_votes (circle_survey_customer_uuid, vote, call_uuid, circle_survey_uuid, sequence_id, domain_uuid)"
-    sql = sql .. " values (:circle_survey_customer_uuid, :vote, :uuid, :circle_survey_uuid, :sequence_id, :domain_uuid)";
+    local sql = "INSERT INTO v_circle_survey_votes (circle_survey_customer_uuid, vote, call_uuid, circle_survey_uuid, sequence_id, domain_uuid";
+    if reason ~= nil then
+        sql = sql .. ", reason";
+    end
+    sql = sql .. ")";
+    sql = sql .. " values (:circle_survey_customer_uuid, :vote, :uuid, :circle_survey_uuid, :sequence_id, :domain_uuid"
+    if reason ~= nil then
+        sql = sql .. ", :reason";
+    end
+    sql = sql .. ")";
     local params = {
         circle_survey_customer_uuid = circle_survey_customer_uuid,
         vote = vote,
         uuid = uuid,
         circle_survey_uuid = circle_survey_uuid,
         sequence_id = sequence_id,
-        domain_uuid = domain_uuid
+        domain_uuid = domain_uuid,
+        reason = reason
     }
     dbh:query(sql, params);
 end
@@ -160,6 +169,8 @@ if session:ready() then
         gender_file = row['gender_file'];
         question_answered_file = row['question_answered_file'];
         exit_action = row["exit_action"];
+        reason_file = row["reason_file"];
+        ask_reason_below = row["ask_reason_below"];
     end);
 
     -- Play greeting
@@ -244,6 +255,7 @@ if session:ready() then
 end
 
 if session:ready() then
+    local reason = nil;
     for i, question in ipairs(survey_questions) do
         session:flushDigits();
         local exit = false;
@@ -266,10 +278,26 @@ if session:ready() then
         end
 
         if tonumber(dtmf_digits) ~= nil then
+            -- If they voted 0 then ask for a reason
+            if tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) then
+                session:flushDigits();
+                local exit = false;
+                local tries = 0;
+                while (session:ready() and exit == false) do
+                    reason = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. reason_file,
+                        "", "");
+                    if tonumber(reason) ~= nil and tonumber(reason) > 0 then
+                        exit = true;
+                    else
+                        tries = tries + 1;
+                        if tries == max_tries then session:hangup(); end;
+                    end
+                end
+            end
             if question_answered_file ~= nil and string.len(question_answered_file) > 0 then
                 session:streamFile(recordings_dir .. question_answered_file);
             end
-            save_vote(dtmf_digits, i)
+            save_vote(dtmf_digits, reason, i)
         end
     end
 end
