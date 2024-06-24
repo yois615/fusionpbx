@@ -279,7 +279,7 @@ if session:ready() then
 
         if tonumber(dtmf_digits) ~= nil then
             -- If they voted 0 then ask for a reason
-            if tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) then
+            if tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) and reason_file ~= nil and string.len(reason_file) ~= 0 then
                 session:flushDigits();
                 local exit = false;
                 local tries = 0;
