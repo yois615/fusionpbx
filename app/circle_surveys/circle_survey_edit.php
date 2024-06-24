@@ -57,6 +57,7 @@
 		$zip_code_file = $_POST["zip_code_file"];
 		$question_answered_file = $_POST["question_answered_file"];
 		$reason_file = $_POST["reason_file"];
+		$reason_0_file = $_POST["reason_0_file"];
 		$ask_reason_below = $_POST["ask_reason_below"];
 		$exit_action = $_POST["exit_action"];
 		$description = $_POST["description"];
@@ -160,6 +161,7 @@
 			$array['circle_surveys'][0]['gender_file'] = $gender_file;
 			$array['circle_surveys'][0]['zip_code_file'] = $zip_code_file;
 			$array['circle_surveys'][0]['reason_file'] = $reason_file;
+			$array['circle_surveys'][0]['reason_0_file'] = $reason_0_file;
 			$array['circle_surveys'][0]['ask_reason_below'] = $ask_reason_below;
 			$array['circle_surveys'][0]['exit_action'] = $exit_action;
 
@@ -257,6 +259,7 @@ $destination = new destinations;
 		$gender_file = $row['gender_file'];
 		$zip_code_file = $row['zip_code_file'];
 		$reason_file = $row['reason_file'];
+		$reason_0_file = $row['reason_0_file'];
 		$ask_reason_below = $row['ask_reason_below'];
 		$exit_action = $row['exit_action'];
 	}
@@ -496,6 +499,58 @@ for ($x = 0; $x < $rows; $x++) {
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-reason_0_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='reason_0_file' id='reason_0_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($reason_0_file) > 0 && $reason_0_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<td>\n";
+	echo $text['description-reason_0_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-ask_reason_below']."\n";
+	echo "</td>\n";
+	echo "				<td class='formfld'>\n";
+	echo "					<select name=\"ask_reason_below\" class='formfld' style='width:55px'>\n";
+	$i=0;
+	while ($i <= 9) {
+		if ($i == $ask_reason_below) {
+			echo "				<option value='$i' selected='selected'>$i</option>\n";
+		}
+		else {
+			echo "				<option value='$i'>$i</option>\n";
+		}
+		$i = $i + 1;
+	}
+	echo "					</select>\n";
+	echo "				</td>\n";
+	echo "<td>\n";
+	echo $text['description-ask_reason_below']."\n";
+	echo "</td>\n";
+	echo "			</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-reason_file']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
@@ -523,28 +578,7 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-ask_reason_below']."\n";
-	echo "</td>\n";
-	echo "				<td class='formfld'>\n";
-	echo "					<select name=\"ask_reason_below\" class='formfld' style='width:55px'>\n";
-	$i=0;
-	while ($i <= 9) {
-		if ($i == $ask_reason_below) {
-			echo "				<option value='$i' selected='selected'>$i</option>\n";
-		}
-		else {
-			echo "				<option value='$i'>$i</option>\n";
-		}
-		$i = $i + 1;
-	}
-	echo "					</select>\n";
-	echo "				</td>\n";
-	echo "<td>\n";
-	echo $text['description-ask_reason_below']."\n";
-	echo "</td>\n";
-	echo "			</tr>\n";
+
 
 	echo "	<tr>";
 	echo "		<td class='vncellreq' valign='top'>".$text['label-survey-questions']."</td>";

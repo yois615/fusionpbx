@@ -170,6 +170,7 @@ if session:ready() then
         question_answered_file = row['question_answered_file'];
         exit_action = row["exit_action"];
         reason_file = row["reason_file"];
+        reason_0_file = row["reason_0_file"];
         ask_reason_below = row["ask_reason_below"];
     end);
 
@@ -279,7 +280,21 @@ if session:ready() then
 
         if tonumber(dtmf_digits) ~= nil then
             -- If they voted 0 then ask for a reason
-            if tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) and reason_file ~= nil and string.len(reason_file) ~= 0 then
+            if tonumber(dtmf_digits) == 0 and reason_0_file ~= nil and string.len(reason_0_file) > 0 then
+                session:flushDigits();
+                local exit = false;
+                local tries = 0;
+                while (session:ready() and exit == false) do
+                    reason = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. reason_0_file,
+                        "", "");
+                    if tonumber(reason) ~= nil and tonumber(reason) > 0 then
+                        exit = true;
+                    else
+                        tries = tries + 1;
+                        if tries == max_tries then session:hangup(); end;
+                    end
+                end
+            elseif tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) and reason_file ~= nil and string.len(reason_file) ~= 0 then
                 session:flushDigits();
                 local exit = false;
                 local tries = 0;
