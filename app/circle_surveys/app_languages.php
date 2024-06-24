@@ -40,7 +40,7 @@
 
 		$text['label-reason_file']['en-us'] = "Reason for vote question";
 
-		$text['label-ask_reason_below']['en-us'] = "Ask for reason below this vote";
+		$text['label-ask_reason_below']['en-us'] = "Ask for reason at or below this vote";
 
 		$text['label-question_answered_file']['en-us'] = "Question Answered recording";
 
