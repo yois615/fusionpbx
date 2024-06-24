@@ -180,6 +180,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'reason_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'reason_0_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'ask_reason_below';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
