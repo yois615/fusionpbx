@@ -276,7 +276,7 @@
 			//redirect
 			$header = 'Location: recordings.php';
 			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-				$header .= "?show=all";
+				$header .= "?show=all&teacher_uuid=" . $_REQUEST['teacher_uuid'] . "&page=" . $_GET['page'];
 			}
 			header($header);
 			exit;

@@ -594,7 +594,7 @@
 			if (permission_exists('chazara_recording_edit')) {
 				$list_row_url = "recording_edit.php?id=".urlencode($row['chazara_recording_uuid']);
 				if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-					$list_row_url .= "&show=all";
+					$list_row_url .= "&show=all&teacher_uuid=" . $_REQUEST['teacher_uuid'] . "&page=" . $_GET['page'];
 				}
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
