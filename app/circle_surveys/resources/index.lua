@@ -256,10 +256,10 @@ if session:ready() then
 end
 
 if session:ready() then
-    local reason = nil;
     for i, question in ipairs(survey_questions) do
         session:flushDigits();
         local exit = false;
+        local reason = nil;
         local tries = 0;
         while (session:ready() and exit == false) do
             if question['recording_suffix'] ~= nil and string.len(question['recording_suffix']) > 0 then
