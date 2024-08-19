@@ -162,8 +162,10 @@ function download_send_headers($filename) {
 	unset($sql, $parameters);
 
 //get the list
-	$sql = "select AVG(vote) as vote_average, COUNT(vote) as vote_count, v.sequence_id, q.description, ";
-	$sql .= "((CAST(SUM(CASE when vote = 0 then 1 else 0 end) AS DECIMAL) / COUNT(vote)) * 100) AS percent_zero FROM v_circle_survey_votes v ";
+	//$sql = "select AVG(vote) as vote_average, COUNT(vote) as vote_count, v.sequence_id, q.description, ";
+	//$sql .= "((CAST(SUM(CASE when vote = 0 then 1 else 0 end) AS DECIMAL) / COUNT(vote)) * 100) AS percent_zero FROM v_circle_survey_votes v ";
+	$sql = "select (SUM(CASE when vote < 2 then 0 else vote end) / SUM(CASE when vote < 2 then 0 else 1 end)) as vote_average, COUNT(vote) as vote_count, v.sequence_id, q.description, ";
+    $sql .= "((CAST(SUM(CASE when vote < 2 then 1 else 0 end) AS DECIMAL) / COUNT(vote)) * 100) AS percent_zero FROM v_circle_survey_votes v ";
 	$sql .= "INNER JOIN v_circle_survey_customer c ";
 	$sql .= "ON v.circle_survey_customer_uuid = c.circle_survey_customer_uuid ";
 	$sql .= "INNER JOIN v_circle_survey_questions q ";
