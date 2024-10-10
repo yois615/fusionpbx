@@ -1,0 +1,10 @@
+<context name="{v_context}">
+    <extension name="Conf_Barge" continue="false" app_uuid="c03b781e-13a8-bd1b-e42b-b6b9b4d27ce4" enabled="true" order="100">
+        <condition field="destination_number" expression="conf_barge">
+            <action application="answer" data=""/>
+            <action application="set" data="eavesdrop_whisper_bleg=true"/>
+            <action application="set" data="eavesdrop_enable_dtmf=false"/>
+            <action application="eavesdrop" data="${sip_h_X-Child-Call-Uuid}"/>
+        </condition>
+    </extension>
+</context>
