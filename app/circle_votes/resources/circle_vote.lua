@@ -7,6 +7,7 @@
 -- (c) 2022 The Voice of Lakewood, Circle Magazine
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
 require "resources.functions.config";
+require "resources.functions.mkdir";
 audio_dir = "/usr/share/freeswitch/sounds/the_circle/top_ten_hotline/"
 debug.sql = true;
 json = freeswitch.JSON();
@@ -265,6 +266,8 @@ zip = session:playAndGetDigits(5, 5, 5, 3000, "#", audio_dir .. "top_ten_zip.wav
         session:execute("playback", "silence_stream://200");
         session:streamFile("tone_stream://L=1;%(500, 0, 640)");
         start_epoch = os.time();
+        --make sure the voicemail_dir exists
+	    mkdir(voicemail_dir .. "/" .. voicemail_id);
         result = session:recordFile(voicemail_dir .. "/" .. voicemail_id .. "/msg_" .. uuid .. ".wav", max_len_seconds,
             500, 4);
         message_length = (os.time() - start_epoch);
