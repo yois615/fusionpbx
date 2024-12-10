@@ -48,6 +48,13 @@
 	$order_by = $_GET["order_by"];
 	$order = $_GET["order"];
 
+//get the vote_id
+	$vote_id = $_GET["vote_id"];
+	if (empty($vote_id)) {
+		echo "missing vote_id";
+		exit;
+	}
+
 
 //get the count
 	$sql = "select count(vote) from circle_tt_votes ";
@@ -68,7 +75,9 @@
     $sql .= "FROM circle_tt_votes v INNER JOIN circle_customer c ON v.customer_id = c.customer_id ";
 	$sql .= "INNER JOIN v_voicemail_messages vmm ON v.call_uuid = vmm.voicemail_message_uuid ";
 	$sql .= "INNER JOIN v_voicemails vm ON vmm.voicemail_uuid = vm.voicemail_uuid ";
+	$sql .= "WHERE v.vote_id = :vote_id ";
 	$sql .= "ORDER BY random() LIMIT 1 ";
+	$parameters["vote_id"] = $vote_id;
 	$database = new database;
 	$vote_results = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
@@ -85,7 +94,7 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>Pick a winner (".$num_votes.")</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_votes.php']);
+	echo button::create(['type'=>'button','icon'=>$_SESSION['theme']['button_icon_back'],'label'=>'Back','link'=>'circle_votes.php?vote_id='.$vote_id]);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
