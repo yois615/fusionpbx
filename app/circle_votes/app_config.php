@@ -48,6 +48,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote_id';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'customer_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';

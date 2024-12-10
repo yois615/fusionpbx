@@ -81,16 +81,23 @@ function download_send_headers($filename) {
 		$search = $_POST['search'];
 		$circle_votes = $_POST['circle_votes'];
 	
+//get the vote_id
+	$vote_id = $_GET["vote_id"];
+	if (empty($vote_id)) {
+		echo "access denied";
+		exit;
+	}
 
 //process the http post data by action
 	if ($action == 'delete' && permission_exists('circle_votes_delete')) {
-		$sql = "DELETE FROM circle_tt_votes ";
+		$sql = "DELETE FROM circle_tt_votes WHERE vote_id = :vote_id ";
+		$parameters["vote_id"] = $vote_id;
 	    $database = new database;
 	    $vote_results = $database->select($sql, $parameters, 'all');
 	    unset($sql, $parameters);
 
 		//delete the voicemails
-		$voicemail_id = '250';
+		$voicemail_id = $vote_id;
 		//Get the VM uuid
 		$sql = "SELECT voicemail_uuid FROM v_voicemails ";
 		$sql .= "WHERE domain_uuid = :domain_uuid ";
@@ -100,9 +107,6 @@ function download_send_headers($filename) {
 		$database = new database;
 		$voicemail_uuid = $database->select($sql, $parameters, 'column');
 		unset($sql, $parameters);
-		if (empty($voicemail_uuid)) {
-			$voicemail_uuid = '8b1f7c2c-46a0-4fcd-b2d7-6ba8c7b52433';
-		}
 
 		//Clean the table
 		$sql = "DELETE FROM v_voicemail_messages ";
@@ -140,7 +144,8 @@ function download_send_headers($filename) {
 
 
 //get the count
-	$sql = "select count(vote) from circle_tt_votes ";
+	$sql = "select count(vote) from circle_tt_votes WHERE vote_id = :vote_id";
+	$parameters["vote_id"] = $vote_id;
 	$database = new database;
 	$num_rows = $database->select($sql, $parameters, 'column');
 
@@ -152,9 +157,10 @@ function download_send_headers($filename) {
 	$offset = $rows_per_page * $page;
 
 //get the list
-	$sql = "select vote,count(vote) FROM circle_tt_votes GROUP BY vote ";
+	$sql = "select vote,count(vote) FROM circle_tt_votes WHERE vote_id = :vote_id GROUP BY vote ";
 	$sql .= order_by($order_by, $order, 'count', 'desc');
 	$sql .= limit_offset($rows_per_page, $offset);
+	$parameters["vote_id"] = $vote_id;
 	$database = new database;
 	$vote_results = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
