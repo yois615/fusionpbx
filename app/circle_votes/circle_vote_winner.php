@@ -57,7 +57,8 @@
 
 
 //get the count
-	$sql = "select count(vote) from circle_tt_votes ";
+	$sql = "select count(vote) from circle_tt_votes WHERE vote_id = :vote_id";
+	$parameters["vote_id"] = $vote_id;
 	$database = new database;
 	$num_votes = $database->select($sql, $parameters, 'column');
 	$num_rows = 1;
