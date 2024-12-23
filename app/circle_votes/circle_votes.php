@@ -127,9 +127,10 @@ function download_send_headers($filename) {
 
 	if ($_GET["action"] == "download") {
 		$sql = "select c.caller_id_name, c.caller_id_number, v.age, v.gender, c.zip, v.vote FROM circle_tt_votes v INNER JOIN circle_customer c ";
-		$sql .= "ON v.customer_id = c.customer_id ORDER BY vote ASC";
+		$sql .= "ON v.customer_id = c.customer_id WHERE v.vote_id = :vote_id ORDER BY vote ASC";
+		$parameters["vote_id"] = $vote_id;
 		$database = new database;
-		$vote_results = $database->select($sql, null, 'all');
+		$vote_results = $database->select($sql, $parameters, 'all');
 		unset($sql, $parameters);
 
 		download_send_headers("votes_export_".date("Y-m-d").".csv");
