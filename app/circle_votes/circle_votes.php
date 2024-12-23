@@ -133,7 +133,7 @@ function download_send_headers($filename) {
 		$vote_results = $database->select($sql, $parameters, 'all');
 		unset($sql, $parameters);
 
-		download_send_headers("votes_export_".date("Y-m-d").".csv");
+		download_send_headers("votes_export_".date("Y-m-d")."-".$vote_id.".csv");
 		echo array2csv($vote_results);
 		exit;
 	}
@@ -180,7 +180,7 @@ function download_send_headers($filename) {
 	echo "	<div class='actions'>\n";
 
 	echo button::create(['type'=>'button','label'=>'Pick random winner','link'=>'circle_vote_winner.php?vote_id='.$vote_id]);
-	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download']);
+	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download&vote_id='.$vote_id]);
 	
 	if (permission_exists('circle_votes_delete')) {
 		echo button::create(['type'=>'button','label'=>$text['button-circle-vote-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
