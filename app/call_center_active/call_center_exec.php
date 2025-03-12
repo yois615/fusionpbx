@@ -86,6 +86,15 @@
 			}
 			break;
 		case "uuid_pickup":
+				if (!empty($_SESSION['user']['extension'][0]['call_center_agent_uuid'])) {
+					//Get the current agent status
+					$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+					$response = event_socket_request($fp, 'api callcenter_config agent get state ' .$_SESSION['user']['extension'][0]['call_center_agent_uuid']);
+					if (trim($response) == "Waiting") {
+							$response = event_socket_request($fp, 'api callcenter_config agent set state ' .$_SESSION['user']['extension'][0]['call_center_agent_uuid'] . " 'Idle'");
+							$response = event_socket_request($fp, 'api uuid_setvar '.$uuid.' api_after_bridge callcenter_config agent set state ' .$_SESSION['user']['extension'][0]['call_center_agent_uuid'] . ' Waiting');
+					}
+				}
 				$switch_command = "uuid_transfer ".$uuid." ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];
 				break;
 		case "bridge":

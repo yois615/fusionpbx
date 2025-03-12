@@ -254,14 +254,17 @@
 						$sql .= "e.user_context, ";
 						$sql .= "e.outbound_caller_id_name, ";
 						$sql .= "e.outbound_caller_id_number, ";
+						$sql .= "cc.call_center_agent_uuid, "
 						$sql .= "e.description ";
 						$sql .= "from ";
 						$sql .= "v_extension_users as u, ";
-						$sql .= "v_extensions as e ";
+						$sql .= "v_extensions as e, ";
+						$sql .= "v_call_center_agents as cc "
 						$sql .= "where ";
 						$sql .= "e.domain_uuid = :domain_uuid ";
 						$sql .= "and e.extension_uuid = u.extension_uuid ";
 						$sql .= "and u.user_uuid = :user_uuid ";
+						$sql .= "and cc.user_uuid = :user_uuid "
 						$sql .= "and e.enabled = 'true' ";
 						$sql .= "order by ";
 						$sql .= "e.extension asc ";
@@ -285,6 +288,7 @@
 								$_SESSION['user']['extension'][$x]['outbound_caller_id_name'] = $row['outbound_caller_id_name'];
 								$_SESSION['user']['extension'][$x]['outbound_caller_id_number'] = $row['outbound_caller_id_number'];
 								$_SESSION['user']['extension'][$x]['user_context'] = $row['user_context'];
+								$_SESSION['user']['extension'][$x]['call_center_agent_uuid'] = $row['call_center_agent_uuid'];
 								$_SESSION['user']['extension'][$x]['description'] = $row['description'];
 
 								//set the context
