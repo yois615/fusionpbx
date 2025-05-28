@@ -472,7 +472,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_serial_number";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
-		$z++
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_emergency_cid";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
