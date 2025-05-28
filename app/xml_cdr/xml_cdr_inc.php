@@ -142,6 +142,8 @@
 		$order = $_REQUEST["order"] ?? '';
 		$cc_side = $_REQUEST["cc_side"] ?? '';
 		$call_center_queue_uuid = $_REQUEST["call_center_queue_uuid"] ?? '';
+		$call_center_abandoned = $_REQUEST["call_center_abandoned"];
+		$call_center_agent_uuid = $_REQUEST["call_center_agent_uuid"];
 		$ring_group_uuid = $_REQUEST["ring_group_uuid"] ?? '';
 		$ivr_menu_uuid = $_REQUEST["ivr_menu_uuid"] ?? '';
 		if (isset($_SESSION['cdr']['field']) && is_array($_SESSION['cdr']['field'])) {
@@ -241,6 +243,8 @@
 	$param .= "&recording=".urlencode($recording ?? '');
 	$param .= "&cc_side=".urlencode($cc_side ?? '');
 	$param .= "&call_center_queue_uuid=".urlencode($call_center_queue_uuid ?? '');
+	$param .= "&call_center_abandoned=".urlencode($call_center_abandoned ?? '');
+	$param .= "&call_center_agent_uuid=".urlencode($call_center_agent_uuid ?? '');
 
 	if (isset($_SESSION['cdr']['field']) && is_array($_SESSION['cdr']['field'])) {
 		foreach ($_SESSION['cdr']['field'] as $field) {
@@ -318,12 +322,27 @@
 	$sql .= "e.effective_caller_id_name as extension_name, \n";
 	$sql .= "c.start_stamp, \n";
 	$sql .= "c.end_stamp, \n";
-	$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-	$sql .= "to_char(timezone(:time_zone, start_stamp), '".$sql_time_format."') as start_time_formatted, \n";
-	$sql .= "c.start_epoch, \n";
 	$sql .= "c.hangup_cause, \n";
-	$sql .= "c.billsec as duration, \n";
-	$sql .= "c.billmsec, \n";
+	$sql .= "c.duration, \n";
+	if (strlen($call_center_agent_uuid) == 0 && strlen($call_center_queue_uuid) == 0) {
+		$sql .= "c.start_epoch, \n";
+		$sql .= "c.billmsec, \n";
+		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+	} elseif (strlen($call_center_agent_uuid) > 0) {
+		$sql .= "c.cc_queue_answered_epoch as start_epoch, \n";
+		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) * 1000 as billmsec, \n";
+	} elseif (strlen($call_center_queue_uuid) > 0) {
+		$sql .= "c.start_epoch, \n";
+		$sql .= "c.billmsec, \n";
+		$sql .= "c.cc_queue_joined_epoch, c.cc_queue_answered_epoch, \n";
+		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) as agent_talk_time, \n";
+	}
+	
 	$sql .= "c.missed_call, \n";
 	$sql .= "c.record_path, \n";
 	$sql .= "c.record_name, \n";
@@ -389,7 +408,7 @@
 		}
 	}
 	if (!empty($start_epoch) && !empty($stop_epoch)) {
-		$sql .= "and start_epoch between :start_epoch and :stop_epoch \n";
+		$sql .= "and ".((strlen($call_center_agent_uuid) == 0) ? "start_epoch " : "cc_queue_answered_epoch ")."between :start_epoch and :stop_epoch \n";
 		$parameters['start_epoch'] = $start_epoch;
 		$parameters['stop_epoch'] = $stop_epoch;
 	}
@@ -575,7 +594,21 @@
 		$sql .= "and network_addr like :network_addr \n";
 		$parameters['network_addr'] = '%'.$network_addr.'%';
 	}
-	//if (strlen($mos_comparison) > 0 && !empty($mos_score) ) {
+	if (strlen($call_center_agent_uuid) > 0) {
+		$sql .= "and cc_agent = :call_center_agent_uuid \n";
+		$sql .= "and cc_cause = 'answered' \n";
+		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+	}
+	if (strlen($call_center_queue_uuid) > 0) {
+		$sql .= "and call_center_queue_uuid = :call_center_queue_uuid \n";
+		if ($call_center_abandoned != 'on') {
+			$sql .= "and cc_cause = 'answered' \n";
+		} else {
+			$sql .= "and cc_cause = 'cancel' \n";
+		}
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+	}
+	//if (strlen($mos_comparison) > 0 && strlen($mos_score) > 0 ) {
 	//	$sql .= "and rtp_audio_in_mos = :mos_comparison :mos_score ";
 	//	$parameters['mos_comparison'] = $mos_comparison;
 	//	$parameters['mos_score'] = $mos_score;

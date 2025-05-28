@@ -2186,6 +2186,16 @@ $text['label-end_date_time']['zh-cn'] = "结束日期/时间";
 $text['label-end_date_time']['ja-jp'] = "終了日時";
 $text['label-end_date_time']['ko-kr'] = "종료 날짜/시간";
 
+$text['label-call_center_agent_name']['en-us'] = "Queue Agent";
+
+$text['label-queue_name']['en-us'] = "Queue Name";
+
+$text['label-call_center_abandoned']['en-us'] = "CC Abandoned";
+
+$text['label-agent_talk_time']['en-us'] = "CC talk time";
+
+$text['title-call_queue_stats']['en-us'] = "Call Center Queue Stats";
+
 $text['label-duration']['en-us'] = "Duration";
 $text['label-duration']['en-gb'] = "Duration";
 $text['label-duration']['ar-eg'] = "مدة";

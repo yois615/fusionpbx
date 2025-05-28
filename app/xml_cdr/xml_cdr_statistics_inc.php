@@ -202,6 +202,20 @@
 		$sql_where_ands[] = "c.context like :context";
 		$parameters['context'] = '%'.$context.'%';
 	}
+	if (strlen($call_center_agent_uuid) > 0) {
+		$sql_where_ands[] = "cc_agent = :call_center_agent_uuid";
+		$sql_where_ands[] = "cc_cause = 'answered'";
+		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+	}
+	if (strlen($call_center_queue_uuid) > 0) {
+		$sql_where_ands[] = "call_center_queue_uuid = :call_center_queue_uuid";
+		if ($call_center_abandoned != 'on') {
+			$sql_where_ands[] = "cc_cause = 'answered'";
+		} else {
+			$sql_where_ands[] = "cc_cause = 'cancel'";
+		}
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+	}
 	/*
 	if (!empty($start_stamp_begin) && !empty($start_stamp_end)) {
 		$sql_where_ands[] = "start_stamp between :start_stamp_begin and :start_stamp_end";

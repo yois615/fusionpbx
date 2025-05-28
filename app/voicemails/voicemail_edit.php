@@ -629,6 +629,8 @@
 	echo "	<select class='formfld' name='greeting_id' id='greeting_id' onchange=\"if (this.selectedIndex == 0) { $('#alternate_greeting_id').slideDown(); } else { $('#alternate_greeting_id').slideUp(); } ".(permission_exists('voicemail_greeting_play') || permission_exists('voicemail_greeting_download') ? "recording_reset('greeting'); set_playable('greeting', this.options[this.selectedIndex].getAttribute('data-uuid'), this.options[this.selectedIndex].getAttribute('data-mime'));" : null)."\">\n";
 	echo "		<option value=''>".$text['label-default']."</option>\n";
 	echo "		<option value='0' ".(isset($greeting_id) && $greeting_id == "0" ? "selected='selected'" : null).">".$text['label-none']."</option>\n";
+	$selected = ($greeting_id == 11) ? "selected" : null;
+	echo "		<option value='11' ".escape($selected).">".$text['label-name']."</option>\n";
 	$playable = false;
 	if (!empty($greetings) && is_array($greetings)) {
 		foreach ($greetings as $greeting) {

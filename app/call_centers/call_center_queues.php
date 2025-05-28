@@ -139,6 +139,9 @@
 	if (permission_exists('call_center_imports')) {
 		echo button::create(['type'=>'button','label'=>$text['button-import'],'icon'=>$settings->get('theme', 'button_icon_import'),'link'=>PROJECT_PATH.'/app/call_center_imports/call_center_imports.php?import_type=call_center_queues']);
 	}
+	if (permission_exists('call_center_callback_view')) {
+		echo button::create(['type'=>'button','label'=>'Callback Profiles','icon'=>'phone-alt','link'=>'call_center_callback.php']);
+	}
 	if (permission_exists('call_center_agent_view')) {
 		echo button::create(['type'=>'button','label'=>$text['button-agents'],'icon'=>'users','link'=>'call_center_agents.php']);
 	}
@@ -288,6 +291,58 @@
 	echo "</div>\n";
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
+
+	echo "	<div class='heading'>";
+	echo "<b>".$text['title-call_queue_stats']."</b>";
+	echo "</div>\n";
+	echo "<br>\n";
+
+	$sql = "select COUNT(*), AVG(c.cc_queue_answered_epoch \n";
+	$sql .= "- c.cc_queue_joined_epoch), q.queue_name \n";
+	$sql .= "from v_xml_cdr c \n";
+	$sql .= "INNER JOIN v_call_center_queues q ON c.call_center_queue_uuid = q.call_center_queue_uuid \n";
+	$sql .= "WHERE cc_cause = 'answered' \n";
+	$sql .= "and cc_queue_joined_epoch > :search_period \n";
+	$sql .= "and c.domain_uuid = :domain_uuid \n";
+	$sql .= "GROUP BY c.call_center_queue_uuid, q.queue_name \n";
+	$parameters['domain_uuid'] = $domain_uuid;
+
+	//One Hour
+	$parameters['search_period'] = time() - 3600;
+	$database = new database;
+	$hour_avg_holds = $database->select($sql, $parameters, 'all');
+	echo "<b>Average hold time over the last hour:</b><br>\n";
+	foreach ($hour_avg_holds as $row) {
+		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds, ";
+		echo "Total Calls: " . $row['count'] ."<br>";
+	}
+	
+	echo "<br>";
+			
+	//One Day
+	$parameters['search_period'] = time() - 86400;
+	$database = new database;
+	$day_avg_holds = $database->select($sql, $parameters, 'all');
+	//print_r($database->message);
+	echo "<b>Average hold time over the last 24 hours:</b><br>\n";
+	foreach ($day_avg_holds as $row) {
+		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds, ";
+		echo "Total Calls: " . $row['count'] ."<br>";
+	} 
+	echo "<br>";
+
+	//One Week
+	$parameters['search_period'] = time() - 604800;
+	$database = new database;
+	$week_avg_holds = $database->select($sql, $parameters, 'all');
+	echo "<b>Average hold time over the last week:</b><br>\n";
+	foreach ($week_avg_holds as $row){
+		echo "<i>".$row['queue_name'] . ":</i> ". round($row['avg']). " seconds, ";
+		echo "Total Calls: " . $row['count'] ."<br>";
+	} 
+	echo "<br>";
+
+
 
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 

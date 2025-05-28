@@ -556,8 +556,8 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "menu_main_background_color_hover";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#4099ff";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#ff0000";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set a background hover color (and opacity) of the main menu items.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "88279d7e-2df3-4ee8-923c-a9def9effa59";
@@ -596,8 +596,8 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "menu_main_text_color_hover";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#ffffff";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#fd9c03";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the text hover color of the main menu items.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "2833c246-dccd-49c2-87cf-fb40c352b48d";
@@ -612,8 +612,8 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "menu_main_icon_color_hover";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#ffffff";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#fd9c03";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the icon hover color of the main menu items.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "aaed6662-d441-4a34-9ac6-874af33e4fd1";
@@ -684,8 +684,8 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "menu_sub_background_color_hover";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#4099ff";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the hover background color (and opacity) of the sub menu items.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "cfbac64a-ed95-470d-887b-3268e1a57144";
@@ -716,8 +716,8 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "menu_sub_text_color_hover";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#ffffff";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#69e5ff";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the hover text color (and opacity) of sub menu items.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "12ceab7a-a405-4099-b78c-1696fd3cab51";
@@ -988,8 +988,8 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "table_row_background_color_dark";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#f2f4f6";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#e5e9f0";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the darker background color (and opacity) of table data rows.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "117c0235-4387-43f4-8cd4-7ad4fec97820";

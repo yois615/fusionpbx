@@ -162,6 +162,8 @@ $text['label-transfer']['zh-cn'] = "转移";
 $text['label-transfer']['ja-jp'] = "移行";
 $text['label-transfer']['ko-kr'] = "옮기다";
 
+$text['label-pickup']['en-us'] = "Pickup";
+
 $text['label-time_base_score']['en-us'] = "Time Base Score";
 $text['label-time_base_score']['en-gb'] = "Time Base Score";
 $text['label-time_base_score']['ar-eg'] = "نقاط قاعدة الوقت";
@@ -701,6 +703,12 @@ $text['label-queue']['tr-tr'] = "Sıra";
 $text['label-queue']['zh-cn'] = "队列";
 $text['label-queue']['ja-jp'] = "列";
 $text['label-queue']['ko-kr'] = "대기줄";
+
+$text['label-callback']['en-us'] = "Callback";
+
+$text['label-queue-pending-callbacks']['en-us'] = "Pending Queue Callbacks";
+
+$text['label-retry_count']['en-us'] = "Retry Count";
 
 $text['label-options']['en-us'] = "Options";
 $text['label-options']['en-gb'] = "Options";

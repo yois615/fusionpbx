@@ -133,6 +133,15 @@
 	if (!empty($_GET['mos_score'])) {
 		$search_url .= '&mos_score='.urlencode($_GET['mos_score']);
 	}
+	if (strlen($_GET['call_center_queue_uuid']) > 0) {
+		$search_url .= '&call_center_queue_uuid='.urlencode($_GET['call_center_queue_uuid']);
+	}
+	if (strlen($_GET['call_center_agent_uuid']) > 0) {
+		$search_url .= '&call_center_agent_uuid='.urlencode($_GET['call_center_agent_uuid']);
+	}
+	if (strlen($_GET['call_center_abandoned']) > 0) {
+		$search_url .= '&call_center_abandoned='.urlencode($_GET['call_center_abandoned']);
+	}
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
@@ -291,6 +300,10 @@
 
 	$i = 0;
 	foreach ($stats as $row) {
+		if (strlen($call_center_queue_uuid) > 0 && round(escape($row['minutes']),2) == 0) {
+			$i++;
+			continue;
+		}
 		echo "<tr class='list-row'>\n";
 		if ($i <= $hours) {
 			echo "	<td>".$row['hours']."</td>\n";

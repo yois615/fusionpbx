@@ -790,6 +790,9 @@
 	if ($permission['xml_cdr_duration']) {
 		echo "<th class='center hide-sm-dn'>".$text['label-duration']."</th>\n";
 		$col_count++;
+		if (strlen($result[0]['agent_talk_time']) > 0) {
+			echo "<th class='center hide-sm-dn'>".$text['label-agent_talk_time']."</th>\n";
+		}
 	}
 	if ($permission['xml_cdr_status']) {
 		echo "<th class='shrink'>".$text['label-status']."</th>\n";
@@ -1095,6 +1098,47 @@
 	echo "</div>\n";
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
+	// Queue stats
+	
+	if (strlen($call_center_queue_uuid) > 0) {
+		echo "	<div class='heading'>";
+		echo "<b>".$text['title-call_queue_stats']."</b>";
+		echo "</div>\n";
+		echo "<br>\n";
+
+		$sql = "select COUNT(*), COUNT(DISTINCT cc_agent) as agent_count, \n";
+		$sql .= "AVG(cc_queue_answered_epoch - cc_queue_joined_epoch) \n";
+		$sql .= "from v_xml_cdr \n";
+		$sql .= "where call_center_queue_uuid = :call_center_queue_uuid \n";
+		$sql .= "and cc_cause = 'answered' \n";
+		$sql .= "and domain_uuid = :domain_uuid \n";
+		if (strlen($start_stamp_begin) > 0 && strlen($start_stamp_end) > 0) {
+			$sql .= "and timezone(:time_zone, to_timestamp(cc_queue_joined_epoch)) between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
+			$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+			$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
+			$parameters['time_zone'] = $time_zone;
+		}
+		else {
+			if (strlen($start_stamp_begin) > 0) {
+				$sql .= "and timezone(:time_zone, to_timestamp(cc_queue_joined_epoch)) >= :start_stamp_begin \n";
+				$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+				$parameters['time_zone'] = $time_zone;
+			}
+			if (strlen($start_stamp_end) > 0) {
+				$sql .= "and timezone(:time_zone, to_timestamp(cc_queue_joined_epoch)) <= :start_stamp_end \n";
+				$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
+				$parameters['time_zone'] = $time_zone;
+			}
+		}
+		$parameters['domain_uuid'] = $domain_uuid;
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+
+		$database = new database;
+		$cc_stats = $database->select($sql, $parameters, 'row');
+		echo "Average hold time over the search period: " . round($cc_stats['avg']). " seconds, Total Calls: " . $cc_stats['count'] . ", Agent Count: " . $cc_stats['agent_count'];
+		echo "<br>";
+		unset ($sql, $param, $cc_stats);
+	}
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 	echo "</form>\n";
 

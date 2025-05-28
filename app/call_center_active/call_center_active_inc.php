@@ -184,6 +184,9 @@
 
 						if (isset($agent_result)) {
 							foreach ($agent_result as $agent_row) {
+								if ($agent_row['status'] == 'Logged Out') {
+									continue;
+								}
 								if ($tier_row['agent'] == $agent_row['name']) {
 									$agent_uuid = $agent_row['name'];
 
@@ -337,6 +340,9 @@
 
 			if (is_array($result)) {
 				foreach ($result as $row) {
+					if ($row['state'] == 'Abandoned') {
+						continue;
+					}
 					$queue = $row['queue'];
 					$system = $row['system'] ?? null;
 					$uuid = $row['uuid'];
@@ -353,7 +359,7 @@
 					$serving_agent = $row['serving_agent'];
 					$serving_system = $row['serving_system'];
 					$state = $row['state'];
-					$joined_seconds = time() - $joined_epoch;
+					$joined_seconds = time() - ($joined_epoch - $base_score);
 					$joined_length_hour = floor($joined_seconds/3600);
 					$joined_length_min = floor($joined_seconds/60 - ($joined_length_hour * 60));
 					$joined_length_sec = $joined_seconds - (($joined_length_hour * 3600) + ($joined_length_min * 60));
@@ -377,7 +383,7 @@
 					echo "<td>".escape($caller_name)."&nbsp;</td>\n";
 					echo "<td>".escape($caller_number)."&nbsp;</td>\n";
 					echo "<td>".escape($state)."</td>\n";
-					if (permission_exists('call_center_active_options')) {
+					if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
 						echo "<td>";
 						if ($state != "Abandoned") {
 							$orig_command = "{origination_caller_id_name=eavesdrop,origination_caller_id_number=".escape($q_caller_number ?? '')."}user/".escape($_SESSION['user']['extension'][0]['user'] ?? '')."@".escape($_SESSION['domain_name'])." %26eavesdrop(".escape($session_uuid).")";
@@ -396,6 +402,59 @@
 			echo "</table>\n";
 			echo "</div>\n";
 
-	}
+			echo "<br /><br />\n";
+			echo "<div class='heading'><b>".$text['label-queue-pending-callbacks']."</b></div>\n";
+			echo "<br /><br />\n";
+
+			echo "<table class='list'>\n";
+			echo "<tr class='list-header'>\n";
+			echo "<th>".$text['label-time']."</th>\n";
+			echo "<th>".$text['label-name']."</th>\n";
+			echo "<th>".$text['label-number']."</th>\n";
+			echo "<th>".$text['label-retry_count']."</th>\n";
+			if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
+				echo "<th>".$text['label-options']."</th>\n";
+			}
+			echo "</tr>\n";
+
+			$sql = "select * from v_call_center_callbacks ";
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$sql .= "and call_center_queue_uuid = :call_center_queue_uuid ";
+			$sql .= "and status = 'pending' ";
+			$sql .= "order by start_epoch asc ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$parameters['call_center_queue_uuid'] = $queue_uuid;
+			$database = new database;
+			$result = $database->select($sql, $parameters, 'all');
+
+			if (is_array($result)) {
+				foreach ($result as $row) {
+					$call_uuid = $row['call_uuid'];
+					$caller_number = $row['caller_id_number'];
+					$caller_name = $row['caller_id_name'];
+					$start_epoch = $row['start_epoch'];
+					$retry_count = $row['retry_count'];
+					$joined_seconds = time() - $start_epoch;
+					$joined_length_hour = floor($joined_seconds/3600);
+					$joined_length_min = floor($joined_seconds/60 - ($joined_length_hour * 60));
+					$joined_length_sec = $joined_seconds - (($joined_length_hour * 3600) + ($joined_length_min * 60));
+					$joined_length_min = sprintf("%02d", $joined_length_min);
+					$joined_length_sec = sprintf("%02d", $joined_length_sec);
+					$joined_length = $joined_length_hour.':'.$joined_length_min.':'.$joined_length_sec;
+
+					echo "<tr class='list-row'>\n";
+					echo "<td>".escape($joined_length)."</td>\n";
+					echo "<td>".escape($caller_name)."&nbsp;</td>\n";
+					echo "<td>".escape($caller_number)."&nbsp;</td>\n";
+					echo "<td>".escape($retry_count)."&nbsp;</td>\n";
+					if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
+						echo "<td>";
+						echo button::create(['type'=>'button','class'=>'link','label'=>$text['label-callback'],'onclick'=>"if (confirm('".$text['message-confirm']."')) { send_command('call_center_exec.php?command=uuid_callback&uuid=".urlencode($call_uuid)."'); } else { this.blur(); return false; }"]);
+						echo "</td>";
+					}
+				}
+			}
+			echo "</table>";
+		}
 
 ?>

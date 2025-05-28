@@ -130,6 +130,8 @@ $text['title-call_center_queues']['zh-cn'] = "呼叫中心队列";
 $text['title-call_center_queues']['ja-jp'] = "コールセンターの待ち行列";
 $text['title-call_center_queues']['ko-kr'] = "콜센터 대기열";
 
+$text['title-call_queue_stats']['en-us'] = "Call Center Queue Stats";
+
 $text['title-call_center_queue_edit']['en-us'] = "Call Center Queue";
 $text['title-call_center_queue_edit']['en-gb'] = "Call Center Queue";
 $text['title-call_center_queue_edit']['ar-eg'] = "قائمة انتظار مركز الاتصال";
@@ -181,6 +183,8 @@ $text['title-call_center_queue_add']['uk-ua'] = "Черга кол-центра"
 $text['title-call_center_queue_add']['zh-cn'] = "呼叫中心队列";
 $text['title-call_center_queue_add']['ja-jp'] = "コール センター キュー";
 $text['title-call_center_queue_add']['ko-kr'] = "콜센터 대기열";
+
+$text['title-call_center_callback']['en-us'] = "Call Center Callback Profiles";
 
 $text['title-call_center_agents']['en-us'] = "Call Center Agents";
 $text['title-call_center_agents']['en-gb'] = "Call Center Agents";
@@ -2028,6 +2032,22 @@ $text['label-exit_keys']['zh-cn'] = "退出键";
 $text['label-exit_keys']['ja-jp'] = "終了キー";
 $text['label-exit_keys']['ko-kr'] = "종료 키";
 
+$text['label-callback_profile_name']['en-us'] = "Profile Name";
+
+$text['label-callback_dialplan']['en-us'] = "Callback Dialplan";
+
+$text['label-callback_request_prompt']['en-us'] = "Callback Request Prompt";
+
+$text['label-callback_confirm_prompt']['en-us'] = "Callback Confirm Prompt";
+
+$text['label-callback_force_cid']['en-us'] = "Force Caller ID";
+
+$text['label-callback_retries']['en-us'] = "Retries";
+
+$text['label-callback_timeout']['en-us'] = "Timeout";
+
+$text['label-callback_retry_delay']['en-us'] = "Retry Delay";
+
 $text['description-exit_keys']['en-us'] = "Define a key that can be used to exit the queue.";
 $text['description-exit_keys']['en-gb'] = "Define a key that can be used to exit the queue.";
 $text['description-exit_keys']['ar-eg'] = "مفاتيح لإنهاء انتظار قائمة الانتظار الحالية.";
@@ -2365,6 +2385,8 @@ $text['header-call_center_tier_edit']['uk-ua'] = "Рівень кол-центр
 $text['header-call_center_tier_edit']['zh-cn'] = "呼叫中心层";
 $text['header-call_center_tier_edit']['ja-jp'] = "コールセンター層";
 $text['header-call_center_tier_edit']['ko-kr'] = "콜 센터 계층";
+
+$text['header-call_center_callback']['en-us'] = "Callback Profiles";
 
 $text['header-call_center_queues']['en-us'] = "Call Center Queues";
 $text['header-call_center_queues']['en-gb'] = "Call Center Queues";
@@ -3717,6 +3739,30 @@ $text['description-abandoned_resume_allowed']['uk-ua'] = "Встановіть �
 $text['description-abandoned_resume_allowed']['zh-cn'] = "将允许放弃的简历设置为 true 或 false。";
 $text['description-abandoned_resume_allowed']['ja-jp'] = "true または false に許可された放棄された履歴書を設定します。";
 $text['description-abandoned_resume_allowed']['ko-kr'] = "허용된 포기된 이력서를 true 또는 false로 설정합니다.";
+
+
+$text['description-callback_profile_name']['en-us'] = "Enter a name for this callback profile";
+
+$text['description-callback_profile_description']['en-us'] = "(Optional) Enter a description for this callback profile";
+
+$text['description-caller_id_name']['en-us'] = "The outbound Caller ID name to use for callback";
+
+$text['description-caller_id_number']['en-us'] = "The outbound Caller ID number to use for callback";
+
+$text['description-callback_dialplan']['en-us'] = "Regular expression to validate user's requested callback number";
+
+$text['description-callback_request_prompt']['en-us'] = "Prompt to play when user breaks out of queue to request callback";
+
+$text['description-callback_confirm_prompt']['en-us'] = "Prompt to play user upon callback to re-enter queue";
+
+$text['description-callback_force_cid']['en-us'] = "Force callback to caller's Caller ID number";
+
+$text['description-callback_retries']['en-us'] = "How many times to retry callback if no answer";
+
+$text['description-callback_timeout']['en-us'] = "How long user has (in seconds) to accept callback before hangup";
+
+$text['description-callback_retry_delay']['en-us'] = "How long to wait (in seconds) before retrying callback";
+
 
 $text['confirm-copy']['en-us'] = "Do you really want to copy this?";
 $text['confirm-copy']['en-gb'] = "Do you really want to copy this?";

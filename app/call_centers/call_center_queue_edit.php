@@ -23,6 +23,7 @@
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 	Luis Daniel Lucio Quiroz <dlucio@okay.com.mx>
+	Joseph Nadiv <ynadiv@corpit.xyz>
 */
 
 //includes files
@@ -119,6 +120,7 @@
 			$queue_announce_position = $_POST["queue_announce_position"] ?? null;
 			$queue_announce_sound = $_POST["queue_announce_sound"];
 			$queue_announce_frequency = $_POST["queue_announce_frequency"];
+			$queue_callback_profile = $_POST["queue_callback_profile"];
 			$queue_cc_exit_keys = $_POST["queue_cc_exit_keys"];
 			$queue_email_address = $_POST["queue_email_address"] ?? null;
 			$queue_description = $_POST["queue_description"];
@@ -340,6 +342,7 @@
 				$array['call_center_queues'][0]['queue_announce_sound'] = $queue_announce_sound;
 			}
 			$array['call_center_queues'][0]['queue_announce_frequency'] = $queue_announce_frequency;
+			$array['call_center_queues'][0]['queue_callback_profile'] = $queue_callback_profile;
 			$array['call_center_queues'][0]['queue_cc_exit_keys'] = $queue_cc_exit_keys;
 			if (permission_exists('call_center_email_address')) {
 				$array['call_center_queues'][0]['queue_email_address'] = $queue_email_address;
@@ -393,6 +396,10 @@
 			}
 			$dialplan_xml .= "		<action application=\"set\" data=\"cc_export_vars=\${cc_export_vars},".$export_variables."\"/>\n";
 			$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
+			if ($queue_announce_position == 'true' && is_numeric($queue_announce_frequency)) {
+				$dialplan_xml .= "		<action application=\"set\" data=\"result=\${luarun(app/call_centers/resources/scripts/announce-position.lua ";
+				$dialplan_xml .= "\${uuid} ".$call_center_queue_uuid." ".($queue_announce_frequency * 1000)."})\"/>\n";
+			}
 			if (!empty($queue_time_base_score_sec)) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"cc_base_score=".xml::sanitize($queue_time_base_score_sec)."\"/>\n";
 			}
@@ -410,17 +417,25 @@
 			}
 			if (!empty($queue_cid_prefix)) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".xml::sanitize($queue_cid_prefix)."#\${caller_id_name}\"/>\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=".xml::sanitize($queue_cid_prefix)."#\${caller_id_name}\"/>\n";
+			}
+			if (!strpos($queue_cc_exit_keys, "1") && strlen($queue_callback_profile) > 0) {
+				$queue_cc_exit_keys .= "1";
 			}
 			if (!empty($queue_cc_exit_keys)) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".xml::sanitize($queue_cc_exit_keys)."\"/>\n";
 			}
 			$dialplan_xml .= "		<action application=\"callcenter\" data=\"".xml::sanitize($queue_extension)."@".$domain_name."\"/>\n";
+			if (strlen($queue_callback_profile) > 0) {
+				$dialplan_xml .= "		<action application=\"lua\" data=\"app/call_centers/resources/scripts/callback.lua start ".$call_center_queue_uuid."\"/>\n";
+			}
+
 			if ($destination->valid($queue_timeout_app.':'.$queue_timeout_data)) {
 				$dialplan_xml .= "		<action application=\"".xml::sanitize($queue_timeout_app)."\" data=\"".xml::sanitize($queue_timeout_data)."\"/>\n";
 			}
 			$dialplan_xml .= "	</condition>\n";
 			$dialplan_xml .= "</extension>\n";
-
+			
 		//build the dialplan array
 			$array['dialplans'][0]["domain_uuid"] = $domain_uuid;
 			$array['dialplans'][0]["dialplan_uuid"] = $dialplan_uuid;
@@ -569,6 +584,7 @@
 				$queue_announce_position = $row["queue_announce_position"];
 				$queue_announce_sound = $row["queue_announce_sound"];
 				$queue_announce_frequency = $row["queue_announce_frequency"];
+				$queue_callback_profile = $row["queue_callback_profile"];
 				$queue_cc_exit_keys = $row["queue_cc_exit_keys"];
 				$queue_email_address = $row["queue_email_address"];
 				$queue_context = $row["queue_context"];
@@ -629,6 +645,15 @@
 		$audio_files[1] = $sounds->get();
 		unset($sounds);
 	}
+
+//get the callback profiles
+	$sql = "select profile_name, id from v_call_center_callback_profile ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "order by profile_name asc";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$cbprofiles = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //set default values
 	if (empty($queue_strategy)) { $queue_strategy = "longest-idle-agent"; }
@@ -1377,6 +1402,27 @@
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "  Callback Profile\n";
+   	echo "</td>\n";
+   	echo "<td class='vtable' align='left'>\n";
+   	echo "  <select class='formfld' name='queue_callback_profile'>\n";
+	echo "	<option value=''></option>\n";
+	foreach ($cbprofiles as $row) {
+		if ($row['id'] == $queue_callback_profile) {
+			echo "    <option value='".escape($row['id'])."' selected='selected'>".escape($row['profile_name'])."</option>\n";
+		}
+		else {
+			echo "    <option value='".escape($row['id'])."'>".escape($row['profile_name'])."</option>\n";
+		}
+	}
+	echo "    </select>\n";
+   	echo "<br />\n";
+   	echo "Select the Queue callback profile or leave blank for none.\n";
+   	echo "</td>\n";
+   	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";

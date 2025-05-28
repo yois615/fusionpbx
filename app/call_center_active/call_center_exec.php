@@ -32,7 +32,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('call_center_active_options')) {
+	if (permission_exists('call_center_active_options') || permission_exists('call_center_active_pickup')) {
 		//access granted
 	}
 	else {
@@ -72,16 +72,40 @@
 //validate the command
 	switch ($command) {
 		case "eavesdrop":
-			$switch_command = "originate {origination_caller_id_name=eavesdrop,origination_caller_id_number=".$extension."}user/".$_SESSION['user']['extension'][0]['user']."@".$_SESSION['domain_name']." &eavesdrop(".$uuid.")";
+			if (permission_exists('call_center_active_options')) {
+				$switch_command = "originate {origination_caller_id_name=eavesdrop,origination_caller_id_number=".$extension."}user/".$_SESSION['user']['extension'][0]['user']."@".$_SESSION['domain_name']." &eavesdrop(".$uuid.")";
+			}
 			break;
 		case "uuid_transfer":
-			$switch_command = "uuid_transfer ".$uuid." -bleg ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];
+			if (permission_exists('call_center_active_options')) {
+				$switch_command = "uuid_transfer ".$uuid." -bleg ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];
+			}
 			break;
 		case "uuid_pickup":
+				if (!empty($_SESSION['user']['extension'][0]['call_center_agent_uuid'])) {
+					//Get the current agent status
+					$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+					$response = event_socket_request($fp, 'api callcenter_config agent get state ' .$_SESSION['user']['extension'][0]['call_center_agent_uuid']);
+					if (trim($response) == "Waiting") {
+							$response = event_socket_request($fp, 'api callcenter_config agent set state ' .$_SESSION['user']['extension'][0]['call_center_agent_uuid'] . " 'Idle'");
+							$response = event_socket_request($fp, 'api uuid_setvar '.$uuid.' api_after_bridge callcenter_config agent set state ' .$_SESSION['user']['extension'][0]['call_center_agent_uuid'] . ' Waiting');
+					}
+				}
 				$switch_command = "uuid_transfer ".$uuid." ".$_SESSION['user']['extension'][0]['user']." XML ".$_SESSION['domain_name'];
 				break;
 		case "bridge":
 			$switch_command = "originate {origination_caller_id_name=".$caller_id_name.",origination_caller_id_number=".$caller_id_number."}user/".$_SESSION['user']['extension'][0]['user']."@".$_SESSION['domain_name']." bridge(user/".$extension."@".$_SESSION['domain_name'].")";
+			break;
+		case "uuid_callback":
+			$sql = "update v_call_center_callbacks ";
+			$sql .= "set start_epoch = :start_epoch, ";
+			$sql .= "next_retry_epoch = :start_epoch ";
+			$sql .= "where call_uuid = :call_uuid ";
+			$sql .= "and status = 'pending' ";
+			$parameters['call_uuid'] = $uuid;
+			$parameters['start_epoch'] = time() - 10800;
+			$database = new database;
+			$result = $database->select($sql, $parameters, 'all');
 			break;
 		default:
 			echo "access denied";
