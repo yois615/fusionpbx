@@ -226,7 +226,7 @@
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "device_serial_number";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$y++
+		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "device_emergency_cid";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
