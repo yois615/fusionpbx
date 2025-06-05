@@ -181,14 +181,20 @@
 			$cache = new cache;
 			$cache->delete('configuration:callcenter.conf');
 
-	//get and then set the complete agent_contact with the call_timeout and when necessary confirm
+	//get and then set the complete agent_contact with the call_timeout, recording and when necessary confirm
 		//if you change this variable, also change resources/switch.php
 		$confirm = "group_confirm_file=custom/press_1_to_accept_this_call.wav,group_confirm_key=1,group_confirm_read_timeout=2000,leg_timeout=".$agent_call_timeout;
 		if(strstr($agent_contact, '}') === FALSE) {
 			//not found
 			if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
-				//add the call_timeout
-				$agent_contact = "{call_timeout=".$agent_call_timeout.",sip_invite_domain=".$_SESSION['domain_name']."}".$agent_contact;
+				//add the call_timeout and recording
+				$orig_agent_contact = $agent_contact;
+				$agent_contact = "{call_timeout=".$agent_call_timeout.",domain_name=".$_SESSION['domain_name'].",domain_uuid=".$_SESSION['domain_uuid'];
+				$agent_contact .= ',sip_h_caller_destination=${caller_destination}';
+				if ($agent_record == "true") {
+					$agent_contact .= ',execute_on_pre_bridge="record_session ${recordings_dir}/'.$_SESSION['domain_name'].'/archive/${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}"';
+				}
+				$agent_contact .= "}".$orig_agent_contact;
 			}
 			else {
 				//add the call_timeout and confirm
@@ -202,12 +208,15 @@
 			//add call_timeout and sip_invite_domain, only if missing
 			$call_timeout = (stristr($agent_contact, 'call_timeout') === FALSE) ? ',call_timeout='.$agent_call_timeout : null;
 			$sip_invite_domain = (stristr($agent_contact, 'sip_invite_domain') === FALSE) ? ',sip_invite_domain='.$_SESSION['domain_name'] : null;
+			if ($agent_record == "true" && stristr($agent_contact, 'record_session') === FALSE) {
+				$recording_string = ',execute_on_pre_bridge="record_session ${recordings_dir}/'.$_SESSION['domain_name'].'/archive/${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}"';
+			}
 			//compose
 			if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
-				$agent_contact = $first.$sip_invite_domain.$call_timeout.$last;
+				$agent_contact = $first.$sip_invite_domain.$call_timeout.$recording_string.$last;
 			}
 			else {
-				$agent_contact = $first.','.$confirm.$sip_invite_domain.$call_timeout.$last;
+				$agent_contact = $first.','.$confirm.$sip_invite_domain.$call_timeout.$recording_string.$last;
 			}
 		}
 
