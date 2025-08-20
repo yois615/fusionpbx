@@ -266,7 +266,7 @@
 		echo "    ".$text['label-grade']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+		if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" && $_SESSION['chazara']['chumash_mode']['boolean'] != "true") {
 			echo "    <input class='formfld' type='text' name='grade' maxlength='255' value=\"".escape($grade)."\">\n";
 		} else {
 			echo "    <input class='formfld' type='text' name='grade' maxlength='255' value='1' readonly>\n";
@@ -279,7 +279,7 @@
     // Parallel Class ID
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		if ($_SESSION['chazara']['daf_mode']['boolean'] == "false" && $_SESSION['chazara']['chumash_mode']['boolean'] == "false") {
+		if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" && $_SESSION['chazara']['chumash_mode']['boolean'] != "true") {
 			echo "    ".$text['label-parallel_class_id']."\n";
 		} elseif ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 			echo "    ".$text['label-masechta_id']."\n";
