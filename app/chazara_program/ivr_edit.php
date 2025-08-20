@@ -278,7 +278,7 @@
 	echo "</tr>\n";
 
     // Grade Menu recording
-	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "false" && $_SESSION['chazara']['chumash_mode']['boolean'] == "false") {
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-ivr-grade_greeting']."\n";
@@ -318,6 +318,8 @@
 			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 				echo "    ".$text['label-ivr-masechta_greeting']."\n";	
+			} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+				echo "    ".$text['label-ivr-chumash_greeting']."\n";
 			} else {
 				echo "    ".$text['label-grade']." ".$pg["grade"]."\n";
 			}
@@ -363,12 +365,16 @@
 		}
 	}
 
-		// daf_mode
-		if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+		// daf_mode and chumash_mode
+		if ($_SESSION['chazara']['daf_mode']['boolean'] == "true" || $_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
 			// Daf Menu recording
 			echo "<tr>\n";
 			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";	
-			echo "    ".$text['label-ivr-daf_greeting']."\n";	
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+				echo "    ".$text['label-ivr-daf_greeting']."\n";	
+			} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+				echo "    ".$text['label-ivr-chapter_greeting']."\n";
+			}
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
 			echo "<select name='daf_recording' id='daf_recording' class='formfld'>\n";
@@ -398,7 +404,11 @@
 			// Amud menu recording
 			echo "<tr>\n";
 			echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";	
-			echo "    ".$text['label-ivr-amud_greeting']."\n";	
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+				echo "    ".$text['label-ivr-amud_greeting']."\n";	
+			} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+				echo "    ".$text['label-ivr-verse_greeting']."\n";
+			}
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
 			echo "<select name='amud_recording' id='amud_recording' class='formfld'>\n";

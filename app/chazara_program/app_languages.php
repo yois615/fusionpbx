@@ -524,6 +524,9 @@ $text['label-teacher-name']['en-us'] = "Teacher";
 $text['label-ivr-main-greeting']['en-us'] = "Main Greeting";
 $text['label-ivr-grade_greeting']['en-us'] = "Grade Recording";
 $text['label-ivr-masechta_greeting']['en-us'] = "Masechta Recording";
+$text['label-ivr-chumash_greeting']['en-us'] = "Which Chumash Recording";
+$text['label-ivr-chapter_greeting']['en-us'] = "Perek Recording";
+$text['label-ivr-verse_greeting']['en-us'] = "Pasuk Recording";
 $text['label-ivr-daf_greeting']['en-us'] = "Daf Recording";
 $text['label-ivr-amud_greeting']['en-us'] = "Amud Recording";
 
@@ -559,6 +562,11 @@ $text['label-daf_number']['en-us'] = "Daf";
 
 $text['label-chapter']['en-us'] = "Perek";
 
+$text['label-start_chapter']['en-us'] = "Starting Perek";
+$text['label-end_chapter']['en-us'] = "Ending Perek";
+$text['label-start_verse']['en-us'] = "Starting Pasuk";
+$text['label-end_verse']['en-us'] = "Ending Pasuk";
+
 $text['label-daf_amud']['en-us'] = "Amud";
 
 $text['label-mesechta']['en-us'] = "Mesechta";
@@ -567,6 +575,8 @@ $text['label-daf_start_line']['en-us'] = "Daf Starting Line";
 
 $text['label-daf_end_line']['en-us'] = "Daf Ending Line";
 
-$text['label-masechta_id']['en-us'] = "Mesechta ID"
+$text['label-masechta_id']['en-us'] = "Mesechta ID";
+
+$text['label-chumash_id']['en-us'] = "Chumash ID";
 
 ?>

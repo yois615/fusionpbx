@@ -361,6 +361,9 @@
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, r.chapter, ";
 	}
+	elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
+		$sql .= "r.chumash_start_chapter, r.chumash_end_chapter, r.chumash_start_verse, r.chumash_end_verse, ";
+	}
 	$sql .= "t.grade, t.parallel_class_id, r.chazara_teacher_uuid, t.name as teacher_name ";
 	$sql .= "from v_chazara_recordings r ";
 	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
@@ -374,10 +377,12 @@
 		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
 	}
 	$parameters['domain_uuid'] = $domain_uuid;
-	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true") {
+	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" && $_SESSION['chazara']['chumash_mode']['boolean'] != "true") {
 		$sql .= order_by($order_by, $order, 'recording_id', 'asc');
-	} else {
+	} elseif ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 		$sql .= order_by($order_by, $order, ['chapter', 'daf_number', 'daf_amud', 'daf_start_line'], 'asc');
+	} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+		$sql .= order_by($order_by, $order, ['chumash_start_chapter', 'chumash_start_line'], 'asc');
 	}
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
@@ -522,7 +527,7 @@
 		echo "	</th>\n";
 		$col_count++;
 	}
-	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true"){
+	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" || $_SESSION['chazara']['chumash_mode']['boolean'] != "true"){
 		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $order_params);
 		$col_count++;
 	}
@@ -542,6 +547,16 @@
 		echo "<th class='center'>".$text['label-daf_amud']."</th>\n";
 		$col_count++;
 		echo "<th class='center'>Lines</th>\n";
+		$col_count++;
+	}
+	elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+		echo "<th class='center'>".$text['label-start_chapter']."</th>\n";
+		$col_count++;
+		echo "<th class='center'>".$text['label-end_chapter']."</th>\n";
+		$col_count++;
+		echo "<th class='center'>".$text['label-start_verse']."</th>\n";
+		$col_count++;
+		echo "<th class='center'>".$text['label-end_verse']."</th>\n";
 		$col_count++;
 	}
 	echo "<th class='center'>".'Teacher'."</th>\n";
@@ -605,7 +620,7 @@
 				echo "	</td>\n";
 			}
 			
-			if ($_SESSION['chazara']['daf_mode']['boolean'] != "true") {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" && $_SESSION['chazara']['chumash_mode']['boolean'] != "true") {
 				echo "	<td>";
 				echo escape($row['recording_id']);
 				echo "	</td>\n";
@@ -622,6 +637,12 @@
 				echo "	<td>".$row['daf_number']."</td>\n";
 				echo "	<td>".$row['daf_amud']."</td>\n";
 				echo "	<td>".$row['daf_start_line']."-".$row['daf_end_line']."</td>\n";
+			}
+			elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
+				echo "	<td>".$row['chumash_start_chapter']."</td>\n";
+				echo "	<td>".$row['chumash_end_chapter']."</td>\n";
+				echo "	<td>".$row['chumash_start_verse']."</td>\n";
+				echo "	<td>".$row['chumash_end_verse']."</td>\n";
 			}
 			$file_path = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['chazara_teacher_uuid'];
 			$file_name = file_path.'/'.$row['recording_filename'];

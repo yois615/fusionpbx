@@ -40,6 +40,11 @@ local Settings = require "resources.functions.lazy_settings";
     if daf_mode == nil or string.len(daf_mode) == 0 then
         daf_mode = "false";
     end
+    chumash_mode = settings:get('chazara', 'chumash_mode', 'boolean');
+
+    if chumash_mode == nil or string.len(chumash_mode) == 0 then
+        chumash_mode = "false";
+    end
 	
 
 -- Strip E.164 plus sign

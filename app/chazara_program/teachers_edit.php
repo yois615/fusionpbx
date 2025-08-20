@@ -279,10 +279,12 @@
     // Parallel Class ID
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-		if ($_SESSION['chazara']['daf_mode']['boolean'] == "false") {
+		if ($_SESSION['chazara']['daf_mode']['boolean'] == "false" && $_SESSION['chazara']['chumash_mode']['boolean'] == "false") {
 			echo "    ".$text['label-parallel_class_id']."\n";
-		} else {
+		} elseif ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 			echo "    ".$text['label-masechta_id']."\n";
+		} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+			echo "    ".$text['label-chumash_id']."\n";
 		}
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";

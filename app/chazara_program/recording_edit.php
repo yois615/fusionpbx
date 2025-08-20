@@ -112,6 +112,10 @@
 		$daf_amud = $_POST["daf_amud"];
 		$daf_start_line = $_POST["daf_start_line"];
 		$daf_end_line = $_POST["daf_end_line"];
+		$chumash_start_chapter = $_POST["chumash_start_chapter"];
+		$chumash_end_chapter = $_POST["chumash_end_chapter"];
+		$chumash_start_verse = $_POST["chumash_start_verse"];
+		$chumash_end_verse = $_POST["chumash_end_verse"];
 		$recording_length = 0;
 		$uploaded = 1;
 		if(!file_exists($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
@@ -257,6 +261,10 @@
 				$array['chazara_recordings'][0]['daf_amud'] = $daf_amud;
 				$array['chazara_recordings'][0]['daf_start_line'] = $daf_start_line;
 				$array['chazara_recordings'][0]['daf_end_line'] = $daf_end_line;
+				$array['chazara_recordings'][0]['chumash_start_chapter'] = $chumash_start_chapter;
+				$array['chazara_recordings'][0]['chumash_end_chapter'] = $chumash_end_chapter;
+				$array['chazara_recordings'][0]['chumash_start_verse'] = $chumash_start_verse;
+				$array['chazara_recordings'][0]['chumash_end_verse'] = $chumash_end_verse;
 				$array['chazara_recordings'][0]['chapter'] = $chapter;
 				$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
 				$array['chazara_recordings'][0]['recording_name'] = $recording_name;
@@ -305,6 +313,10 @@
 			$daf_start_line = $row['daf_start_line'];
 			$daf_end_line = $row['daf_end_line'];
 			$chapter = $row['chapter'];
+			$chumash_start_chapter = $row['chumash_start_chapter'];
+			$chumash_end_chapter = $row['chumash_end_chapter'];
+			$chumash_start_verse = $row['chumash_start_verse'];
+			$chumash_end_verse = $row['chumash_end_verse'];
 		}
 		unset($sql, $parameters, $row);
 	}
@@ -466,6 +478,47 @@
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		echo "    <input class='formfld' type='number' name='daf_end_line' maxlength='255' value=\"".escape($daf_end_line)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-start_chapter']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='number' name='chumash_start_chapter' maxlength='255' value=\"".escape($chumash_start_chapter)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-end_chapter']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='number' name='chumash_end_chapter' maxlength='255' value=\"".escape($chumash_end_chapter)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-start_verse']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='number' name='chumash_start_verse' maxlength='255' value=\"".escape($chumash_start_verse)."\">\n";
+		echo "<br />\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    ".$text['label-end_verse']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "    <input class='formfld' type='number' name='chumash_end_verse' maxlength='255' value=\"".escape($chumash_end_verse)."\">\n";
 		echo "<br />\n";
 		echo "</td>\n";
 		echo "</tr>\n";
