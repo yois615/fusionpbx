@@ -248,7 +248,7 @@ end
 
 
 -- play parallel menu if exists
--- If we're in daf_mode, the parallel is the masechta
+-- If we're in daf_mode/chumash_mode, the parallel is the masechta/chumash
 if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
     session:flushDigits();
     local exit = false;
@@ -362,10 +362,50 @@ if daf_mode == "true" then
             session:hangup();
         end
     end
-
-
 end
+--End Daf Daf-mode
 
+--Chumash mode
+if chumash_mode == "true" then
+    freeswitch.consoleLog("WARNING", "We are in chumash_mode " .. chumash_mode .. "\n")
+    session:flushDigits();
+    local exit = false;
+    local timeout = 0;
+    while (session:ready() and exit == false) do
+        perek = session:playAndGetDigits(1, 3, 3, 2500, "#", recordings_dir .. daf_recording, "silence_stream://500", "");
+        if perek == "*" then goto grade_menu; end;
+
+	    perek = perek:match("0*(%d+)");
+        if tonumber(perek) ~= nil then
+            -- Validate that we have such a perek
+            local sql = [[SELECT COUNT(*) FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+		            AND chumash_start_chapter <= :perek
+                    AND chumash_end_chapter >= :perek]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_teacher_uuid = chazara_teacher_uuid,
+		        perek = perek
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                count = row["count"];
+            end);
+            if count ~= nil and tonumber(count) > 0 then
+                exit = true;
+            else
+                session:streamFile(recordings_dir .. "invalid.wav");
+            end
+        end
+        timeout = timeout + 1;
+        if timeout > 3 then
+            session:hangup();
+        end
+    end
+end
 
 if caller_type == "2" then
     local tries = 0;
@@ -388,6 +428,8 @@ if teacher_auth ~= true then
     while session:ready() do
         if daf_mode == "true" then
             recording_id = session:playAndGetDigits(1, 2, 4, 2500, "#", recordings_dir .. "student_select_line.wav", "silence_stream://500", "");
+        elseif chumash_mode == "true" then
+            recording_id = session:playAndGetDigits(1, 2, 4, 2500, "#", recordings_dir .. "student_select_verse.wav", "silence_stream://500", "");
         else
             recording_id = session:playAndGetDigits(3, 3, 3, digit_timeout + 3000, "#", recordings_dir .. "student_select_class.wav", recordings_dir .. "invalid.wav", "");
         end
@@ -448,6 +490,28 @@ if teacher_auth ~= true then
                     chazara_recording_uuid = row["chazara_recording_uuid"];
                 end);   
             end
+        elseif chumash_mode == "true" then
+            local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+                    AND chumash_start_chapter <= :perek
+                    AND chumash_end_chapter >= :perek
+		            AND chumash_start_verse <= :recording_id
+                    AND chumash_end_verse >= :recording_id
+                    ORDER BY chumash_start_verse desc LIMIT 1]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_teacher_uuid = chazara_teacher_uuid,
+                perek = perek,
+		        recording_id = recording_id
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params, function(row)
+                recording_filename = row["recording_filename"];
+                chazara_recording_uuid = row["chazara_recording_uuid"];
+            end);
         else
             local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
