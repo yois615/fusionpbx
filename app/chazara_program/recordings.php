@@ -382,7 +382,7 @@
 	} elseif ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
 		$sql .= order_by($order_by, $order, ['chapter', 'daf_number', 'daf_amud', 'daf_start_line'], 'asc');
 	} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
-		$sql .= order_by($order_by, $order, ['chumash_start_chapter', 'chumash_start_line'], 'asc');
+		$sql .= order_by($order_by, $order, ['chumash_start_chapter', 'chumash_start_verse'], 'asc');
 	}
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
