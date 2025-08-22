@@ -233,11 +233,11 @@ while (session:ready() and exit == false) do
             dbh:query(sql, params, function(row)
                 parallel_recording = row["recording"];
             end);
-            if tonumber(max_parallel) ~= nil and tonumber(max_parallel) > 9 then
-                parallel_max_digits = 2;
-            else
-                parallel_max_digits = 1;
-            end
+        end
+        if tonumber(max_parallel) ~= nil and tonumber(max_parallel) > 9 then
+            parallel_max_digits = 2;
+        else
+            parallel_max_digits = 1;
         end
     end
     timeout = timeout + 1
@@ -491,6 +491,7 @@ if teacher_auth ~= true then
                 end);   
             end
         elseif chumash_mode == "true" then
+            -- This probably needs to be fixed because if we have 52:1-53:5, 53:6-54:2, and 54:3-8, we'll have a prob
             local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
