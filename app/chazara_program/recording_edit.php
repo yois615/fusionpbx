@@ -128,7 +128,7 @@
 
 			//sanitize recording filename and name
 			$recording_filename_ext = strtolower(pathinfo($recording_filename, PATHINFO_EXTENSION));
-			if (!in_array($recording_filename_ext, ['wav','mp3','ogg'])) {
+			if (!in_array($recording_filename_ext, ['wav','mp3','ogg','m4a'])) {
 				$recording_filename = pathinfo($recording_filename, PATHINFO_FILENAME);
 				$recording_filename = str_replace('.', '', $recording_filename);
 			}
@@ -542,7 +542,7 @@
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		echo 		"<input type='text' class='txt' style='width: 100px; cursor: pointer;' id='filename' placeholder='Select...' onclick=\"document.getElementById('ulfile').click(); this.blur();\" onfocus='this.blur();'>";
-		echo 		"<input type='file' id='ulfile' name='file' style='display: none;' accept='.wav,.mp3,.ogg' onchange=\"document.getElementById('filename').value = this.files.item(0).name; check_file_type(this);\">";
+		echo 		"<input type='file' id='ulfile' name='file' style='display: none;' accept='.wav,.mp3,.ogg,.m4a' onchange=\"document.getElementById('filename').value = this.files.item(0).name; check_file_type(this);\">";
 		echo "<br />\n";
 		echo $text['message-file_upload']."\n";
 		echo "</td>\n";
