@@ -527,7 +527,7 @@
 		echo "	</th>\n";
 		$col_count++;
 	}
-	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" || $_SESSION['chazara']['chumash_mode']['boolean'] != "true"){
+	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" && $_SESSION['chazara']['chumash_mode']['boolean'] != "true"){
 		echo th_order_by('recording_id', $text['label-recording_id'], $order_by, $order, $order_params);
 		$col_count++;
 	}
