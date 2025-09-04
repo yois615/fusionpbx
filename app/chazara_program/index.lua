@@ -116,7 +116,7 @@ end
 
 -- Play greeting pagd
 ::start_menu::
-if session:ready() then
+if session:ready() and greeting_recording ~= nil and string.len(greeting_recording) > 0 then
     session:flushDigits();
     local exit = false;
     local timeout = 0;
@@ -134,6 +134,8 @@ if session:ready() then
             session:hangup();
         end
     end
+else
+    caller_type = "1";
 end
 
 -- Transfer 8 to *732
