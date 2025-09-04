@@ -80,9 +80,9 @@
 
 		//check for all required data
 			$msg = '';
-			 if (strlen($ivr_greeting_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-main-greeting']."<br>\n"; }
 			 if ($_SESSION['chazara']['daf_mode']['boolean'] == "false" && $_SESSION['chazara']['chumash_mode']['boolean'] == "false") { 
-			 	if (strlen($grade_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-grade_greeting']."<br>\n"; }
+			 	if (strlen($ivr_greeting_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-main-greeting']."<br>\n"; }
+				if (strlen($grade_recording) == 0) { $msg .= $text['message-required'].$text['label-ivr-grade_greeting']."<br>\n"; }
 			 }
 
 
