@@ -334,8 +334,16 @@
 	}
 	$sql .= $sql_search;
 	if (strlen($_REQUEST['teacher_uuid']) > 0) {
-		$sql .= "and r.chazara_teacher_uuid = :teacher_uuid";
+		$sql .= "and r.chazara_teacher_uuid = :teacher_uuid ";
 		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
+		if (strlen($_REQUEST['chapter'] > 0)) {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+				$sql .= "and r.chapter = :chapter ";
+			} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+				$sql .= "and r.chumash_start_chapter = :chapter ";
+			}
+			$parameters['chapter'] = escape($_REQUEST['chapter']);
+		}
 	}
 	$parameters['domain_uuid'] = $domain_uuid;
 	$sql .= $sql_search;
@@ -346,7 +354,7 @@
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	$param = "&search=".urlencode($search);
 	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-		$param .= "&show=all&teacher_uuid=".escape($_REQUEST['teacher_uuid']);
+		$param .= "&show=all&teacher_uuid=".escape($_REQUEST['teacher_uuid'])."&chapter=".escape($_REQUEST['chapter']);
 	}
 	$order_params = $param;
 	$param .= "&order_by=".$order_by."&order=".$order;
@@ -375,6 +383,15 @@
 	elseif (strlen($_REQUEST['teacher_uuid']) > 0) {
 		$sql .= "and r.chazara_teacher_uuid = :teacher_uuid";
 		$parameters['teacher_uuid'] = escape($_REQUEST['teacher_uuid']);
+		//Add perek for chumash and gemara
+		if (strlen($_REQUEST['chapter']) > 0 && ($_SESSION['chazara']['daf_mode']['boolean'] == "true" || $_SESSION['chazara']['chumash_mode']['boolean'] == "true")) {
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true"){
+				$sql .= " and r.chapter = :chapter";
+			} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+				$sql .= " and r.chumash_start_chapter = :chapter";
+			}
+			$parameters['chapter'] = escape($_REQUEST['chapter']);
+		}
 	}
 	$parameters['domain_uuid'] = $domain_uuid;
 	if ($_SESSION['chazara']['daf_mode']['boolean'] != "true" && $_SESSION['chazara']['chumash_mode']['boolean'] != "true") {
@@ -472,7 +489,7 @@
 
     if (permission_exists('chazara_recording_all') && $_REQUEST['show'] == 'all') {
 
-		//basic search of call detail records
+		//basic search of recordings
         $sql = "select chazara_teacher_uuid, name, grade from v_chazara_teachers ";
         $sql .= "where domain_uuid = :domain_uuid ";
         $sql .= "order by name asc ";
@@ -493,6 +510,9 @@
             foreach ($result_e as &$row) {
                 $selected = ($row['chazara_teacher_uuid'] == $_REQUEST['teacher_uuid']) ? "selected" : null;
                 echo "		<option value='".escape($row['chazara_teacher_uuid'])."' ".escape($selected).">".escape($row['grade'])."-".escape($row['name'])."</option>";
+				if ($selected == "selected") {
+					$show_perek_search = true;
+				}
             }
         }
         echo "			</select>\n";
@@ -500,6 +520,40 @@
         echo "	</div>\n";
 		echo "</div>\n";
         unset($sql, $parameters, $result_e, $row, $selected);
+
+		if ($show_perek_search && ($_SESSION['chazara']['daf_mode']['boolean'] == "true" || $_SESSION['chazara']['chumash_mode']['boolean'] == "true")){
+			//Search by perek
+			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+				$sql = "select DISTINCT chapter from v_chazara_recordings ";
+			} elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+				$sql = "select DISTINCT chumash_start_chapter AS chapter from v_chazara_recordings ";
+			}
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$sql .= "and chazara_teacher_uuid = :chazara_teacher_uuid ";
+			$sql .= "order by chapter asc ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$parameters['chazara_teacher_uuid'] = $_REQUEST['teacher_uuid'];
+			$database = new database;
+			$result_e = $database->select($sql, $parameters, 'all');
+			echo "<div class='form_grid'>\n";
+			echo "	<div class='form_set'>\n";
+			echo "		<div class='label'>\n";
+			echo "			"."Perek"."\n";
+			echo "		</div>\n";
+			echo "		<div class='field'>\n";
+			echo "			<select class='formfld' name='chapter' id='chapter'>\n";
+			echo "				<option value=''></option>";
+			if (is_array($result_e) && @sizeof($result_e) != 0) {
+				foreach ($result_e as &$row) {
+					$selected = ($row['chapter'] == $_REQUEST['chapter']) ? "selected" : null;
+					echo "		<option value='".escape($row['chapter'])."' ".escape($selected).">".escape($row['chapter'])."</option>";
+				}
+			}
+			echo "			</select>\n";
+			echo "		</div>\n";
+			echo "	</div>\n";
+			echo "</div>\n";
+		}
 
 		button::$collapse = false;
 		echo "<div style='float: left; padding-top: 15px; margin-left: 20px; white-space: nowrap;'>";
@@ -609,7 +663,7 @@
 			if (permission_exists('chazara_recording_edit')) {
 				$list_row_url = "recording_edit.php?id=".urlencode($row['chazara_recording_uuid']);
 				if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
-					$list_row_url .= "&show=all&teacher_uuid=" . $_REQUEST['teacher_uuid'] . "&page=" . $_GET['page'];
+					$list_row_url .= "&show=all&teacher_uuid=" . $_REQUEST['teacher_uuid'] . "&chapter=" . $_GET['chapter'] . "&page=" . $_GET['page'];
 				}
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
