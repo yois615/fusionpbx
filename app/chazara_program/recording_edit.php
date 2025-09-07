@@ -411,7 +411,7 @@
 			$result_e = $database->select($sql, $parameters, 'all');
 			echo "<tr>\n";
 			echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-			echo "Teacher";
+			echo "Teacher/Masechta/Sefer";
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
 			echo "			<select class='formfld' name='chazara_teacher_uuid' id='chazara_teacher_uuid'>\n";
@@ -427,6 +427,32 @@
 			echo "</tr>\n";
 			unset($sql, $parameters, $result_e, $row, $selected);
 		}
+	}
+
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true" || $_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
+		$sql = "select chazara_daf_teacher_uuid, name from v_chazara_daf_teachers ";
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$sql .= "order by name asc ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$database = new database;
+			$result_e = $database->select($sql, $parameters, 'all');
+			echo "<tr>\n";
+			echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+			echo "Parallel Teacher";
+			echo "</td>\n";
+			echo "<td class='vtable' align='left'>\n";
+			echo "			<select class='formfld' name='chazara_daf_teacher_uuid' id='chazara_daf_teacher_uuid'>\n";
+			echo "				<option value=''></option>";
+			if (is_array($result_e) && @sizeof($result_e) != 0) {
+				foreach ($result_e as &$row) {
+					$selected = ($row['chazara_daf_teacher_uuid'] == $_REQUEST['chazara_daf-teacher_uuid']) ? "selected" : null;
+					echo "		<option value='".escape($row['chazara_daf_teacher_uuid'])."' ".escape($selected).">".escape($row['name'])."</option>";
+				}
+			}
+			echo "			</select>\n";
+			echo "</td>\n";
+			echo "</tr>\n";
+			unset($sql, $parameters, $result_e, $row, $selected);
 	}
 
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
