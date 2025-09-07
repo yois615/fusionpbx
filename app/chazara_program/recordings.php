@@ -434,6 +434,9 @@
 	}
 	if (permission_exists('chazara_teacher_view')) {
 		echo button::create(['type'=>'button','label'=>$text['button-teacher-submenu'],'icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/teachers.php']);
+		if ($_SESSION['chazara']['daf_mode']['boolean'] == "true" || $_SESSION['chazara']['chumash_mode']['boolean'] == "true"){
+			echo button::create(['type'=>'button','label'=>'Parallel Teachers','icon'=>$_SESSION['theme']['button_icon_users'],'link'=>'/app/chazara_program/daf_teachers.php']);
+		}
 	}
 	if (permission_exists('chazara_ivr_edit')) {
 		echo button::create(['type'=>'button','label'=>$text['button-ivr-submenu'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'/app/chazara_program/ivr_edit.php']);
