@@ -22,6 +22,10 @@ max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
 
+recording_filename = {}
+chazara_recording_uuid = {}
+chazara_daf_teacher_uuid = {}
+
 -- set the recordings directory
 local recordings_dir = recordings_dir .. "/" .. domain_name .. "/";
 
@@ -441,14 +445,15 @@ if teacher_auth ~= true then
         else
         -- Find recording
         if daf_mode == "true" then
-            local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+            local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
+                    FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND daf_number = :daf
                     AND daf_amud = :amud
 		            AND daf_start_line <= :recording_id
                     AND daf_end_line >= :recording_id
-                    ORDER BY daf_start_line desc LIMIT 1]];
+                    ORDER BY daf_start_line desc, chazara_teacher_uuid asc]];
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_teacher_uuid = chazara_teacher_uuid,
@@ -459,25 +464,30 @@ if teacher_auth ~= true then
             if (debug["sql"]) then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
             end
-            dbh:query(sql, params, function(row)
-                recording_filename = row["recording_filename"];
-                chazara_recording_uuid = row["chazara_recording_uuid"];
+
+            dbh:query(sql, params, function(rows)
+                if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
+                    table.insert(recording_filename, row["recording_filename"]);
+                    table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
+                    table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"] or "UNDEF");
+                end
             end);
 
             -- If there's not recording found, maybe it's from the end of the previous amud
-            if recording_filename == nil or string.len(recording_filename) == 0 then
+            if #recording_filename < 1 then
                 local tmp_daf = daf
                 local tmp_amud = "a"
                 if amud == "a" then
                     tmp_amud = "b"
                     tmp_daf = tonumber(daf) - 1
                 end 
-                local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+                local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
+                    FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND daf_number = :daf
                     AND daf_amud = :amud
-                    ORDER BY daf_start_line desc LIMIT 1]];
+                    ORDER BY daf_start_line desc, chazara_daf_teacher_uuid asc]];
                 local params = {
                     domain_uuid = domain_uuid,
                     chazara_teacher_uuid = chazara_teacher_uuid,
@@ -488,20 +498,24 @@ if teacher_auth ~= true then
                     freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
                 end
                 dbh:query(sql, params, function(row)
-                    recording_filename = row["recording_filename"];
-                    chazara_recording_uuid = row["chazara_recording_uuid"];
+                    if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
+                        table.insert(recording_filename, row["recording_filename"]);
+                        table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
+                        table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"] or "UNDEF");
+                    end
                 end);   
             end
         elseif chumash_mode == "true" then
             -- This probably needs to be fixed because if we have 52:1-53:5, 53:6-54:2, and 54:3-8, we'll have a prob
-            local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
+            local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
+                    FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND chumash_start_chapter <= :perek
                     AND chumash_end_chapter >= :perek
 		            AND chumash_start_verse <= :recording_id
                     AND chumash_end_verse >= :recording_id
-                    ORDER BY chumash_start_verse desc LIMIT 1]];
+                    ORDER BY chumash_start_verse desc, chazara_daf_teacher_uuid asc]];
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_teacher_uuid = chazara_teacher_uuid,
@@ -511,9 +525,13 @@ if teacher_auth ~= true then
             if (debug["sql"]) then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
             end
-            dbh:query(sql, params, function(row)
-                recording_filename = row["recording_filename"];
-                chazara_recording_uuid = row["chazara_recording_uuid"];
+
+            dbh:query(sql, params, function(rows)
+                if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
+                    table.insert(recording_filename, row["recording_filename"]);
+                    table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
+                    table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"] or "UNDEF");
+                end
             end);
         else
             local sql = [[SELECT recording_filename, chazara_recording_uuid FROM v_chazara_recordings
@@ -529,25 +547,27 @@ if teacher_auth ~= true then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
             end
             dbh:query(sql, params, function(row)
-                recording_filename = row["recording_filename"];
-                chazara_recording_uuid = row["chazara_recording_uuid"];
+                table.insert(recording_filename, row["recording_filename"]);
+                table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
             end);
         end
 
-            if recording_filename ~= nil and string.len(recording_filename) > 0 then
+        -- Need to parse table
+            if #recording_filename == 1 then
                 local start_epoch = os.time();
                 -- Play file
                 session:setInputCallback("cpb_dtmf_input", "");
-                session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename);
+                session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1]);
                 session:unsetInputCallback();
                 -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
+                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
                 sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
                 local params = {
-                    chazara_recording_uuid = chazara_recording_uuid,
+                    chazara_recording_uuid = chazara_recording_uuid[1],
                     domain_uuid = domain_uuid,
                     chazara_teacher_uuid = chazara_teacher_uuid,
+                    chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[1] or "NULL",
                     uuid = uuid,
                     start_epoch = start_epoch,
                     caller_id_number = caller_id_number,
@@ -555,8 +575,12 @@ if teacher_auth ~= true then
                     duration = os.time() - start_epoch
                 }
                 dbh:query(sql, params);
-                recording_filename = nil;
-                chazara_recording_uuid = nil;
+                recording_filename = {};
+                chazara_recording_uuid = {};
+                chazara_daf_teacher_uuid = {}
+            elseif #recording_filename > 1 then
+                -- Create a menu to select the rebbe
+                session:streamFile(recordings_dir .. "invalid.wav");
             else
                 -- Does not exist
                 session:streamFile(recordings_dir .. "recording_not_available.wav");
