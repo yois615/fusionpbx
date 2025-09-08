@@ -574,13 +574,19 @@ if teacher_auth ~= true then
                     chazara_recording_uuid = chazara_recording_uuid[1],
                     domain_uuid = domain_uuid,
                     chazara_teacher_uuid = chazara_teacher_uuid,
-                    chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[1] or "00000000-0000-0000-0000-000000000000",
                     uuid = uuid,
                     start_epoch = start_epoch,
                     caller_id_number = caller_id_number,
                     caller_id_name = caller_id_name,
                     duration = os.time() - start_epoch
                 }
+                
+                if chazara_daf_teacher_uuid[1] ~= nil and string.len(chazara_daf_teacher_uuid[1]) > 0 then
+                    params['chazara_daf_teacher_uuid'] = chazara_daf_teacher_uuid[1];
+                else
+                    params['chazara_daf_teacher_uuid'] = dbh.NULL;
+                end
+
                 dbh:query(sql, params);
                 recording_filename = {};
                 chazara_recording_uuid = {};
