@@ -106,6 +106,7 @@
 		$recording_id = $_POST["recording_id"];
 		$chapter = $_POST["chapter"];
 		$chazara_teacher_uuid = $chazara_teacher_uuid;
+		$chazara_daf_teacher_uuid = $_POST['chazara_daf_teacher_uuid'];
 		$recording_name = $_POST["recording_name"];
 		$recording_description = $_POST["recording_description"];
 		$daf_number = $_POST["daf_number"];
@@ -269,6 +270,7 @@
 				$array['chazara_recordings'][0]['chumash_end_verse'] = $chumash_end_verse;
 				$array['chazara_recordings'][0]['chapter'] = $chapter;
 				$array['chazara_recordings'][0]['chazara_teacher_uuid'] = $chazara_teacher_uuid;
+				$array['chazara_recordings'][0]['chazara_daf_teacher_uuid'] = $chazara_daf_teacher_uuid;
 				$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 				$array['chazara_recordings'][0]['recording_filename'] = $recording_filename;
 				$array['chazara_recordings'][0]['recording_description'] = $recording_description;
@@ -309,6 +311,7 @@
 			$recording_filename = $row["recording_filename"];
 			$recording_name = $row["recording_name"];
 			$recording_description = $row["recording_description"];
+			$chazara_daf_teacher_uuid = $row['chazara_daf_teacher_uuid'];
 			$recording_id = $row['recording_id'];
 			$daf_number = $row['daf_number'];
 			$daf_amud = $row['daf_amud'];
@@ -445,7 +448,7 @@
 			echo "				<option value=''></option>";
 			if (is_array($result_e) && @sizeof($result_e) != 0) {
 				foreach ($result_e as &$row) {
-					$selected = ($row['chazara_daf_teacher_uuid'] == $_REQUEST['chazara_daf-teacher_uuid']) ? "selected" : null;
+					$selected = ($row['chazara_daf_teacher_uuid'] == $chazara_daf-teacher_uuid) ? "selected" : null;
 					echo "		<option value='".escape($row['chazara_daf_teacher_uuid'])."' ".escape($selected).">".escape($row['name'])."</option>";
 				}
 			}
