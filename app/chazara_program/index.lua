@@ -465,7 +465,7 @@ if teacher_auth ~= true then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
             end
 
-            dbh:query(sql, params, function(rows)
+            dbh:query(sql, params, function(row)
                 if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
                     table.insert(recording_filename, row["recording_filename"]);
                     table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
@@ -482,12 +482,19 @@ if teacher_auth ~= true then
                     tmp_daf = tonumber(daf) - 1
                 end 
                 local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
-                    FROM v_chazara_recordings
-                    WHERE domain_uuid = :domain_uuid
+                    FROM v_chazara_recordings WHERE (COALESCE(chazara_daf_teacher_uuid, 'aad5fc46-ebbb-4a10-b667-3e6a5d51104f'),
+                    daf_start_line) IN
+                        (SELECT COALESCE(chazara_daf_teacher_uuid, 'aad5fc46-ebbb-4a10-b667-3e6a5d51104f'), 
+                        MAX(daf_start_line) FROM v_chazara_recordings WHERE domain_uuid = :domain_uuid
+                        AND chazara_teacher_uuid = :chazara_teacher_uuid
+                        AND daf_number = :daf
+                        AND daf_amud = :amud
+                        GROUP BY chazara_daf_teacher_uuid)
+                    AND domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND daf_number = :daf
                     AND daf_amud = :amud
-                    ORDER BY daf_start_line desc, chazara_daf_teacher_uuid asc]];
+]];
                 local params = {
                     domain_uuid = domain_uuid,
                     chazara_teacher_uuid = chazara_teacher_uuid,
@@ -526,7 +533,7 @@ if teacher_auth ~= true then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
             end
 
-            dbh:query(sql, params, function(rows)
+            dbh:query(sql, params, function(row)
                 if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
                     table.insert(recording_filename, row["recording_filename"]);
                     table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
@@ -567,7 +574,7 @@ if teacher_auth ~= true then
                     chazara_recording_uuid = chazara_recording_uuid[1],
                     domain_uuid = domain_uuid,
                     chazara_teacher_uuid = chazara_teacher_uuid,
-                    chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[1] or "NULL",
+                    chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[1] or "00000000-0000-0000-0000-000000000000",
                     uuid = uuid,
                     start_epoch = start_epoch,
                     caller_id_number = caller_id_number,
