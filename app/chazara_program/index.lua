@@ -593,7 +593,60 @@ if teacher_auth ~= true then
                 chazara_daf_teacher_uuid = {}
             elseif #recording_filename > 1 then
                 -- Create a menu to select the rebbe
-                session:streamFile(recordings_dir .. "invalid.wav");
+                local chazara_daf_teacher_recording = {}
+                -- Get the rebbe recording names
+                local sql = "SELECT * FROM v_chazara_daf_teachers WHERE chazara_daf_teacher_uuid IN ("
+                for i = 1, #chazara_daf_teacher_uuid, 1 do
+                    sql = sql .. chazara_daf_teacher_uuid[i]
+                    if i == #chazara_daf_teacher_uuid then
+                        sql = sql .. ")"
+                    else
+                        sql = sql .. ","
+                    end
+                end
+                dbh:query(sql, {}, function(row)
+                    chazara_daf_teacher_recording[row['chazara_daf_teacher_uuid']] = row['name_recording_path']
+                end);
+                -- Build filestring
+                local fs_rebbe = "file_string://"
+                for i = 1, #chazara_daf_teacher_uuid, 1 do
+                    fs_rebbe = fs_rebbe .. recordings_dir .. "for_rabbi.wav!";
+                    fs_rebbe = fs_rebbe .. recordings_dir .. chazara_daf_teacher_recording[chazara_daf_teacher_uuid];
+                    fs_rebbe = fs_rebbe .. recordings_dir .. "press.wav!";
+                    fs_rebbe = fs_rebbe .. "numbers/" .. i .. ".wav";
+                    if i < #chazara_daf_teacher_uuid then fs_rebbe = fs_rebbe .. "!silence_stream://500!"; end;
+                end          
+
+                local select_recording = tonumber(session:playAndGetDigits(1,1,1,3000, "#", fs_rebbe, "", "\\d+"))
+                if select_recording ~= nil and select_recording > 0 and select_recording <= #chazara_daf_teacher_uuid then
+                        local start_epoch = os.time();
+                    -- Play file
+                    session:setInputCallback("cpb_dtmf_input", "");
+                    session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording]);
+                    session:unsetInputCallback();
+                    -- Insert record into CDR
+                    local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+                    sql = sql .. "duration, caller_id_number, caller_id_name) "
+                    sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+                    local params = {
+                        chazara_recording_uuid = chazara_recording_uuid[select_recording],
+                        chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[select_recording],
+                        domain_uuid = domain_uuid,
+                        chazara_teacher_uuid = chazara_teacher_uuid,
+                        uuid = uuid,
+                        start_epoch = start_epoch,
+                        caller_id_number = caller_id_number,
+                        caller_id_name = caller_id_name,
+                        duration = os.time() - start_epoch
+                    }
+
+                    dbh:query(sql, params);
+                    recording_filename = {};
+                    chazara_recording_uuid = {};
+                    chazara_daf_teacher_uuid = {}
+                else
+                    session:streamFile(recordings_dir .. "invalid.wav");
+                end
             else
                 -- Does not exist
                 session:streamFile(recordings_dir .. "recording_not_available.wav");
