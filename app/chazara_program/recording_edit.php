@@ -448,7 +448,7 @@
 			echo "				<option value=''></option>";
 			if (is_array($result_e) && @sizeof($result_e) != 0) {
 				foreach ($result_e as &$row) {
-					$selected = ($row['chazara_daf_teacher_uuid'] == $chazara_daf-teacher_uuid) ? "selected" : null;
+					$selected = ($row['chazara_daf_teacher_uuid'] == $chazara_daf_teacher_uuid) ? "selected" : null;
 					echo "		<option value='".escape($row['chazara_daf_teacher_uuid'])."' ".escape($selected).">".escape($row['name'])."</option>";
 				}
 			}
