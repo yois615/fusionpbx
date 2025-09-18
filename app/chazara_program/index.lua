@@ -613,7 +613,7 @@ if teacher_auth ~= true then
                     fs_rebbe = fs_rebbe .. recordings_dir .. "for_rabbi.wav!";
                     fs_rebbe = fs_rebbe .. recordings_dir .. chazara_daf_teacher_recording[chazara_daf_teacher_uuid[i]] .. "!";
                     fs_rebbe = fs_rebbe .. recordings_dir .. "press.wav!";
-                    fs_rebbe = fs_rebbe .. "numbers/" .. i .. ".wav";
+                    fs_rebbe = fs_rebbe .. "digits/" .. i .. ".wav";
                     if i < #chazara_daf_teacher_uuid then fs_rebbe = fs_rebbe .. "!silence_stream://500!"; end;
                 end          
 
