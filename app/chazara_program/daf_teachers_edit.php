@@ -141,7 +141,11 @@
 // print_r($array); exit;
 				//grant temporary permissions
 					$p = new permissions;
-					$p->add('chazara_daf_teacher_add', 'temp');
+					if ($action == 'add') {
+						$p->add('chazara_daf_teacher_add', 'temp');
+					} elseif ($action == 'update') {
+						$p->add('chazara_daf_teacher_edit', 'temp');
+					}
 
 				//save to the data
 					$database = new database;
@@ -153,6 +157,7 @@
 
 				//revoke temporary permissions
 					$p->delete('chazara_daf_teacher_add', 'temp');
+					$p->delete('chazara_daf_teacher_edit', 'temp');
 					
 				//set the message and redirect
 					if ($action == "add") {
