@@ -595,13 +595,13 @@ if teacher_auth ~= true then
                 -- Create a menu to select the rebbe
                 local chazara_daf_teacher_recording = {}
                 -- Get the rebbe recording names
-                local sql = "SELECT * FROM v_chazara_daf_teachers WHERE chazara_daf_teacher_uuid IN ("
+                local sql = "SELECT * FROM v_chazara_daf_teachers WHERE chazara_daf_teacher_uuid IN ('"
                 for i = 1, #chazara_daf_teacher_uuid, 1 do
                     sql = sql .. chazara_daf_teacher_uuid[i]
                     if i == #chazara_daf_teacher_uuid then
-                        sql = sql .. ")"
+                        sql = sql .. "')"
                     else
-                        sql = sql .. ","
+                        sql = sql .. "','"
                     end
                 end
                 dbh:query(sql, {}, function(row)
