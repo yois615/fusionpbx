@@ -367,7 +367,7 @@
 	$sql = "select r.chazara_recording_uuid, r.recording_name, r.recording_id, r.recording_filename, ";
 	$sql .= "r.length, r.recording_name, r.recording_description, r.enabled, r.insert_date, ";
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
-		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, r.chapter, ";
+		$sql .= "r.daf_number, r.daf_amud, r.daf_start_line, r.daf_end_line, r.chapter, dt.name as daf_teacher_name, ";
 	}
 	elseif ($_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
 		$sql .= "r.chumash_start_chapter, r.chumash_end_chapter, r.chumash_start_verse, r.chumash_end_verse, ";
@@ -375,6 +375,9 @@
 	$sql .= "t.grade, t.parallel_class_id, r.chazara_teacher_uuid, t.name as teacher_name ";
 	$sql .= "from v_chazara_recordings r ";
 	$sql .= "INNER JOIN v_chazara_teachers t ON r.chazara_teacher_uuid = t.chazara_teacher_uuid ";
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+		$sql .= "LEFT JOIN v_chazara_daf_teachers dt on r.chazara_daf_teacher_uuid = dt.chazara_daf_teacher_uuid ";
+	}
 	$sql .= "where r.domain_uuid = :domain_uuid ";
 	if (!permission_exists('chazara_recording_all') || $_GET['show'] != "all") {
 		$sql .= "and t.user_uuid = :user_uuid ";
@@ -590,13 +593,16 @@
 	}
 	echo th_order_by('recording_name', $text['label-recording_name'], $order_by, $order, $order_params);
 	$col_count++;
-	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+	if ($_GET['show'] == "all" && permission_exists('chazara_recording_all' && $_SESSION['chazara']['daf_mode']['boolean'] != "true" 
+	&& $_SESSION['chazara']['chumash_mode']['boolean'] != "true")) {
 		echo th_order_by('grade', $text['label-grade'], $order_by, $order, $order_params, "class='shrink'");
 		echo th_order_by('parallel_class_id', $text['label-parallel'], $order_by, $order, $order_params, "class='shrink'");
 		$col_count++;
 		$col_count++;
 	}
 	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+		echo th_order_by('chazara_daf_teacher_uuid', 'Parallel Teacher', $order_by, $order, $order_params);
+		$col_count++;
 		echo "<th class='center'>".$text['label-chapter']."</th>\n";
 		$col_count++;
 		echo "<th class='center'>".$text['label-daf_number']."</th>\n";
@@ -616,7 +622,11 @@
 		echo "<th class='center'>".$text['label-end_verse']."</th>\n";
 		$col_count++;
 	}
-	echo "<th class='center'>".'Teacher'."</th>\n";
+	if ($_SESSION['chazara']['daf_mode']['boolean'] == "true" || $_SESSION['chazara']['chumash_mode']['boolean'] == "true") {
+		echo "<th class='center'>".'Masechta/Sefer'."</th>\n";
+	} else {
+		echo "<th class='center'>".'Teacher'."</th>\n";
+	}
 	$col_count++;
 	echo "<th class='center'>".$text['label-created']."</th>\n";
 	$col_count++;
@@ -685,11 +695,13 @@
 			
 			echo "	<td>".$row['recording_name']."</td>\n";
 			
-			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all')) {
+			if ($_GET['show'] == "all" && permission_exists('chazara_recording_all') && $_SESSION['chazara']['daf_mode']['boolean'] != "true" 
+			&& $_SESSION['chazara']['chumash_mode']['boolean'] != "true") {
 				echo "	<td>".$row['grade']."</td>\n";
 				echo "	<td>".$row['parallel_class_id']."</td>\n";
 			}
 			if ($_SESSION['chazara']['daf_mode']['boolean'] == "true") {
+				echo "	<td>".$row['daf_teacher_name']."</td>\n";
 				echo "	<td>".$row['chapter']."</td>\n";
 				echo "	<td>".$row['daf_number']."</td>\n";
 				echo "	<td>".$row['daf_amud']."</td>\n";
