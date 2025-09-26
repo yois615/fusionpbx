@@ -7,6 +7,7 @@
 
 require "resources.functions.config";
 require "resources.functions.split";
+require "resources.functions.is_uuid";
 debug.sql = true;
 json = freeswitch.JSON();
 
@@ -581,7 +582,7 @@ if teacher_auth ~= true then
                     duration = os.time() - start_epoch
                 }
                 
-                if chazara_daf_teacher_uuid[1] ~= nil and string.len(chazara_daf_teacher_uuid[1]) > 0 then
+                if chazara_daf_teacher_uuid[1] ~= nil and is_uuid(chazara_daf_teacher_uuid[1]) then
                     params['chazara_daf_teacher_uuid'] = chazara_daf_teacher_uuid[1];
                 else
                     params['chazara_daf_teacher_uuid'] = dbh.NULL;
