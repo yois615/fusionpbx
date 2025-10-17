@@ -470,7 +470,11 @@ if teacher_auth ~= true then
                 if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
                     table.insert(recording_filename, row["recording_filename"]);
                     table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
-                    table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"] or "UNDEF");
+                    if row["chazara_daf_teacher_uuid"] ~= nil and is_uuid(row["chazara_daf_teacher_uuid"]) then
+                        table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"])
+                    else
+                        table.insert(chazara_daf_teacher_uuid, "aad5fc46-ebbb-4a10-b667-3e6a5d51104f");
+                    end
                 end
             end);
 
@@ -509,7 +513,11 @@ if teacher_auth ~= true then
                     if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
                         table.insert(recording_filename, row["recording_filename"]);
                         table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
-                        table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"] or "UNDEF");
+                        if row["chazara_daf_teacher_uuid"] ~= nil and is_uuid(row["chazara_daf_teacher_uuid"]) then
+                            table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"])
+                        else
+                            table.insert(chazara_daf_teacher_uuid, "aad5fc46-ebbb-4a10-b667-3e6a5d51104f");
+                        end
                     end
                 end);   
             end
@@ -538,7 +546,11 @@ if teacher_auth ~= true then
                 if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
                     table.insert(recording_filename, row["recording_filename"]);
                     table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
-                    table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"] or "UNDEF");
+                    if row["chazara_daf_teacher_uuid"] ~= nil and is_uuid(row["chazara_daf_teacher_uuid"]) then
+                        table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"])
+                    else
+                        table.insert(chazara_daf_teacher_uuid, "aad5fc46-ebbb-4a10-b667-3e6a5d51104f");
+                    end
                 end
             end);
         else
@@ -606,13 +618,19 @@ if teacher_auth ~= true then
                     end
                 end
                 dbh:query(sql, {}, function(row)
-                    chazara_daf_teacher_recording[row['chazara_daf_teacher_uuid']] = row['name_recording_path']
+                    if string.len(row['name_recording_path']) > 0 then
+                        chazara_daf_teacher_recording[row['chazara_daf_teacher_uuid']] = row['name_recording_path']
+                    end
                 end);
                 -- Build filestring
                 local fs_rebbe = "file_string://"
                 for i = 1, #chazara_daf_teacher_uuid, 1 do
                     fs_rebbe = fs_rebbe .. recordings_dir .. "for_rabbi.wav!";
-                    fs_rebbe = fs_rebbe .. recordings_dir .. chazara_daf_teacher_recording[chazara_daf_teacher_uuid[i]] .. "!";
+                    if chazara_daf_teacher_recording[chazara_daf_teacher_uuid[i]] ~= nil then
+                        fs_rebbe = fs_rebbe .. recordings_dir .. chazara_daf_teacher_recording[chazara_daf_teacher_uuid[i]] .. "!";
+                    else
+                        fs_rebbe = fs_rebbe .. "digits/" .. i .. ".wav!";
+                    end
                     fs_rebbe = fs_rebbe .. recordings_dir .. "press.wav!";
                     fs_rebbe = fs_rebbe .. "digits/" .. i .. ".wav";
                     if i < #chazara_daf_teacher_uuid then fs_rebbe = fs_rebbe .. "!silence_stream://500!"; end;
