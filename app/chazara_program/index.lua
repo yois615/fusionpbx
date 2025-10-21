@@ -50,7 +50,117 @@ local Settings = require "resources.functions.lazy_settings";
     if chumash_mode == nil or string.len(chumash_mode) == 0 then
         chumash_mode = "false";
     end
-	
+
+-- Chumash by parsha function
+local function chumash_by_parsha()
+        local epoch = os.time()
+        local cache_file = session:execute("http_get", "https://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d") .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
+        local file = io.open(cache_file, "r")
+        if file then
+            content = file:read("*all")
+            file:close()
+        else
+            freeswitch.consoleLog("WARNING", "Error: Could not open file " .. cache_file)
+            return;
+        end
+        local hebcal_response = json:decode(content);
+        content = nil
+        -- "torah":"Genesis 6:9-11:32"
+        local tbl_cur_parsha = split(hebcal_response['items'][1]['leyning']['torah'], ' ');
+        -- Figure out sefer
+        local parallel_class_id = "";
+        if tbl_cur_parsha[1] == "Genesis" then parallel_class_id = 1; end;
+        if tbl_cur_parsha[1] == "Exodus" then parallel_class_id = 2; end;
+        if tbl_cur_parsha[1] == "Leviticus" then parallel_class_id = 3; end;
+        if tbl_cur_parsha[1] == "Numbers" then parallel_class_id = 4; end;
+        if tbl_cur_parsha[1] == "Deuteronomy" then parallel_class_id = 5; end;
+
+        local tbl_parsha_range = split(tbl_cur_parsha[2], "-");
+
+        local tbl_parsha_start = split(tbl_parsha_range[1], ":")
+        local parsha_start_chapter = tbl_parsha_start[1];
+        local parsha_start_verse = tbl_parsha_start[2];
+        local tbl_parsha_end = split(tbl_parsha_range[2], ":")
+        local parsha_end_chapter = tbl_parsha_end[1];
+        local parsha_end_verse = tbl_parsha_end[2];
+
+        -- Match parallel class to teacher_uuid
+        local sql = [[SELECT chazara_teacher_uuid, pin FROM v_chazara_teachers
+                    WHERE domain_uuid = :domain_uuid
+                    AND grade = :grade
+                    AND parallel_class_id = :parallel]];
+        local params = {
+            domain_uuid = domain_uuid,
+            grade = 1,
+            parallel = parallel_class_id
+        };
+        if (debug["sql"]) then
+            freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+        end
+        dbh:query(sql, params, function(row)
+            chazara_teacher_uuid = row["chazara_teacher_uuid"];
+        end);
+
+        -- Get classes from database
+        local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
+                    FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_teacher_uuid = :chazara_teacher_uuid
+                    AND ((chumash_start_chapter = :parsha_start_chapter AND chumash_start_verse >= :parsha_start_verse)
+                    OR (chumash_start_chapter > :parsha_start_chapter AND chumash_end_chapter < :parsha_end_chapter)
+                    OR (chumash_end_chapter = :parsha_end_chapter AND chumash_end_verse <= :parsha_end_verse))
+                    ORDER BY chumash_start_chapter, chumash_start_verse desc, chazara_daf_teacher_uuid asc]];
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_teacher_uuid = chazara_teacher_uuid,
+                parsha_start_chapter = parsha_start_chapter,
+                parsha_end_chapter = parsha_end_chapter,
+                parsha_start_verse = parsha_start_verse,
+                parsha_end_verse = parsha_end_verse
+            };
+            local tbl_parsha_recording_files = {};
+            local tbl_parsha_recording_uuid = {}
+            dbh:query(sql, params, function(row)
+                table.insert(tbl_parsha_recording_files, row['recording_filename']);
+                table.insert(tbl_parsha_recording_uuid, row['chazara_recording_uuid']);
+            end);
+
+            local file_count = #tbl_parsha_recording_files;
+
+            local prmpt_file = "file_string://" .. recordings_dir .. "there_are.wav!";
+            prmpt_file = prmpt_file .. "digits/" .. tostring(file_count) .. ".wav!"
+            prmpt_file = prmpt_file .. recordings_dir .. "this_week.wav";
+
+            -- Loop
+            local exit = false;
+            while session:ready() and exit == false do
+                local parsha_play_file = session:playAndGetDigits(1, string.len(tostring(#tbl_parsha_recording_files)), 3, 5000, "", prmpt_file, "", "");
+                if tonumber(parsha_play_file) == nil then
+                    exit = true;
+                else
+                    local start_epoch = os.time();
+                    -- Play file
+                    session:setInputCallback("cpb_dtmf_input", "");
+                    session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]);
+                    session:unsetInputCallback();
+                    -- Insert record into CDR
+                    local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+                    sql = sql .. "duration, caller_id_number, caller_id_name) "
+                    sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+                    local params = {
+                        chazara_recording_uuid = tbl_parsha_recording_uuid[tonumber(parsha_play_file)],
+                        domain_uuid = domain_uuid,
+                        chazara_teacher_uuid = chazara_teacher_uuid,
+                        uuid = uuid,
+                        start_epoch = start_epoch,
+                        caller_id_number = caller_id_number,
+                        caller_id_name = caller_id_name,
+                        duration = os.time() - start_epoch
+                    }
+                    dbh:query(sql, params);
+                end
+            end
+end
 
 -- Strip E.164 plus sign
 if (string.sub(caller_id_number, 1, 1) == "+") then
@@ -250,6 +360,17 @@ while (session:ready() and exit == false) do
     timeout = timeout + 1
     if timeout > 3 then
         session:hangup();
+    end
+end
+
+-- NEW FOR CHUMASH MODE - select current parsha
+if session:ready() and chumash_mode == "true" then
+    local chumash_type = session:playAndGetDigits(1, 1, 3, 5000, "#", recordings_dir .. "parsha_or_perek.wav", "", "[12]");
+    if chumash_type == "2" then
+        -- do nothing
+    else
+        chumash_by_parsha()
+        goto grade_menu;
     end
 end
 
