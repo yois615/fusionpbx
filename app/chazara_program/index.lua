@@ -140,6 +140,8 @@ local function chumash_by_parsha()
             local parsha_play_file = session:playAndGetDigits(1, string.len(tostring(#tbl_parsha_recording_files)), 3, 5000, "", prmpt_file, "", "");
             if tonumber(parsha_play_file) == nil then
                 exit = true;
+            elseif tonumber(parsha_play_file) < 1 or tonumber(parsha_play_file) > file_count then
+                session:streamFile(recordings_dir .. "invalid.wav");
             else
                 local start_epoch = os.time();
                 -- Play file
