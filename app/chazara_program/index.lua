@@ -10,6 +10,7 @@ require "resources.functions.split";
 require "resources.functions.is_uuid";
 debug.sql = true;
 json = freeswitch.JSON();
+api = freeswitch.API();
 
 -- connect to the database
 local Database = require "resources.functions.database";
@@ -54,7 +55,7 @@ local Settings = require "resources.functions.lazy_settings";
 -- Chumash by parsha function
 local function chumash_by_parsha()
     local epoch = os.time()
-    local cache_file = session:execute("http_get", "https://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d") .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
+    local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d") .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
     local file = io.open(cache_file, "r")
     if file then
         content = file:read("*all")
@@ -149,9 +150,9 @@ local function chumash_by_parsha()
                 session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]);
                 session:unsetInputCallback();
                 -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
                 sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
                 local params = {
                     chazara_recording_uuid = tbl_parsha_recording_uuid[tonumber(parsha_play_file)],
                     domain_uuid = domain_uuid,
