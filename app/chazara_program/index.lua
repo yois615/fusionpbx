@@ -130,6 +130,7 @@ local function chumash_by_parsha()
 
     if file_count == 0 then
         session:streamFile(recordings_dir .. "recording_not_available.wav");
+        return;
     else
         local prmpt_file = "file_string://" .. recordings_dir .. "there_are.wav!";
         prmpt_file = prmpt_file .. "digits/" .. tostring(file_count) .. ".wav!"
