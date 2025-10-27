@@ -110,7 +110,7 @@ local function chumash_by_parsha()
                 AND ((chumash_start_chapter = :parsha_start_chapter AND chumash_start_verse >= :parsha_start_verse)
                 OR (chumash_start_chapter > :parsha_start_chapter AND chumash_end_chapter < :parsha_end_chapter)
                 OR (chumash_end_chapter = :parsha_end_chapter AND chumash_end_verse <= :parsha_end_verse))
-                ORDER BY chumash_start_chapter, chumash_start_verse desc, chazara_daf_teacher_uuid asc]];
+                ORDER BY chumash_start_chapter asc, chumash_start_verse asc, chazara_daf_teacher_uuid asc]];
     local params = {
         domain_uuid = domain_uuid,
         chazara_teacher_uuid = chazara_teacher_uuid,
