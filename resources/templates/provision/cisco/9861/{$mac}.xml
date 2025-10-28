@@ -448,10 +448,10 @@
 <Ring12 ua="na">n=Incoming_EQ;w=file://Incoming_EQ.rwb;c=1</Ring12>
 <Silent_Ring_Duration ua="na">60</Silent_Ring_Duration>
 <!--  Webex  -->
-<Webex_Onboard_Enable ua="na">Yes</Webex_Onboard_Enable>
+<Webex_Onboard_Enable ua="na">No</Webex_Onboard_Enable>
 <Webex_Directory_Enable ua="na">No</Webex_Directory_Enable>
 <Webex_Directory_Name ua="na"/>
-<Webex_Calendar_Enable ua="na">Yes</Webex_Calendar_Enable>
+<Webex_Calendar_Enable ua="na">No</Webex_Calendar_Enable>
 <Webex_Metrics_Enable ua="na">No</Webex_Metrics_Enable>
 <!--  XSI Phone Service  -->
 <XSI_Host_Server ua="na"/>
@@ -596,7 +596,7 @@
 <!--  SIP Settings  -->
 <SIP_Transport_1_ ua="na">{$account.1.sip_transport|upper}</SIP_Transport_1_>
 <!--  available options: UDP|TCP|TLS|AUTO  -->
-<SIP_Port_1_ ua="na">{$account.1.sip_port}<</SIP_Port_1_>
+<SIP_Port_1_ ua="na">{$account.1.sip_port}</SIP_Port_1_>
 <SIP_100REL_Enable_1_ ua="na">No</SIP_100REL_Enable_1_>
 <EXT_SIP_Port_1_ ua="na">0</EXT_SIP_Port_1_>
 <Auth_Resync-Reboot_1_ ua="na">Yes</Auth_Resync-Reboot_1_>
@@ -678,7 +678,7 @@
 <!--  Subscriber Information  -->
 <Display_Name_1_ ua="na">{$account.1.display_name}</Display_Name_1_>
 <User_ID_1_ ua="na">{$account.1.user_id}</User_ID_1_>
-<!--  <Password_1_ ua="na">{$account.1.password}</Password_1_>  -->
+<Password_1_ ua="na">{$account.1.password}</Password_1_>
 <Auth_ID_1_ ua="na">{$account.1.auth_id}</Auth_ID_1_>
 <Reversed_Auth_Realm_1_ ua="na"/>
 <SIP_URI_1_ ua="na"/>

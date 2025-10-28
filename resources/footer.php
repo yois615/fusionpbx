@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -101,6 +101,8 @@
 
 //set template variables
 
+	//add self
+		$view->assign('php_self', basename($_SERVER['PHP_SELF']));
 	//add translations
 		foreach($text as $key => $value) {
 			$array[str_replace('-', '_', $key)] = $value;
@@ -212,7 +214,7 @@
 				unset($menu);
 			}
 		//build menu by style
-			switch ($_SESSION['theme']['menu_style']['text']) {
+			switch ($settings->get('theme', 'menu_style')) {
 				case 'side':
 					$view->assign('menu_side_state', (isset($_SESSION['theme']['menu_side_state']['text']) && $_SESSION['theme']['menu_side_state']['text'] != '' ? $_SESSION['theme']['menu_side_state']['text'] : 'expanded'));
 					if ($_SESSION['theme']['menu_side_state']['text'] != 'hidden') {

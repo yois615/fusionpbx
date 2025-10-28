@@ -246,6 +246,9 @@ $message_alert_background_color = $settings->get('theme', 'message_alert_backgro
 $operator_panel_border_color = $settings->get('theme', 'operator_panel_border_color', '#b9c5d8');
 $operator_panel_sub_background_color = $settings->get('theme', 'operator_panel_sub_background_color', '#e5eaf5');
 $operator_panel_main_background_color = $settings->get('theme', 'operator_panel_main_background_color', '#fff');
+$operator_panel_user_info = $settings->get('theme', 'operator_panel_user_info', '#444');
+$operator_panel_caller_info = $settings->get('theme', 'operator_panel_caller_info', '#444');
+$operator_panel_call_info = $settings->get('theme', 'operator_panel_call_info', '#444');
 $dashboard_background_color = $settings->get('theme', 'dashboard_background_color', '');
 $dashboard_background_gradient_style = $settings->get('theme', 'dashboard_background_gradient_style', '');
 $dashboard_background_gradient_angle = $settings->get('theme', 'dashboard_background_gradient_angle', '');
@@ -358,46 +361,46 @@ if (!empty($_SESSION['theme'])) {
 $background_images_enabled = false;
 if (!empty($_SESSION['username'])) {
 	//logged in - use standard background images
-	if ($settings->get('theme', 'background_image_enabled', false) && is_array($settings->get('theme', 'background_image', ''))) {
+	if ($settings->get('theme', 'background_image_enabled', false) && !empty($settings->get('theme', 'background_image', ''))) {
 		$background_images_enabled = true;
-		$background_images = $settings->get('theme', 'background_image', '');
+		$background_images = $settings->get('theme', 'background_image', array());
 	}
 
 	//logged in - use standard background colors
-	if ($settings->get('theme', 'background_color_enabled', true) && !empty($settings->get('theme', 'background_color')[0]) && !empty($settings->get('theme', 'background_color')[1])) {
+	if ($settings->get('theme', 'background_color_enabled', false) && !empty($settings->get('theme', 'background_color')[0]) && !empty($settings->get('theme', 'background_color')[1])) {
 		$background_colors[0] = $settings->get('theme', 'background_color')[0];
 		$background_colors[1] = $settings->get('theme', 'background_color')[1];
 	}
-	elseif ($settings->get('theme', 'background_color_enabled', true) && !empty($settings->get('theme', 'background_color')[0])) {
+	elseif ($settings->get('theme', 'background_color_enabled', false) && !empty($settings->get('theme', 'background_color')[0])) {
 		$background_colors[0] = $settings->get('theme', 'background_color')[0];
 	}
 }
 else {
 	//not logged in - try using login background images
-	if ($settings->get('theme', 'login_background_image_enabled', false) && is_array($settings->get('theme', 'login_background_image', ''))) {
+	if ($settings->get('theme', 'login_background_image_enabled', false) && !empty($settings->get('theme', 'login_background_image', ''))) {
 		$background_images_enabled = true;
-		$background_images = $settings->get('theme', 'login_background_image', '');
+		$background_images = $settings->get('theme', 'login_background_image', array());
 	}
 
 	//otherwise, use standard background images
-	if ($settings->get('theme', 'background_image_enabled', true) && is_array($settings->get('theme', 'background_image', ''))) {
+	if ($settings->get('theme', 'background_image_enabled', false) && !empty($settings->get('theme', 'background_image', ''))) {
 		$background_images_enabled = true;
-		$background_images = $settings->get('theme', 'background_image', '');
+		$background_images = $settings->get('theme', 'background_image', array());
 	}
 
 	//use standard background colors
-	if (!empty($settings->get('theme', 'login_background_color', '')) && !empty($settings->get('theme', 'login_background_color')[0]) && !empty($settings->get('theme', 'login_background_color')[1])) {
+	if ($settings->get('theme', 'login_background_color_enabled', false) && !empty($settings->get('theme', 'login_background_color', '')) && !empty($settings->get('theme', 'login_background_color')[0]) && !empty($settings->get('theme', 'login_background_color')[1])) {
 		$background_colors[0] = $settings->get('theme', 'login_background_color')[0];
 		$background_colors[1] = $settings->get('theme', 'login_background_color')[1];
 	}
-	elseif (!empty($settings->get('theme', 'login_background_color', '')) && !empty($settings->get('theme', 'login_background_color')[0])) {
+	elseif ($settings->get('theme', 'login_background_color_enabled', false) && !empty($settings->get('theme', 'login_background_color', '')) && !empty($settings->get('theme', 'login_background_color')[0])) {
 		$background_colors[0] = $settings->get('theme', 'login_background_color')[0];
 	}
-	elseif ($settings->get('theme', 'background_color_enabled', true) && !empty($settings->get('theme', 'background_color')[0]) && !empty($settings->get('theme', 'background_color')[1])) {
+	elseif (!$settings->get('theme', 'login_background_image_enabled', false) && $settings->get('theme', 'background_color_enabled', false) && !empty($settings->get('theme', 'background_color')[0]) && !empty($settings->get('theme', 'background_color')[1])) {
 		$background_colors[0] = $settings->get('theme', 'background_color')[0];
 		$background_colors[1] = $settings->get('theme', 'background_color')[1];
 	}
-	elseif ($settings->get('theme', 'background_color_enabled', true) && !empty($settings->get('theme', 'background_color')[0])) {
+	elseif (!$settings->get('theme', 'login_background_image_enabled', false) && $settings->get('theme', 'background_color_enabled', false) && !empty($settings->get('theme', 'background_color')[0])) {
 		$background_colors[0] = $settings->get('theme', 'background_color')[0];
 	}
 }
@@ -407,7 +410,7 @@ if ($background_images_enabled) {
 	//background image is enabled
 	$image_extensions = array('jpg','jpeg','png','gif');
 
-	if (count($background_images) > 0) {
+	if (is_array($background_images) && count($background_images) > 0) {
 
 		if ((!isset($_SESSION['background_image'])) or empty($_SESSION['background_image'])) {
 			$_SESSION['background_image'] = $background_images[array_rand($background_images)];
@@ -499,8 +502,6 @@ if (!empty($background_colors[0]) || !empty($background_colors[1])) { //backgrou
 else { //default: white
 	$background_color = "";
 }
-
-
 
 ?>
 
@@ -2856,6 +2857,7 @@ else { //default: white
 		font-family: arial;
 		font-size: 10px;
 		display: inline-block;
+		color: <?=$operator_panel_user_info?>;
 		}
 
 	.op_user_info strong {
@@ -2867,6 +2869,7 @@ else { //default: white
 		margin-top: 4px;
 		font-family: arial;
 		font-size: 10px;
+		color: <?=$operator_panel_caller_info?>;
 		}
 
 	.op_call_info {
@@ -2874,6 +2877,7 @@ else { //default: white
 		padding: 0px;
 		font-family: arial;
 		font-size: 10px;
+		color: <?=$operator_panel_call_info?>;
 		}
 
 	#op_btn_status_available {

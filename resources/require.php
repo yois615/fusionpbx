@@ -88,10 +88,20 @@
 	global $database;
 	$database = database::new(['config' => $config]);
 
-//if not using the command line required files
+//security headers
+	header("X-Frame-Options: SAMEORIGIN");
+	header("Content-Security-Policy: frame-ancestors 'self';");
+	header("X-Content-Type-Options: nosniff");
+	header("Referrer-Policy: strict-origin-when-cross-origin");
+	//header("Strict-Transport-Security: max-age=63072000; includeSubDomains; preload");
+
+//start the session if not using the command line
 	global $no_session;
 	if (!defined('STDIN') && empty($no_session)) {
-		require_once __DIR__ . '/php.php';
+		ini_set('session.cookie_httponly', !isset($conf['session.cookie_httponly']) ? 'true' : (!empty($config->get('session.cookie_httponly')) ? 'true' : 'false'));
+		ini_set('session.cookie_secure', !isset($conf['session.cookie_secure']) ? 'true' : (!empty($config->get('session.cookie_secure')) ? 'true' : 'false'));
+		ini_set('session.cookie_samesite', $config->get('session.cookie_samesite', 'Lax'));
+		session_start();
 	}
 
 //load settings

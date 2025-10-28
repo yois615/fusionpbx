@@ -353,6 +353,7 @@
 									$sql .= "set device_provisioned_date = :device_provisioned_date, device_provisioned_method = :device_provisioned_method, device_provisioned_ip = :device_provisioned_ip, device_provisioned_agent = :device_provisioned_agent ";
 									$sql .= "where domain_uuid = :domain_uuid ";
 									$sql .= "and device_address = :device_address  ";
+									$sql .= "and (device_provisioned_date is null or device_provisioned_date < NOW() - INTERVAL '30 seconds') ";
 									$parameters['domain_uuid'] = $domain_uuid;
 									$parameters['device_address'] = strtolower($device_address);
 									$parameters['device_provisioned_date'] = 'now()';
@@ -737,7 +738,7 @@
 											$device_lines[$device_key_line]['line_keys'] = $row['device_key_value'];
 										}
 
-										//kept temporarily for backwards comptability to allow custom templates to be updated
+										//kept temporarily for backwards compatibility to allow custom templates to be updated
 										$device_keys[$id] = $row;
 										$device_keys[$id]['device_key_owner'] = "profile";
 									}
@@ -1189,10 +1190,10 @@
 							$provision["daylight_savings_start_time"] = date('H', $daylight_savings_start);
 						}
 						if ($daylight_savings_end !== null) {
-							$provision["daylight_savings_end"] = date('Y-m-d H:i:s', $daylight_savings_end);
-							$provision["daylight_savings_end_month"] = date('m', $daylight_savings_end);
-							$provision["daylight_savings_end_day"] = date('d', $daylight_savings_end);
-							$provision["daylight_savings_end_time"] = date('H', $daylight_savings_end);
+							$provision["daylight_savings_stop"] = date('Y-m-d H:i:s', $daylight_savings_end);
+							$provision["daylight_savings_stop_month"] = date('m', $daylight_savings_end);
+							$provision["daylight_savings_stop_day"] = date('d', $daylight_savings_end);
+							$provision["daylight_savings_stop_time"] = date('H', $daylight_savings_end);
 						}
 
 						//add a generic gmt_offset

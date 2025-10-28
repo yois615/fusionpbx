@@ -73,6 +73,20 @@
 //initialize the destination object
 	$destination = new destinations;
 
+//get installed languages
+	$language_paths = glob($settings->get('switch', 'sounds')."/*/*/*");
+	foreach ($language_paths as $key => $path) {
+		$path = str_replace($settings->get('switch', 'sounds').'/', "", $path);
+		$path_array = explode('/', $path);
+		if (count($path_array) <> 3 || strlen($path_array[0]) <> 2 || strlen($path_array[1]) <> 2) {
+			unset($language_paths[$key]);
+		}
+		$language_paths[$key] = str_replace($settings->get('switch', 'sounds')."/","",$language_paths[$key] ?? '');
+		if (empty($language_paths[$key])) {
+			unset($language_paths[$key]);
+		}
+	}
+
 //get total call center queues count from the database, check limit, if defined
 	if ($action == 'add') {
 		if (!empty($settings->get('limit','call_center_queues', ''))) {
@@ -98,6 +112,7 @@
 			$queue_name = $_POST["queue_name"];
 			$queue_extension = $_POST["queue_extension"];
 			$queue_greeting = $_POST["queue_greeting"];
+			$queue_language = $_POST["queue_language"];
 			$queue_strategy = $_POST["queue_strategy"];
 			$call_center_tiers = $_POST["call_center_tiers"];
 			$queue_moh_sound = $_POST["queue_moh_sound"];
@@ -121,7 +136,7 @@
 			$queue_announce_sound = $_POST["queue_announce_sound"];
 			$queue_announce_frequency = $_POST["queue_announce_frequency"];
 			$queue_callback_profile = $_POST["queue_callback_profile"];
-			$queue_cc_exit_keys = $_POST["queue_cc_exit_keys"];
+			$queue_cc_exit_keys = $_POST["queue_cc_exit_keys"] ?? null;
 			$queue_email_address = $_POST["queue_email_address"] ?? null;
 			$queue_description = $_POST["queue_description"];
 
@@ -132,6 +147,12 @@
 			else if ($action == 'add') {
 				$queue_context = $domain_name;
 			}
+
+		//seperate the language components into language, dialect and voice
+			$language_array = explode("/",$queue_language);
+			$queue_language = $language_array[0] ?? '';
+			$queue_dialect = $language_array[1] ?? '';
+			$queue_voice = $language_array[2] ?? '';
 
 		//remove invalid characters
 			$queue_cid_prefix = str_replace(":", "-", $queue_cid_prefix);
@@ -313,9 +334,12 @@
 			$array['call_center_queues'][0]['queue_name'] = $queue_name;
 			$array['call_center_queues'][0]['queue_extension'] = $queue_extension;
 			$array['call_center_queues'][0]['queue_greeting'] = $queue_greeting;
+			$array['call_center_queues'][0]['queue_language'] = $queue_language;
 			$array['call_center_queues'][0]['queue_strategy'] = $queue_strategy;
 			$array['call_center_queues'][0]['queue_moh_sound'] = $queue_moh_sound;
 			$array['call_center_queues'][0]['queue_record_template'] = $queue_record_template;
+			$array['call_center_queues'][0]['queue_dialect'] = $queue_dialect;
+			$array['call_center_queues'][0]['queue_voice'] = $queue_voice;
 			$array['call_center_queues'][0]['queue_time_base_score'] = $queue_time_base_score;
 			$array['call_center_queues'][0]['queue_time_base_score_sec'] = $queue_time_base_score_sec;
 			$array['call_center_queues'][0]['queue_max_wait_time'] = $queue_max_wait_time;
@@ -422,7 +446,7 @@
 			if (!strpos($queue_cc_exit_keys, "1") && strlen($queue_callback_profile) > 0) {
 				$queue_cc_exit_keys .= "1";
 			}
-			if (!empty($queue_cc_exit_keys)) {
+			if ($queue_cc_exit_keys !== null) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".xml::sanitize($queue_cc_exit_keys)."\"/>\n";
 			}
 			$dialplan_xml .= "		<action application=\"callcenter\" data=\"".xml::sanitize($queue_extension)."@".$domain_name."\"/>\n";
@@ -563,6 +587,9 @@
 				$database_queue_name = $row["queue_name"];
 				$queue_extension = $row["queue_extension"];
 				$queue_greeting = $row["queue_greeting"];
+				$queue_language = $row["queue_language"];
+				$queue_dialect = $row["queue_dialect"];
+				$queue_voice = $row["queue_voice"];
 				$queue_strategy = $row["queue_strategy"];
 				$queue_moh_sound = $row["queue_moh_sound"];
 				$queue_record_template = $row["queue_record_template"];
@@ -886,6 +913,34 @@
 	}
 	echo "<br />\n";
 	echo $text['description-'.$instance_label]."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "	".$text['label-language']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <select class='formfld' type='text' name='queue_language'>\n";
+	echo "		<option></option>\n";
+	if (!empty($queue_language) && !empty($queue_dialect) && !empty($queue_voice)) {
+		$language_formatted = $queue_language."-".$queue_dialect." ".$queue_voice;
+		echo "		<option value='".escape($queue_language.'/'.$queue_dialect.'/'.$queue_voice)."' selected='selected'>".escape($language_formatted)."</option>\n";
+	}
+	if (!empty($language_paths)) {
+		foreach ($language_paths as $key => $language_variables) {
+			$language_variables = explode('/',$language_paths[$key]);
+			$language = $language_variables[0];
+			$dialect = $language_variables[1];
+			$voice = $language_variables[2];
+			if (empty($language_formatted) || $language_formatted != $language.'-'.$dialect.' '.$voice) {
+				echo "		<option value='".$language."/".$dialect."/".$voice."'>".$language."-".$dialect." ".$voice."</option>\n";
+			}
+		}
+	}
+	echo "  </select>\n";
+	echo "<br />\n";
+	echo $text['description-language']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

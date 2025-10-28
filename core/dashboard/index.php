@@ -171,6 +171,10 @@
 	$document['title'] = $text['title-dashboard'];
 	require_once "resources/header.php";
 
+//include websockets
+	$version = md5(file_get_contents(__DIR__ . '/resources/javascript/ws_client.js'));
+	echo "<script src='/core/dashboard/resources/javascript/ws_client.js?v=$version'></script>\n";
+
 //include sortablejs
 	echo "<script src='/resources/sortablejs/sortable.min.js'></script>";
 
@@ -200,7 +204,7 @@
 	echo "	<div class='heading'><b>".$text['title-dashboard']."</b></div>\n";
 	echo "	<div class='actions'>\n";
 	echo "		<form id='dashboard' method='post' _onsubmit='setFormSubmitting()'>\n";
-	if ($_SESSION['theme']['menu_style']['text'] != 'side') {
+	if ($settings->get('theme', 'menu_style') != 'side') {
 		echo "		".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$_SESSION["username"]."</a>&nbsp; &nbsp;";
 	}
 	if (permission_exists('dashboard_edit')) {
@@ -273,13 +277,13 @@ foreach ($dashboard as $row) {
 		echo "}\n";
 	}
 	if (!empty($row['dashboard_label_text_color']) || !empty($row['dashboard_label_background_color'])) {
-		echo "#".$dashboard_name." .hud_title {\n";
+		echo "#".$dashboard_name." .hud_title:first-of-type {\n";
 		if (!empty($row['dashboard_label_text_color'])) { echo "	color: ".$row['dashboard_label_text_color'].";\n"; }
 		if (!empty($row['dashboard_label_background_color'])) { echo "	background-color: ".$row['dashboard_label_background_color'].";\n"; }
 		echo "}\n";
 	}
 	if (!empty($row['dashboard_label_text_color_hover']) || !empty($row['dashboard_label_background_color_hover'])) {
-		echo "#".$dashboard_name.":hover .hud_title {\n";
+		echo "#".$dashboard_name.":hover .hud_title:first-of-type {\n";
 		if (!empty($row['dashboard_label_text_color_hover'])) { echo "	color: ".$row['dashboard_label_text_color_hover'].";\n"; }
 		if (!empty($row['dashboard_label_background_color_hover'])) { echo "	background-color: ".$row['dashboard_label_background_color_hover'].";\n"; }
 		echo "}\n";
@@ -331,7 +335,7 @@ foreach ($dashboard as $row) {
 		echo "}\n";
 	}
 	if ($row['dashboard_label_enabled'] == 'false') {
-		echo "#".$dashboard_name." .hud_title {\n";
+		echo "#".$dashboard_name." .hud_title:first-of-type {\n";
 		echo "	display: none;\n";
 		echo "}\n";
 		echo "#".$dashboard_name." .hud_content {\n";

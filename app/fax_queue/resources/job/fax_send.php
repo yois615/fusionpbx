@@ -63,6 +63,9 @@
 
 //shutdown call back function
 	function shutdown() {
+		//add global variables
+		global $database, $fax_queue_uuid;
+
 		//when the fax status is still sending
 		//then set the fax status to trying
 		$sql = "update v_fax_queue ";
@@ -76,30 +79,30 @@
 	register_shutdown_function('shutdown');
 
 //define the process id file
-	$pid_file = "/var/run/fusionpbx/fax_send".".".$fax_queue_uuid.".pid";
+	$pid_file = '/var/run/fusionpbx/fax_send.'.$fax_queue_uuid.'.pid';
 	//echo "pid_file: ".$pid_file."\n";
 
 //function to check if the process exists
-	function process_exists($file = false) {
-
-		//set the default exists to false
-		$exists = false;
-
-		//check to see if the process is running
-		if (file_exists($file)) {
-			$pid = file_get_contents($file);
-			if (posix_getsid($pid) === false) {
-				//process is not running
-				$exists = false;
-			}
-			else {
-				//process is running
-				$exists = true;
-			}
+	function process_exists($file = '') {
+		//check if the file exists return false if not found
+		if (!file_exists($file)) {
+			return false;
 		}
 
-		//return the result
-		return $exists;
+		//check to see if the process id is valid
+		$pid = file_get_contents($file);
+		if (filter_var($pid, FILTER_VALIDATE_INT) === false) {
+			return false;
+		}
+
+		//check if the process is running
+		exec('ps -p '.$pid, $output);
+		if (count($output) > 1) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 //remove single quote
@@ -394,7 +397,7 @@
 			//$dial_string .= "fax_retry_sleep=180,";
 			$dial_string .= "fax_verbose=true,";
 			//$dial_string .= "fax_use_ecm=off,";
-			$dial_string .= "absolute_codec_string=PCMU,PCMA,";
+			$dial_string .= "absolute_codec_string=\'PCMU,PCMA\',";
 			$dial_string .= "api_hangup_hook='lua app/fax/resources/scripts/hangup_tx.lua'";
 
 		//connect to event socket and send the command
