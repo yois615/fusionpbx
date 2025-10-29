@@ -141,6 +141,7 @@
 		$order_by = $_REQUEST["order_by"] ?? '';
 		$order = $_REQUEST["order"] ?? '';
 		$cc_side = $_REQUEST["cc_side"] ?? '';
+		$disa_outbound_only = $_REQUEST["disa_outbound_only"] ?? '';
 		$call_center_queue_uuid = $_REQUEST["call_center_queue_uuid"] ?? '';
 		$call_center_abandoned = $_REQUEST["call_center_abandoned"];
 		$call_center_agent_uuid = $_REQUEST["call_center_agent_uuid"];
@@ -244,6 +245,7 @@
 	$param .= "&cc_side=".urlencode($cc_side ?? '');
 	$param .= "&call_center_queue_uuid=".urlencode($call_center_queue_uuid ?? '');
 	$param .= "&call_center_abandoned=".urlencode($call_center_abandoned ?? '');
+	$param .= "&disa_outbound_only=".urlencode($disa_outbound_only ?? '');
 	$param .= "&call_center_agent_uuid=".urlencode($call_center_agent_uuid ?? '');
 
 	if (isset($_SESSION['cdr']['field']) && is_array($_SESSION['cdr']['field'])) {
@@ -327,10 +329,10 @@
 	if (strlen($call_center_agent_uuid) == 0 && strlen($call_center_queue_uuid) == 0) {
 		$sql .= "c.start_epoch, \n";
 		$sql .= "c.billmsec, \n";
-		$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-		$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
 	} elseif (strlen($call_center_agent_uuid) > 0) {
-		$sql .= "c.cc_queue_answered_epoch as start_epoch, \n";
+		$sql .= "c.cc_queue_answered_epoch as c.start_epoch, \n";
 		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'DD Mon YYYY') as start_date_formatted, \n";
 		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'HH12:MI:SS am') as start_time_formatted, \n";
 		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) * 1000 as billmsec, \n";
@@ -350,8 +352,13 @@
 	$sql .= "c.bridge_uuid, \n";
 	$sql .= "c.direction, \n";
 	$sql .= "c.billsec, \n";
-	$sql .= "c.caller_id_name, \n";
-	$sql .= "c.caller_id_number, \n";
+	if ($disa_outbound_only != 'on') {
+		$sql .= "c.caller_id_number, \n";
+		$sql .= "c.caller_id_name, \n";
+	} else {
+		$sql .= "flow.call_flow#>>'{0,caller_profile,caller_id_number}' as caller_id_number, ";
+		$sql .= "flow.call_flow#>>'{0,caller_profile,caller_id_name}' as caller_id_name, ";
+	}
 	$sql .= "c.caller_destination, \n";
 	$sql .= "c.source_number, \n";
 	$sql .= "c.destination_number, \n";
@@ -392,6 +399,10 @@
 	$sql .= "from v_xml_cdr as c \n";
 	$sql .= "left join v_extensions as e on e.extension_uuid = c.extension_uuid \n";
 	$sql .= "inner join v_domains as d on d.domain_uuid = c.domain_uuid \n";
+	if ($disa_outbound_only == 'on') {
+		$sql .= "inner join v_xml_cdr_json as json on c.xml_cdr_uuid = json.xml_cdr_uuid \n";
+		$sql .= "inner join v_xml_cdr_flow as flow on c.xml_cdr_uuid = flow.xml_cdr_uuid \n";
+	}
 	if (!empty($_REQUEST['show']) && $_REQUEST['show'] == "all" && $permission['xml_cdr_all']) {
 		$sql .= "where true \n";
 	}
@@ -497,47 +508,47 @@
 	}
 
 	if (!empty($start_stamp_begin) && !empty($start_stamp_end)) {
-		$sql .= "and start_stamp between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
+		$sql .= "and c.start_stamp between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
 		$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
 		$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
 	}
 	else {
 		if (!empty($start_stamp_begin)) {
-			$sql .= "and start_stamp >= :start_stamp_begin \n";
+			$sql .= "and c.start_stamp >= :start_stamp_begin \n";
 			$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
 		}
 		if (!empty($start_stamp_end)) {
-			$sql .= "and start_stamp <= :start_stamp_end \n";
+			$sql .= "and c.start_stamp <= :start_stamp_end \n";
 			$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
 		}
 	}
 	if (!empty($answer_stamp_begin) && !empty($answer_stamp_end)) {
-		$sql .= "and answer_stamp between :answer_stamp_begin::timestamptz and :answer_stamp_end::timestamptz \n";
+		$sql .= "and c.answer_stamp between :answer_stamp_begin::timestamptz and :answer_stamp_end::timestamptz \n";
 		$parameters['answer_stamp_begin'] = $answer_stamp_begin.':00.000 '.$time_zone;
 		$parameters['answer_stamp_end'] = $answer_stamp_end.':59.999 '.$time_zone;
 	}
 	else {
 		if (!empty($answer_stamp_begin)) {
-			$sql .= "and answer_stamp >= :answer_stamp_begin \n";
+			$sql .= "and c.answer_stamp >= :answer_stamp_begin \n";
 			$parameters['answer_stamp_begin'] = $answer_stamp_begin.':00.000 '.$time_zone;;
 		}
 		if (!empty($answer_stamp_end)) {
-			$sql .= "and answer_stamp <= :answer_stamp_end \n";
+			$sql .= "and c.answer_stamp <= :answer_stamp_end \n";
 			$parameters['answer_stamp_end'] = $answer_stamp_end.':59.999 '.$time_zone;
 		}
 	}
 	if (!empty($end_stamp_begin) && !empty($end_stamp_end)) {
-		$sql .= "and end_stamp between :end_stamp_begin::timestamptz and :end_stamp_end::timestamptz \n";
+		$sql .= "and c.end_stamp between :end_stamp_begin::timestamptz and :end_stamp_end::timestamptz \n";
 		$parameters['end_stamp_begin'] = $end_stamp_begin.':00.000 '.$time_zone;
 		$parameters['end_stamp_end'] = $end_stamp_end.':59.999 '.$time_zone;
 	}
 	else {
 		if (!empty($end_stamp_begin)) {
-			$sql .= "and end_stamp >= :end_stamp_begin \n";
+			$sql .= "and c.end_stamp >= :end_stamp_begin \n";
 			$parameters['end_stamp_begin'] = $end_stamp_begin.':00.000 '.$time_zone;
 		}
 		if (!empty($end_stamp_end)) {
-			$sql .= "and end_stamp <= :end_stamp_end \n";
+			$sql .= "and c.end_stamp <= :end_stamp_end \n";
 			$parameters['end_stamp'] = $end_stamp_end.':59.999 '.$time_zone;
 		}
 	}
@@ -567,7 +578,7 @@
 		$parameters['status'] = $status;
 	}
 	if (!empty($xml_cdr_uuid)) {
-		$sql .= "and xml_cdr_uuid = :xml_cdr_uuid \n";
+		$sql .= "and c.xml_cdr_uuid = :xml_cdr_uuid \n";
 		$parameters['xml_cdr_uuid'] = $xml_cdr_uuid;
 	}
 	if (!empty($bleg_uuid)) {
@@ -607,6 +618,9 @@
 			$sql .= "and cc_cause = 'cancel' \n";
 		}
 		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+	}
+	if ($disa_outbound_only == 'on') {
+		$sql .= "and json.json #>> '{variables,disa_outbound}' is not null \n";
 	}
 	//if (strlen($mos_comparison) > 0 && strlen($mos_score) > 0 ) {
 	//	$sql .= "and rtp_audio_in_mos = :mos_comparison :mos_score ";

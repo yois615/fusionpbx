@@ -349,6 +349,13 @@
 		echo "		</td>";
 		echo "	</tr>";
 
+		echo "	<tr>";
+		echo "		<td class='vncell'>DISA Outbound Only</td>";
+		echo "		<td class='vtable'>";
+		echo "      	<input type='checkbox' name='disa_outbound_only' id='disa_outbound_only'>\n";
+		echo "		</td>";
+		echo "	</tr>";
+
 
 		echo "	<tr>";
 		echo "		<td class='vncell'>".$text['label-call_center_agent_name']."</td>";
