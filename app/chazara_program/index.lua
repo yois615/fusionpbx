@@ -53,9 +53,8 @@ local Settings = require "resources.functions.lazy_settings";
     end
 
 -- Chumash by parsha function
-local function chumash_by_parsha()
-    local epoch = os.time()
-    local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d") .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
+local function chumash_by_parsha(epoch)
+    local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
     local file = io.open(cache_file, "r")
     if file then
         content = file:read("*all")
@@ -373,12 +372,15 @@ end
 
 -- NEW FOR CHUMASH MODE - select current parsha
 if session:ready() and chumash_mode == "true" then
-    local chumash_type = session:playAndGetDigits(1, 1, 3, 5000, "#", recordings_dir .. "parsha_or_perek.wav", "", "[12]");
-    if chumash_type == "2" then
-        -- do nothing
-    else
-        chumash_by_parsha()
+    local chumash_type = session:playAndGetDigits(1, 1, 3, 5000, "#", recordings_dir .. "parsha_or_perek.wav", "", "[123]");
+    if chumash_type == "1" then
+        chumash_by_parsha(os.time())
         goto grade_menu;
+    elseif chumash_type == "2" then
+        chumash_by_parsha(os.time() - (60*60*24*7))
+        goto grade_menu;
+    else
+        -- Do nothing
     end
 end
 
