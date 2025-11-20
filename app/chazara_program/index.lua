@@ -52,6 +52,12 @@ local Settings = require "resources.functions.lazy_settings";
         chumash_mode = "false";
     end
 
+--File exists function
+function file_exists(name)
+   local f=io.open(name,"r")
+   if f~=nil then io.close(f) return true else return false end
+end
+
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
     local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
@@ -167,11 +173,16 @@ local function chumash_by_parsha(epoch)
 
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                local playback_samples = session:getVariable("playback_samples");
-                if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
-                    and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]) then
+                    local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)])
+                    local output = soxi_handle:read('*a')
+                    file_total_samples = tonumber(output);
+                    soxi_handle:close()
+                end
+                if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
+                    and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
                     freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. tbl_parsha_recording_uuid[tonumber(parsha_play_file)] .. ":" .. playback_last_offset_pos);
                 else
                     api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
                 end
@@ -280,7 +291,7 @@ end
     local last_file = api:execute("hash", "select/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
     if last_file ~= nil and string.len(last_file) > 0 then
         split_last_file = split(last_file, ":");
-        freeswitch.consoleLog("INFO", "Bookmark last file is " .. last_file[1] .. " and offset is " .. split_last_file[2]);
+        freeswitch.consoleLog("INFO", "Bookmark last file is " .. split_last_file[1] .. " and offset is " .. split_last_file[2]);
         -- we want to prompt and play file by uuid
         local play_bookmark = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "play_bookmark.wav", "", "[12]");
         if play_bookmark == "1" then
@@ -302,12 +313,12 @@ end
             local start_epoch = os.time();
             -- Play file
             session:setInputCallback("cpb_dtmf_input", "");
-            session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename, "cpb_dtmf_input", nil, split_last_file[2]);
+            session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename, split_last_file[2]);
             session:unsetInputCallback();
             -- Insert record into CDR
-            local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+            local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
             sql = sql .. "duration, caller_id_number, caller_id_name) "
-            sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+            sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
             local params = {
                 chazara_recording_uuid = split_last_file[1],
                 domain_uuid = domain_uuid,
@@ -322,18 +333,26 @@ end
 
             -- Insert into hash for later playback
             local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-            local playback_samples = session:getVariable("playback_samples");
-            if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
-                and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+            if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename) then
+                local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename)
+                local output = soxi_handle:read('*a')
+                file_total_samples = tonumber(output);
+                soxi_handle:close()
+            end
+            if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
+                and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
                 freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. split_last_file[1] .. ":" .. playback_last_offset_pos);
             else
                 api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
             end
 
             recording_filename = {};
             chazara_recording_uuid = {};
-            chazara_daf_teacher_uuid = {}
+            chazara_daf_teacher_uuid = {};
+            file_total_samples = nil;
+        else
+            api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
         end
     end
 
@@ -807,18 +826,24 @@ if teacher_auth ~= true then
 
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                local playback_samples = session:getVariable("playback_samples");
-                if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
-                    and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1]) then
+                    local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1])
+                    local output = soxi_handle:read('*a')
+                    file_total_samples = tonumber(output);
+                    soxi_handle:close()
+                end
+                if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
+                    and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
                     freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[1] .. ":" .. playback_last_offset_pos);
                 else
                     api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
                 end
 
                 recording_filename = {};
                 chazara_recording_uuid = {};
-                chazara_daf_teacher_uuid = {}
+                chazara_daf_teacher_uuid = {};
+                file_total_samples = nil;
             elseif #recording_filename > 1 then
                 -- Create a menu to select the rebbe
                 local chazara_daf_teacher_recording = {}
@@ -878,9 +903,14 @@ if teacher_auth ~= true then
 
                     -- Insert into hash for later playback
                     local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                    local playback_samples = session:getVariable("playback_samples");
-                    if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
-                        and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                    if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording]) then
+                        local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording])
+                        local output = soxi_handle:read('*a')
+                        file_total_samples = tonumber(output);
+                        soxi_handle:close()
+                    end
+                    if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
+                        and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
                         freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
                         session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
                     else
@@ -889,7 +919,8 @@ if teacher_auth ~= true then
 
                     recording_filename = {};
                     chazara_recording_uuid = {};
-                    chazara_daf_teacher_uuid = {}
+                    chazara_daf_teacher_uuid = {};
+                    file_total_samples = nil;
                 else
                     session:streamFile(recordings_dir .. "invalid.wav");
                 end
