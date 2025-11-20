@@ -164,10 +164,17 @@ local function chumash_by_parsha(epoch)
                     duration = os.time() - start_epoch
                 }
                 dbh:query(sql, params);
+
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. tbl_parsha_recording_uuid[tonumber(parsha_play_file)] .. ":" .. playback_last_offset_pos);
+                local playback_samples = session:getVariable("playback_samples");
+                if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
+                    and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                    freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+                else
+                    api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+                end
             end
         end
     end
@@ -268,6 +275,67 @@ end
 if caller_type == "8" then
     session:execute("transfer", "*732 XML " .. domain_name);
 end
+
+-- Check for bookmark
+    local last_file = api:execute("hash", "select/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+    if last_file ~= nil and string.len(last_file) > 0 then
+        split_last_file = split(last_file, ":");
+        freeswitch.consoleLog("INFO", "Bookmark last file is " .. last_file[1] .. " and offset is " .. split_last_file[2]);
+        -- we want to prompt and play file by uuid
+        local play_bookmark = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "play_bookmark.wav", "", "[12]");
+        if play_bookmark == "1" then
+            local sql = [[SELECT recording_filename, chazara_daf_teacher_uuid, chazara_teacher_uuid
+                    FROM v_chazara_recordings
+                    WHERE domain_uuid = :domain_uuid
+                    AND chazara_recording_uuid = :chazara_recording_uuid
+            ]]
+            local params = {
+                domain_uuid = domain_uuid,
+                chazara_recording_uuid = split_last_file[1]
+            }
+            dbh:query(sql, params, function(row)
+                recording_filename = row["recording_filename"];
+                chazara_teacher_uuid = row["chazara_teacher_uuid"];
+                chazara_daf_teacher_uuid = row["chazara_daf_teacher_uuid"];
+            end);
+
+            local start_epoch = os.time();
+            -- Play file
+            session:setInputCallback("cpb_dtmf_input", "");
+            session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename, "cpb_dtmf_input", nil, split_last_file[2]);
+            session:unsetInputCallback();
+            -- Insert record into CDR
+            local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+            sql = sql .. "duration, caller_id_number, caller_id_name) "
+            sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+            local params = {
+                chazara_recording_uuid = split_last_file[1],
+                domain_uuid = domain_uuid,
+                chazara_teacher_uuid = chazara_teacher_uuid,
+                uuid = uuid,
+                start_epoch = start_epoch,
+                caller_id_number = caller_id_number,
+                caller_id_name = caller_id_name,
+                duration = os.time() - start_epoch
+            }
+            dbh:query(sql, params);
+
+            -- Insert into hash for later playback
+            local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
+            local playback_samples = session:getVariable("playback_samples");
+            if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
+                and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+            else
+                api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+            end
+
+            recording_filename = {};
+            chazara_recording_uuid = {};
+            chazara_daf_teacher_uuid = {}
+        end
+    end
 
 -- Play grade menu, first find max grade
     local sql = [[SELECT MAX(grade) as max_grade, COUNT(DISTINCT grade) as grade_count FROM v_chazara_teachers
@@ -739,8 +807,14 @@ if teacher_auth ~= true then
 
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[1] .. ":" .. playback_last_offset_pos);
+                local playback_samples = session:getVariable("playback_samples");
+                if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
+                    and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                    freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+                else
+                    api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+                end
 
                 recording_filename = {};
                 chazara_recording_uuid = {};
@@ -802,11 +876,17 @@ if teacher_auth ~= true then
 
                     dbh:query(sql, params);
 
-                        -- Insert into hash for later playback
+                    -- Insert into hash for later playback
                     local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                    freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
-            
+                    local playback_samples = session:getVariable("playback_samples");
+                    if tonumber(playback_last_offset_pos) ~= nil and tonumber(playback_samples) ~= nil 
+                        and tonumber(playback_last_offset_pos) < (tonumber(playback_samples) - 80000) then
+                        freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                        session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
+                    else
+                        api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+                    end
+
                     recording_filename = {};
                     chazara_recording_uuid = {};
                     chazara_daf_teacher_uuid = {}
