@@ -164,6 +164,10 @@ local function chumash_by_parsha(epoch)
                     duration = os.time() - start_epoch
                 }
                 dbh:query(sql, params);
+                -- Insert into hash for later playback
+                local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
+                freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid .. ":" .. playback_last_offset_pos);
             end
         end
     end
@@ -732,6 +736,12 @@ if teacher_auth ~= true then
                 end
 
                 dbh:query(sql, params);
+
+                -- Insert into hash for later playback
+                local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
+                freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid .. ":" .. playback_last_offset_pos);
+
                 recording_filename = {};
                 chazara_recording_uuid = {};
                 chazara_daf_teacher_uuid = {}
@@ -791,6 +801,12 @@ if teacher_auth ~= true then
                     }
 
                     dbh:query(sql, params);
+
+                        -- Insert into hash for later playback
+                    local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
+                    freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid .. ":" .. playback_last_offset_pos);
+            
                     recording_filename = {};
                     chazara_recording_uuid = {};
                     chazara_daf_teacher_uuid = {}
