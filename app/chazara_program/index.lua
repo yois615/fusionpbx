@@ -167,7 +167,7 @@ local function chumash_by_parsha(epoch)
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
                 freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid .. ":" .. playback_last_offset_pos);
+                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. tbl_parsha_recording_uuid[tonumber(parsha_play_file)] .. ":" .. playback_last_offset_pos);
             end
         end
     end
@@ -740,7 +740,7 @@ if teacher_auth ~= true then
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
                 freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid .. ":" .. playback_last_offset_pos);
+                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[1] .. ":" .. playback_last_offset_pos);
 
                 recording_filename = {};
                 chazara_recording_uuid = {};
@@ -805,7 +805,7 @@ if teacher_auth ~= true then
                         -- Insert into hash for later playback
                     local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
                     freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid .. ":" .. playback_last_offset_pos);
+                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
             
                     recording_filename = {};
                     chazara_recording_uuid = {};
