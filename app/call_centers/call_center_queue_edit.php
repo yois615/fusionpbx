@@ -257,7 +257,7 @@
 			if (empty($queue_extension)) { $msg .= $text['message-required'].$text['label-extension']."<br>\n"; }
 			if (empty($queue_strategy)) { $msg .= $text['message-required'].$text['label-strategy']."<br>\n"; }
 			//if (empty($queue_moh_sound)) { $msg .= $text['message-required'].$text['label-music_on_hold']."<br>\n"; }
-			//if (empty($queue_record_template)) { $msg .= $text['message-required'].$text['label-record_template']."<br>\n"; }
+			//if (empty($queue_record_enabled)) { $msg .= $text['message-required'].$text['label-record_template']."<br>\n"; }
 			//if (empty($queue_time_base_score)) { $msg .= $text['message-required'].$text['label-time_base_score']."<br>\n"; }
 			//if (empty($queue_time_base_score_sec)) { $msg .= $text['message-required'].$text['label-time_base_score_sec']."<br>\n"; }
 			//if (empty($queue_max_wait_time)) { $msg .= $text['message-required'].$text['label-max_wait_time']."<br>\n"; }
@@ -692,21 +692,22 @@
 	unset($sql, $parameters);
 
 //set default values
-	if (empty($queue_strategy)) { $queue_strategy = "longest-idle-agent"; }
-	if (empty($queue_moh_sound)) { $queue_moh_sound = "\$\${hold_music}"; }
-	if (empty($queue_time_base_score)) { $queue_time_base_score = "system"; }
-	if (empty($queue_time_base_score)) { $queue_time_base_score = ""; }
-	if (empty($queue_max_wait_time)) { $queue_max_wait_time = "0"; }
-	if (empty($queue_max_wait_time_with_no_agent)) { $queue_max_wait_time_with_no_agent = "90"; }
-	if (empty($queue_max_wait_time_with_no_agent_time_reached)) { $queue_max_wait_time_with_no_agent_time_reached = "30"; }
-	if (empty($queue_record_template)) { $queue_record_enabled = "false"; }
-	if (empty($queue_tier_rules_apply)) { $queue_tier_rules_apply = "false"; }
-	if (empty($queue_tier_rule_wait_second)) { $queue_tier_rule_wait_second = "30"; }
-	if (empty($queue_tier_rule_wait_multiply_level)) { $queue_tier_rule_wait_multiply_level = "true"; }
-	if (empty($queue_tier_rule_no_agent_no_wait)) { $queue_tier_rule_no_agent_no_wait = "true"; }
-	if (empty($queue_discard_abandoned_after)) { $queue_discard_abandoned_after = "900"; }
-	if (empty($queue_abandoned_resume_allowed)) { $queue_abandoned_resume_allowed = "false"; }
-	if (empty($queue_context)) { $queue_context = $domain_name; }
+	$queue_greeting = $queue_greeting ?? '';
+	$queue_strategy = $queue_strategy ?? "longest-idle-agent";
+	$queue_moh_sound = $queue_moh_sound ?? "\$\${hold_music}";
+	$queue_time_base_score = $queue_time_base_score ?? "system";
+	$queue_max_wait_time = $queue_max_wait_time ?? "0";
+	$queue_max_wait_time_with_no_agent = $queue_max_wait_time_with_no_agent ?? "90";
+	$queue_max_wait_time_with_no_agent_time_reached = $queue_max_wait_time_with_no_agent_time_reached ?? "30";
+	$queue_tier_rule_wait_second = $queue_tier_rule_wait_second ?? "30";
+	$queue_discard_abandoned_after = $queue_discard_abandoned_after ?? "900";
+	$queue_record_enabled = $queue_record_template ? true : false;
+	$queue_tier_rules_apply = $queue_tier_rules_apply ?? false;
+	$queue_tier_rule_wait_multiply_level = $queue_tier_rule_wait_multiply_level ?? true;
+	$queue_tier_rule_no_agent_no_wait = $queue_tier_rule_no_agent_no_wait ?? true;
+	$queue_abandoned_resume_allowed = $queue_abandoned_resume_allowed ?? false;
+	$queue_announce_sound = $queue_announce_sound ?? '';
+	$queue_context = $queue_context ?? $domain_name;
 
 //create token
 	$object = new token;
@@ -725,10 +726,6 @@
 	if (empty($call_center_queue_uuid)) {
 		$call_center_queue_uuid = null;
 	}
-
-//set the record_template
-	$record_template = $settings->get('switch','recordings', '')."/".$domain_name."/archive/";
-	$record_template .= $settings->get('call_center','record_name', "\${strftime(%Y)}/\${strftime(%b)}/\${strftime(%d)}/\${uuid}.\${record_ext}");
 
 //show the content
 	if (permission_exists('recording_play') || permission_exists('recording_download')) {
@@ -1111,20 +1108,10 @@
 	echo "	".$text['label-record_template']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='queue_record_enabled'>\n";
-	if (!empty($queue_record_enabled)) {
-		echo "	<option value='".escape($record_template)."' selected='selected' >".$text['option-true']."</option>\n";
-	}
-	else {
-		echo "	<option value='".escape($record_template)."'>".$text['option-true']."</option>\n";
-	}
-	if (empty($queue_record_enabled)) {
-		echo "	<option value='' selected='selected' >".$text['option-false']."</option>\n";
-	}
-	else {
-		echo "	<option value=''>".$text['option-false']."</option>\n";
-	}
-	echo "	</select>\n";
+	echo "		<select class='formfld' id='queue_record_enabled' name='queue_record_enabled'>\n";
+	echo "			<option value='true' ".($queue_record_enabled == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "			<option value='false' ".($queue_record_enabled == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "		</select>\n";
 	echo "<br />\n";
 	echo $text['description-record_template']."\n";
 	echo "</td>\n";
