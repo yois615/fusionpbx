@@ -714,7 +714,7 @@
 				echo "	<td>".$row['chumash_end_verse']."</td>\n";
 			}
 			$file_path = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$row['chazara_teacher_uuid'];
-			$file_name = file_path.'/'.$row['recording_filename'];
+			$file_name = $file_path.'/'.$row['recording_filename'];
 			echo "	<td class='center hide-md-dn'>".$row['teacher_name']."</td>\n";
 			echo "	<td class='center hide-md-dn'>".$file_date."</td>\n";
 			echo "	<td class='center no-wrap hide-xs'>".escape($row['message_length_label'])."</td>\n";
