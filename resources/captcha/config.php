@@ -63,8 +63,7 @@ $pathtofonts = "/captcha/fonts/"; //path from the root of the website
     //add this to the top of the page where the form is submitted to
 
         //--- begin captcha verification ---------------------
-          //ini_set("session.cookie_httponly", True); session_start(); //make sure sessions are started
-          if (strtolower($_SESSION["captcha"]) != strtolower($_REQUEST["captcha"]) || strlen($_SESSION["captcha"]) == 0) {
+          if (strtolower($_SESSION["captcha"]) != strtolower($_REQUEST["captcha"]) || empty($_SESSION["captcha"])) {
 
               echo "       <span class=\"h2\">Sorry!</span>\n";
               //echo "              <br><br>\n";

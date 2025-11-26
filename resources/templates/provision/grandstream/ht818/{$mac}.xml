@@ -214,10 +214,10 @@
     <!-- # Enable TR-069. 0 - No, 1 - Yes (default is Yes) -->
     <!-- # Number: 0, 1 -->
     <!-- # Mandatory -->
-    <P1409>1</P1409>
+    {if isset ($grandstream_tr069_enable)}<P1409>{$grandstream_tr069_enable}</P1409>{else}<P1409>0</P1409>{/if}
 
     <!-- # ACS URL -->
-    <P4503>https://acs.gdms.cloud</P4503>
+    {if isset($grandstream_acs_url)}<P4503>{$grandstream_acs_url}</P4503>{else}<P4503></P4503>{/if}
 
     <!-- # ACS Username -->
     <!-- # String -->
@@ -230,7 +230,7 @@
     <!-- # Periodic Inform Enable 0 - No, 1 - Yes (default is No) -->
     <!-- # Number: 0, 1 -->
     <!-- # Mandatory -->
-    <P4506>0</P4506>
+    {if isset ($grandstream_tr069_periodic_inform_enable)}<P4506>{$grandstream_tr069_periodic_inform_enable}</P4506>{else}<P4506>0</P4506>{/if}
 
     <!-- # Periodic Inform Interval (default is 300) -->
     <!-- # Number: 1-99999 -->
@@ -796,17 +796,30 @@
     <!-- # Priority 1 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_1) }
+    <P850>{$grandstream_dtmf_method_1}</P850>
+    {else}
     <P850>101</P850>
+    {/if}
+
 
     <!-- # Priority 2 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_2) }
+    <P851>{$grandstream_dtmf_method_1}</P851>
+    {else}
     <P851>102</P851>
+    {/if}
 
     <!-- # Priority 3 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_3) }
+    <P852>{$grandstream_dtmf_method_1}</P852>
+    {else}
     <P852>100</P852>
+    {/if}
 
     <!-- # Disable DTMF Negotiation. 0 - No(negotiate with peer), 1 - Yes(use above DTMF order without negotiation)  -->
     <!-- # Number: 0, 1 -->
@@ -1781,7 +1794,7 @@
     <!-- # IP Address. 0 - DHCP, 2 - PPPoE, 1 - Static IP -->
     <!-- # Number: 0, 1, 2 -->
     <!-- # Mandatory -->
-    <P8>0</P8>
+    {if isset($grandstream_ip_mode)}<P8>{$grandstream_ip_mode}</P8>{else}<P8>0</P8>{/if}
 
     <!-- ################################################################################# -->
     <!-- # DHCP -->
@@ -2014,8 +2027,8 @@
     <!-- # <value=TZe-13> GMT+13:00 (Nuku'alofa) -->
     <!-- # <value=customize> Using self-defined Time Zone -->
     <!-- # Mandatory -->
-    {if isset($grandstream_timezone) }
-    <P64>{$grandstream_timezone}</P64>
+    {if isset($grandstream_time_zone) }
+    <P64>{$grandstream_time_zone}</P64>
     {elseif isset($grandstream_gxp_time_zone) }
     <P64>{$grandstream_gxp_time_zone}</P64>
     {else}

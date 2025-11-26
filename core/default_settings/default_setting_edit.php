@@ -17,19 +17,15 @@
 
  The Initial Developer of the Original Code is
  Mark J Crane <markjcrane@fusionpbx.com>
- Portions created by the Initial Developer are Copyright (C) 2008-2022
+ Portions created by the Initial Developer are Copyright (C) 2008-2025
  the Initial Developer. All Rights Reserved.
 
  Contributor(s):
  Mark J Crane <markjcrane@fusionpbx.com>
 */
 
-//set the include path
-	$conf = glob("{/usr/local/etc,/etc}/fusionpbx/config.conf", GLOB_BRACE);
-	set_include_path(parse_ini_file($conf[0])['document.root']);
-
 //includes files
-	require_once "resources/require.php";
+	require_once dirname(__DIR__, 2) . "/resources/require.php";
 	require_once "resources/check_auth.php";
 
 //check permissions
@@ -41,38 +37,59 @@
 		exit;
 	}
 
+//connect to the database
+	$database = new database;
+
 //add multi-lingual support
 	$language = new text;
 	$text = $language->get();
 
+//define the variables
+	$default_setting_category = '';
+	$default_setting_subcategory = '';
+	$default_setting_name = '';
+	$default_setting_value = '';
+	$default_setting_order = '';
+	$default_setting_enabled = '';
+	$default_setting_description = '';
+	$search = '';
+
 //action add or update
-	if (is_uuid($_REQUEST["id"])) {
+	if (!empty($_REQUEST["id"]) && is_uuid($_REQUEST["id"])) {
 		$action = "update";
 		$default_setting_uuid = $_REQUEST["id"];
 	}
 	else {
 		$action = "add";
 	}
-	$search = $_REQUEST['search'];
+
+//get the search variable
+	if (!empty($_REQUEST['search'])) {
+		$search = $_REQUEST['search'];
+	}
 
 //get http post variables and set them to php variables
-	if (count($_REQUEST) > 0) {
-		$default_setting_category = strtolower($_REQUEST["default_setting_category"]);
-		$default_setting_subcategory = strtolower($_POST["default_setting_subcategory"]);
-		$default_setting_name = strtolower($_POST["default_setting_name"]);
-		$default_setting_value = $_POST["default_setting_value"];
-		$default_setting_order = $_POST["default_setting_order"];
-		$default_setting_enabled = $_POST["default_setting_enabled"];
-		$default_setting_description = $_POST["default_setting_description"];
+	if (!empty($_REQUEST)) {
+		$default_setting_category = strtolower($_REQUEST["default_setting_category"] ?? '');
+		$default_setting_subcategory = strtolower($_POST["default_setting_subcategory"] ?? '');
+		$default_setting_name = strtolower($_POST["default_setting_name"] ?? '');
+		$default_setting_value = $_POST["default_setting_value"] ?? '';
+		$default_setting_order = $_POST["default_setting_order"] ?? '';
+		$default_setting_enabled = $_POST["default_setting_enabled"] ?? 'false';
+		$default_setting_description = $_POST["default_setting_description"] ?? '';
 	}
 
 //sanitize the variables
-	$search = preg_replace('#[^a-zA-Z0-9_\-\. ]#', '', $search);
-	$default_setting_category = preg_replace('#[^a-zA-Z0-9_\-\.]#', '', $default_setting_category);
+	if (!empty($search)) {
+		$search = preg_replace('#[^a-zA-Z0-9_\-\. ]#', '', $search);
+	}
+	if (!empty($domain_setting_category)) {
+		$default_setting_category = preg_replace('#[^a-zA-Z0-9_\-\. ]#', '', $default_setting_category);
+	}
 
 //build the query string
 	$query_string = '';
-	if ($search != '') {
+	if (!empty($search)) {
 		$query_string .= 'search='.urlencode($search);
 	}
 	if ($default_setting_category != '') {
@@ -81,7 +98,7 @@
 	}
 
 //process the http post
-	if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
+	if (!empty($_POST) && (empty($_POST["persistformvar"]) || $_POST["persistformvar"] != "true")) {
 
 		//set the default_setting_uuid
 			if ($action == "update") {
@@ -101,14 +118,14 @@
 
 		//check for all required data
 			$msg = '';
-			if (strlen($default_setting_category) == 0) { $msg .= $text['message-required'].$text['label-category']."<br>\n"; }
-			if (strlen($default_setting_subcategory) == 0) { $msg .= $text['message-required'].$text['label-subcategory']."<br>\n"; }
-			if (strlen($default_setting_name) == 0) { $msg .= $text['message-required'].$text['label-type']."<br>\n"; }
-			//if (strlen($default_setting_value) == 0) { $msg .= $text['message-required'].$text['label-value']."<br>\n"; }
-			if (strlen($default_setting_order) == 0) { $msg .= $text['message-required'].$text['label-order']."<br>\n"; }
-			if (strlen($default_setting_enabled) == 0) { $msg .= $text['message-required'].$text['label-enabled']."<br>\n"; }
-			//if (strlen($default_setting_description) == 0) { $msg .= $text['message-required'].$text['label-description']."<br>\n"; }
-			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
+			if (empty($default_setting_category)) { $msg .= $text['message-required'].$text['label-category']."<br>\n"; }
+			if (empty($default_setting_subcategory)) { $msg .= $text['message-required'].$text['label-subcategory']."<br>\n"; }
+			if (empty($default_setting_name)) { $msg .= $text['message-required'].$text['label-type']."<br>\n"; }
+			//if (empty($default_setting_value)) { $msg .= $text['message-required'].$text['label-value']."<br>\n"; }
+			if (empty($default_setting_order)) { $msg .= $text['message-required'].$text['label-order']."<br>\n"; }
+			if (empty($default_setting_enabled)) { $msg .= $text['message-required'].$text['label-enabled']."<br>\n"; }
+			//if (empty($default_setting_description)) { $msg .= $text['message-required'].$text['label-description']."<br>\n"; }
+			if (!empty($msg) && empty($_POST["persistformvar"])) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
 				echo "<div align='center'>\n";
@@ -122,16 +139,24 @@
 			}
 
 		//add or update the database
-			if ($_POST["persistformvar"] != "true") {
+			if (empty($_POST["persistformvar"]) || $_POST["persistformvar"] != "true") {
 				// fix null
 				$default_setting_order = ($default_setting_order != '') ? $default_setting_order : 'null';
+
+				//reset the cache for settings object
+				settings::clear_cache();
+
+				//reset others
+				$classes_to_clear = array_filter($autoload->get_interface_list('clear_cache'), function ($class) { return $class !== 'settings'; });
+				foreach ($classes_to_clear as $class_name) {
+					$class_name::clear_cache();
+				}
 
 				//update switch timezone variables
 				if ($default_setting_category == "domain" && $default_setting_subcategory == "time_zone" && $default_setting_name == "name" ) {
 					//get the dialplan_uuid
 						$sql = "select dialplan_uuid from v_dialplans ";
 						$sql .= "where app_uuid = 'd49ee3bd-5085-4619-a2f9-2b62c8c461c5' ";
-						$database = new database;
 						$dialplan_uuid = $database->select($sql, null, 'column');
 						unset($sql);
 
@@ -142,13 +167,12 @@
 						$sql .= "and dialplan_detail_type = 'set' ";
 						$sql .= "and dialplan_detail_data like 'timezone=%' ";
 						$parameters['dialplan_uuid'] = $dialplan_uuid;
-						$database = new database;
 						$dialplan_detail_uuid = $database->select($sql, $parameters, 'column');
 						$detail_action = is_uuid($dialplan_detail_uuid) ? 'update' : 'add';
 						unset($sql, $parameters);
 
 					//update the timezone
-						$p = new permissions;
+						$p = permissions::new();
 						if ($detail_action == "update") {
 							$array['dialplan_details'][0]['dialplan_detail_uuid'] = $dialplan_detail_uuid;
 							$array['dialplan_details'][0]['dialplan_detail_data'] = 'timezone='.$default_setting_value;
@@ -166,7 +190,6 @@
 							$p->add('dialplan_detail_add', 'temp');
 						}
 						if (is_array($array) && sizeof($array) != 0) {
-							$database = new database;
 							$database->app_name = 'default_settings';
 							$database->app_uuid = '2c2453c0-1bea-4475-9f44-4d969650de09';
 							$database->save($array);
@@ -205,7 +228,6 @@
 				$array['default_settings'][$x]['default_setting_description'] = $default_setting_description;
 
 				//save to the data
-				$database = new database;
 				$database->app_name = 'default_settings';
 				$database->app_uuid = '2c2453c0-1bea-4475-9f44-4d969650de09';
 				$database->save($array);
@@ -222,17 +244,16 @@
 					header("Location: default_settings.php?".$query_string."#anchor_".$default_setting_category);
 					return;
 				}
-			} //if ($_POST["persistformvar"] != "true")
-	} //(count($_POST)>0 && strlen($_POST["persistformvar"]) == 0)
+			}
+	}
 
 //pre-populate the form
-	if (count($_GET) > 0 && $_POST["persistformvar"] != "true") {
-		$default_setting_uuid = $_GET["id"];
+	if (count($_GET) > 0 && empty($_POST["persistformvar"])) {
+		$default_setting_uuid = $_GET["id"] ?? '';
 		$sql = "select default_setting_uuid, default_setting_category, default_setting_subcategory, default_setting_name, default_setting_value, default_setting_order, cast(default_setting_enabled as text), default_setting_description ";
 		$sql .= "from v_default_settings ";
 		$sql .= "where default_setting_uuid = :default_setting_uuid ";
 		$parameters['default_setting_uuid'] = $default_setting_uuid;
-		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && sizeof($row) != 0) {
 			$default_setting_category = $row["default_setting_category"];
@@ -245,6 +266,9 @@
 		}
 		unset($sql, $parameters);
 	}
+
+//set the defaults
+	if (empty($default_setting_enabled)) { $default_setting_enabled = 'true'; }
 
 //create token
 	$object = new token;
@@ -272,8 +296,8 @@
 	}
 	echo "	</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'default_settings.php?'.$query_string]);
-	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','onclick'=>'submit_form();']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'default_settings.php?'.$query_string]);
+	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','onclick'=>'submit_form();']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -286,6 +310,7 @@
 	}
 	echo "<br /><br />\n";
 
+	echo "<div class='card'>\n";
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 
 	echo "<tr>\n";
@@ -315,7 +340,14 @@
 	echo "	".$text['label-type']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld lowercase' type='text' name='default_setting_name' id='default_setting_name' maxlength='255' value=\"".escape($default_setting_name)."\">\n";
+	$setting_types = ['Array','Boolean','Code','Dir','Name','Numeric','Text','UUID'];
+	echo "	<select class='formfld' id='default_setting_name' name='default_setting_name' required='required'>\n";
+	echo "		<option value=''></option>\n";
+	foreach ($setting_types as $setting_type) {
+		echo "	<option value='".strtolower($setting_type)."' ".($default_setting_name == strtolower($setting_type) ? "selected='selected'" : null).">".$setting_type."</option>\n";
+	}
+	echo "	</select>\n";
+	unset($setting_types, $setting_type);
 	echo "<br />\n";
 	echo $text['description-type']."\n";
 	echo "</td>\n";
@@ -326,9 +358,9 @@
 	echo "	".$text['label-value']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	$category = $row['default_setting_category'];
-	$subcategory = $row['default_setting_subcategory'];
-	$name = $row['default_setting_name'];
+	$category = $default_setting_category;
+	$subcategory = $default_setting_subcategory;
+	$name = $default_setting_name;
 	if ($category == "cdr" && $subcategory == "format" && $name == "text" ) {
 		echo "		<select class='formfld' id='default_setting_value' name='default_setting_value' style=''>\n";
 		if ($default_setting_value == "json") {
@@ -365,7 +397,6 @@
 		echo "		<select class='formfld' id='default_setting_value' name='default_setting_value' style=''>\n";
 		$sql = "select * from v_menus ";
 		$sql .= "order by menu_language, menu_name asc ";
-		$database = new database;
 		$sub_result = $database->select($sql, null, 'all');
 		if (is_array($sub_result) && sizeof($sub_result) != 0) {
 			foreach ($sub_result as $sub_row) {
@@ -463,7 +494,7 @@
 				}
 				echo "		<optgroup label='".$category."'>\n";
 			}
-			if (strlen($val) > 0) {
+			if (!empty($val)) {
 				$time_zone_offset = get_time_zone_offset($val)/3600;
 				$time_zone_offset_hours = floor($time_zone_offset);
 				$time_zone_offset_minutes = ($time_zone_offset - $time_zone_offset_hours) * 60;
@@ -494,8 +525,14 @@
 		echo "    	<option value='12h' ".(($default_setting_value == "12h") ? "selected='selected'" : null).">".$text['label-12-hour']."</option>\n";
 		echo "	</select>\n";
 	}
-	elseif ($subcategory == 'password' || substr_count($subcategory, '_password') > 0 || $category == "login" && $subcategory == "password_reset_key" && $name == "text") {
-		echo "	<input class='formfld' type='password' id='default_setting_value' name='default_setting_value' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='255' value=\"".escape($default_setting_value)."\">\n";
+	elseif ($category == "domain" && $subcategory == "setting_value_input_type" && $name == "text" ) {
+		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
+		echo "    	<option value='input'>Input</option>\n";
+		echo "    	<option value='textarea' ".($default_setting_value == "textarea" ? "selected='selected'" : null).">TextArea</option>\n";
+		echo "	</select>\n";
+	}
+	elseif ($subcategory == 'password' || (substr_count($subcategory, '_password') > 0 && $subcategory != 'input_text_font_password') || $category == "login" && $subcategory == "password_reset_key" && $name == "text") {
+		echo "	<input class='formfld password' type='password' id='default_setting_value' name='default_setting_value' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='255' value=\"".escape($default_setting_value)."\">\n";
 	}
 	elseif (substr_count($subcategory, "_color") > 0 && ($name == "text" || $name == 'array')) {
 		echo "	<input type='text' class='formfld colorpicker' id='default_setting_value' name='default_setting_value' value=\"".escape($default_setting_value)."\">\n";
@@ -577,21 +614,6 @@
 		echo "    	<option value='true' ".(($default_setting_value == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
 		echo "    </select>\n";
 	}
-	elseif ($category == "theme" && $subcategory == "cache" && $name == "boolean" ) {
-		echo "    <select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
-		echo "    	<option value='true' ".(($default_setting_value == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
-		echo "    	<option value='false' ".(($default_setting_value == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-		echo "    </select>\n";
-	}
-	elseif (
-		($category == "theme" && $subcategory == "menu_main_icons" && $name == "boolean") ||
-		($category == "theme" && $subcategory == "menu_sub_icons" && $name == "boolean")
-		) {
-		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
-		echo "    	<option value='true' ".(($default_setting_value == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
-		echo "    	<option value='false' ".(($default_setting_value == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-		echo "	</select>\n";
-	}
 	elseif ($category == "theme" && $subcategory == "menu_brand_type" && $name == "text" ) {
 		echo "    <select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
 		echo "    	<option value='image' ".(($default_setting_value == "image") ? "selected='selected'" : null).">".$text['label-image']."</option>\n";
@@ -665,6 +687,13 @@
 		echo "    	<option value='none' ".(($default_setting_value == "none") ? "selected='selected'" : null).">".$text['label-none']."</option>\n";
 		echo "    </select>\n";
 	}
+	elseif ($category == "theme" && $subcategory == "input_toggle_style" && $name == "text" ) {
+		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
+		echo "    	<option value='select'>".$text['option-select']."</option>\n";
+		echo "    	<option value='switch_round' ".(($default_setting_value == "switch_round") ? "selected='selected'" : null).">".$text['option-switch_round']."</option>\n";
+		echo "    	<option value='switch_square' ".(($default_setting_value == "switch_square") ? "selected='selected'" : null).">".$text['option-switch_square']."</option>\n";
+		echo "	</select>\n";
+	}
 	elseif ($category == "users" && $subcategory == "username_format" && $name == "text" ) {
 		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
 		echo "    	<option value='any' ".($default_setting_value == 'any' ? "selected='selected'" : null).">".$text['option-username_format_any']."</option>\n";
@@ -679,9 +708,10 @@
 		echo "    	<option value='attach' ".(($default_setting_value == "attach") ? "selected='selected'" : null).">".$text['option-voicemail_file_attach']."</option>\n";
 		echo "    </select>\n";
 	}
-	elseif ($category == "voicemail" && $subcategory == "keep_local" && $name == "boolean" ) {
+	elseif ($category == "voicemail" && ($subcategory == "message_caller_id_number" || $subcategory == "message_date_time") && $name == "text" ) {
 		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
-		echo "    	<option value='true' ".(($default_setting_value == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+		echo "    	<option value='before'>".$text['label-before']."</option>\n";
+		echo "    	<option value='after' ".(($default_setting_value == "after") ? "selected='selected'" : null).">".$text['label-after']."</option>\n";
 		echo "    	<option value='false' ".(($default_setting_value == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
 		echo "	</select>\n";
 	}
@@ -689,12 +719,6 @@
 		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
 		echo "    	<option value='file'>".$text['label-file']."</option>\n";
 		echo "    	<option value='base64' ".(($default_setting_value == "base64") ? "selected='selected'" : null).">".$text['label-base64']."</option>\n";
-		echo "	</select>\n";
-	}
-	elseif ($category == "destinations" && $subcategory == "dialplan_details" && $name == "boolean" ) {
-		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
-		echo "    	<option value='true'>".$text['label-true']."</option>\n";
-		echo "    	<option value='false' ".(($default_setting_value == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
 		echo "	</select>\n";
 	}
 	elseif ($category == "destinations" && $subcategory == "dialplan_mode" && $name == "text" ) {
@@ -709,22 +733,39 @@
 		echo "    	<option value='dynamic' ".(($default_setting_value == "dynamic") ? "selected='selected'" : null).">".$text['label-dynamic']."</option>\n";
 		echo "	</select>\n";
 	}
-	elseif ($category == "destinations" && $subcategory == "unique" && $name == "boolean" ) {
+	elseif ($category == "cdr" && $subcategory == "column_overflow" && $name == "text" ) {
 		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
-		echo "    	<option value='true'>".$text['label-true']."</option>\n";
-		echo "    	<option value='false' ".(($default_setting_value == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
+		echo "    	<option value='hidden' ".(($default_setting_value == "hidden") ? "selected='selected'" : null).">".$text['label-hidden']."</option>\n";
+		echo "    	<option value='scroll' ".(($default_setting_value == "scroll") ? "selected='selected'" : null).">".$text['label-scroll']."</option>\n";
 		echo "	</select>\n";
 	}
 	elseif (is_json($default_setting_value)) {
 		echo "	<textarea class='formfld' style='width: 100%; height: 80px; font-family: courier, monospace; overflow: auto;' id='default_setting_value' name='default_setting_value' wrap='off'>".escape($default_setting_value)."</textarea>\n";
 	}
+	elseif ($name == "boolean") {
+		echo "	<select class='formfld' id='default_setting_value' name='default_setting_value'>\n";
+		if ($category == "provision" && is_numeric($default_setting_value)) {
+			echo "	<option value='0'>".$text['label-false']."</option>\n";
+			echo "	<option value='1' ".(($default_setting_value == 1) ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+		}
+		else {
+			echo "	<option value='false'>".$text['label-false']."</option>\n";
+			echo "	<option value='true' ".((strtolower($default_setting_value) == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+		}
+		echo "	</select>\n";
+	}
 	else {
-		echo "	<input class='formfld' type='text' id='default_setting_value' name='default_setting_value' value=\"".escape($default_setting_value)."\">\n";
+		if (!empty($_SESSION['domain']['setting_value_input_type']) && $_SESSION['domain']['setting_value_input_type']['text'] == 'textarea') {
+			echo "	<textarea class='formfld' style='width: 185px; height: 80px;' id='default_setting_value' name='default_setting_value'>".($default_setting_value ?? '')."</textarea>\n";
+		}
+		else {
+			echo "	<input class='formfld' type='text' id='default_setting_value' name='default_setting_value' value=\"".escape($default_setting_value ?? '')."\">\n";
+		}
 	}
 	echo "<br />\n";
 	echo $text['description-value']."\n";
 	if ($category == "theme" && substr_count($subcategory, "_font") > 0 && $name == "text") {
-		echo "&nbsp;&nbsp;".$text['label-reference'].": <a href='https://www.google.com/fonts' target='_blank'>".$text['label-web_fonts']."</a>\n";
+		echo "&nbsp;&nbsp;".$text['label-reference'].": <a href='https://fonts.google.com' target='_blank'>".$text['label-web_fonts']."</a>\n";
 	}
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -764,20 +805,18 @@
 	echo "    ".$text['label-enabled']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='default_setting_enabled'>\n";
-	if ($default_setting_enabled == "true") {
-		echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
+		echo "	<label class='switch'>\n";
+		echo "		<input type='checkbox' id='default_setting_enabled' name='default_setting_enabled' value='true' ".($default_setting_enabled == 'true' ? "checked='checked'" : null).">\n";
+		echo "		<span class='slider'></span>\n";
+		echo "	</label>\n";
 	}
 	else {
-		echo "    <option value='true'>".$text['label-true']."</option>\n";
+		echo "	<select class='formfld' id='default_setting_enabled' name='default_setting_enabled'>\n";
+		echo "		<option value='true' ".($default_setting_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "		<option value='false' ".($default_setting_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "	</select>\n";
 	}
-	if ($default_setting_enabled == "false") {
-		echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "    <option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "    </select>\n";
 	echo "<br />\n";
 	echo $text['description-enabled']."\n";
 	echo "</td>\n";
@@ -795,6 +834,7 @@
 	echo "</tr>\n";
 
 	echo "</table>";
+	echo "</div>";
 	echo "<br><br>";
 
 	if ($action == "update") {
@@ -805,7 +845,7 @@
 
 	echo "</form>";
 
-	if ($_REQUEST["id"] == '' && $_REQUEST["default_setting_category"] != '') {
+	if (empty($_REQUEST["id"]) && !empty($_REQUEST["default_setting_category"])) {
 		echo "<script>document.getElementById('default_setting_subcategory').focus();</script>";
 	}
 

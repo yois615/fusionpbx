@@ -17,16 +17,12 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2018-2020
+	Portions created by the Initial Developer are Copyright (C) 2018-2024
 	the Initial Developer. All Rights Reserved.
 */
 
-//set the include path
-	$conf = glob("{/usr/local/etc,/etc}/fusionpbx/config.conf", GLOB_BRACE);
-	set_include_path(parse_ini_file($conf[0])['document.root']);
-
 //includes files
-	require_once "resources/require.php";
+	require_once dirname(__DIR__, 2) . "/resources/require.php";
 	require_once "resources/check_auth.php";
 
 //check permissions
@@ -42,8 +38,14 @@
 	$language = new text;
 	$text = $language->get();
 
+//set the defaults
+	$stream_name = '';
+	$stream_location = '';
+	$stream_description = '';
+	$stream_uuid = '';
+
 //action add or update
-	if (is_uuid($_REQUEST["id"])) {
+	if (!empty($_REQUEST["id"])) {
 		$action = "update";
 		$stream_uuid = $_REQUEST["id"];
 		$id = $_REQUEST["id"];
@@ -53,17 +55,17 @@
 	}
 
 //get http post variables and set them to php variables
-	if (is_array($_POST)) {
+	if (count($_POST) > 0) {
 		$domain_uuid = $_POST['domain_uuid'];
 		$stream_uuid = $_POST["stream_uuid"];
 		$stream_name = $_POST["stream_name"];
 		$stream_location = $_POST["stream_location"];
-		$stream_enabled = $_POST["stream_enabled"];
+		$stream_enabled = $_POST["stream_enabled"] ?? 'false';
 		$stream_description = $_POST["stream_description"];
 	}
 
 //process the user data and save it to the database
-	if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
+	if (count($_POST) > 0 && empty($_POST["persistformvar"])) {
 
 		//get the uuid from the POST
 			if ($action == "update") {
@@ -80,12 +82,12 @@
 
 		//check for all required data
 			$msg = '';
-			if (strlen($stream_name) == 0) { $msg .= $text['message-required']." ".$text['label-stream_name']."<br>\n"; }
-			if (strlen($stream_location) == 0) { $msg .= $text['message-required']." ".$text['label-stream_location']."<br>\n"; }
-			if (strlen($stream_enabled) == 0) { $msg .= $text['message-required']." ".$text['label-stream_enabled']."<br>\n"; }
-			//if (strlen($domain_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-domain_uuid']."<br>\n"; }
-			//if (strlen($stream_description) == 0) { $msg .= $text['message-required']." ".$text['label-stream_description']."<br>\n"; }
-			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
+			if (empty($stream_name)) { $msg .= $text['message-required']." ".$text['label-stream_name']."<br>\n"; }
+			if (empty($stream_location)) { $msg .= $text['message-required']." ".$text['label-stream_location']."<br>\n"; }
+			if (empty($stream_enabled)) { $msg .= $text['message-required']." ".$text['label-stream_enabled']."<br>\n"; }
+			//if (empty($domain_uuid)) { $msg .= $text['message-required']." ".$text['label-domain_uuid']."<br>\n"; }
+			//if (empty($stream_description)) { $msg .= $text['message-required']." ".$text['label-stream_description']."<br>\n"; }
+			if (!empty($msg) && empty($_POST["persistformvar"])) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
 				echo "<div align='center'>\n";
@@ -98,8 +100,85 @@
 				return;
 			}
 
+		//get the original stream location
+			if (!empty($stream_uuid) && is_uuid($stream_uuid)) {
+				//get the original value from the database
+				$sql = "select stream_location from v_streams ";
+				$sql .= "where stream_uuid = :stream_uuid ";
+				$parameters['stream_uuid'] = $stream_uuid;
+				$row = $database->select($sql, $parameters, 'row');
+				if (is_array($row) && @sizeof($row) != 0) {
+					$original_stream_location = $row["stream_location"];
+				}
+
+				//update call center queues
+				if (!empty($original_stream_location)) {
+					$sql = "update v_call_center_queues ";
+					$sql .= "set queue_moh_sound = :stream_location ";
+					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "and queue_moh_sound = :original_stream_location ";
+					$parameters['domain_uuid'] = $_SESSION['domain_uuid'];;
+					$parameters['stream_location'] = $stream_location;
+					$parameters['original_stream_location'] = $original_stream_location;
+					$database->execute($sql, $parameters);
+					unset($parameters);
+				}
+
+				//update destinations
+				if (!empty($original_stream_location)) {
+					$sql = "update v_destinations ";
+					$sql .= "set destination_hold_music = :stream_location ";
+					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "and destination_hold_music = :original_stream_location ";
+					$parameters['domain_uuid'] = $_SESSION['domain_uuid'];;
+					$parameters['stream_location'] = $stream_location;
+					$parameters['original_stream_location'] = $original_stream_location;
+					$database->execute($sql, $parameters);
+					unset($parameters);
+				}
+
+				//update extensions
+				if (!empty($original_stream_location)) {
+					$sql = "update v_extensions ";
+					$sql .= "set hold_music = :stream_location ";
+					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "and hold_music = :original_stream_location ";
+					$parameters['domain_uuid'] = $_SESSION['domain_uuid'];;
+					$parameters['stream_location'] = $stream_location;
+					$parameters['original_stream_location'] = $original_stream_location;
+					$database->execute($sql, $parameters);
+					unset($parameters);
+				}
+
+				//update ivr menus
+				if (!empty($original_stream_location)) {
+					$sql = "update v_ivr_menus ";
+					$sql .= "set ivr_menu_ringback = :stream_location ";
+					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "and ivr_menu_ringback = :original_stream_location ";
+					$parameters['domain_uuid'] = $_SESSION['domain_uuid'];;
+					$parameters['stream_location'] = $stream_location;
+					$parameters['original_stream_location'] = $original_stream_location;
+					$database->execute($sql, $parameters);
+					unset($parameters);
+				}
+
+				//update ring groups
+				if (!empty($original_stream_location)) {
+					$sql = "update v_ring_groups ";
+					$sql .= "set ring_group_ringback = :stream_location ";
+					$sql .= "where domain_uuid = :domain_uuid ";
+					$sql .= "and ring_group_ringback = :original_stream_location ";
+					$parameters['domain_uuid'] = $_SESSION['domain_uuid'];;
+					$parameters['stream_location'] = $stream_location;
+					$parameters['original_stream_location'] = $original_stream_location;
+					$database->execute($sql, $parameters);
+					unset($parameters);
+				}
+			}
+
 		//add the stream_uuid
-			if (strlen($_POST["stream_uuid"]) == 0) {
+			if (empty($_POST["stream_uuid"])) {
 				$stream_uuid = uuid();
 			}
 
@@ -117,7 +196,6 @@
 			$array['streams'][0]['stream_description'] = $stream_description;
 
 		//save to the data
-			$database = new database;
 			$database->app_name = 'streams';
 			$database->app_uuid = 'ffde6287-aa18-41fc-9a38-076d292e0a38';
 			$database->save($array);
@@ -137,12 +215,11 @@
 	}
 
 //pre-populate the form
-	if (is_array($_GET) && $_POST["persistformvar"] != "true") {
+	if (!empty($_GET) && (empty($_POST["persistformvar"]) || $_POST["persistformvar"] != "true")) {
 		$stream_uuid = $_GET["id"];
 		$sql = "select * from v_streams ";
 		$sql .= "where stream_uuid = :stream_uuid ";
 		$parameters['stream_uuid'] = $stream_uuid;
-		$database = new database;
 		$row = $database->select($sql, $parameters, 'row');
 		if (is_array($row) && @sizeof($row) != 0) {
 			$domain_uuid = $row["domain_uuid"];
@@ -153,6 +230,9 @@
 		}
 		unset($sql, $parameters, $row);
 	}
+
+//set the defaults
+	if (empty($stream_enabled)) { $stream_enabled = 'true'; }
 
 //need stream_all permission to edit a global stream
 	if (!permission_exists('stream_all') && $domain_uuid == null) {
@@ -174,12 +254,13 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-stream']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'streams.php']);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','link'=>'streams.php']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
+	echo "<div class='card'>\n";
 	echo "<table width='100%'  border='0' cellpadding='0' cellspacing='0'>\n";
 
 	echo "<tr>\n";
@@ -209,20 +290,18 @@
 	echo "	".$text['label-stream_enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<select class='formfld' name='stream_enabled'>\n";
-	if ($stream_enabled == "true") {
-		echo "		<option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
+		echo "	<label class='switch'>\n";
+		echo "		<input type='checkbox' id='stream_enabled' name='stream_enabled' value='true' ".($stream_enabled == 'true' ? "checked='checked'" : null).">\n";
+		echo "		<span class='slider'></span>\n";
+		echo "	</label>\n";
 	}
 	else {
-		echo "		<option value='true'>".$text['label-true']."</option>\n";
+		echo "	<select class='formfld' id='stream_enabled' name='stream_enabled'>\n";
+		echo "		<option value='true' ".($stream_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "		<option value='false' ".($stream_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "	</select>\n";
 	}
-	if ($stream_enabled == "false") {
-		echo "		<option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "		<option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "	</select>\n";
 	echo "<br />\n";
 	echo $text['description-stream_enabled']."\n";
 	echo "</td>\n";
@@ -235,7 +314,7 @@
 		echo "</td>\n";
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
 		echo "	<select class='formfld' name='domain_uuid'>\n";
-		if (strlen($domain_uuid) == 0) {
+		if (empty($domain_uuid)) {
 			echo "		<option value='' selected='selected'>".$text['label-global']."</option>\n";
 		}
 		else {
@@ -251,7 +330,7 @@
 		}
 		echo "	</select>\n";
 		echo "<br />\n";
-		echo $text['description-domain_uuid']."\n";
+		echo !empty($text['description-domain_uuid'])."\n";
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -268,6 +347,7 @@
 	echo "</tr>\n";
 
 	echo "</table>";
+	echo "</div>\n";
 	echo "<br /><br />";
 
 	echo "<input type='hidden' name='stream_uuid' value='".escape($stream_uuid)."'>\n";

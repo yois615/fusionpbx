@@ -147,8 +147,11 @@
 
 		<!-- SIP Transport -->
 		<!-- UDP, TCP, TlsOrTcp -->
-		<item name="account.{$line}.sip.transport">{if $row.sip_transport=='tcp'}TCP{elseif $row.sip_transport=='tls'}Tls Or Tcp{else}UDP{/if}</item>
-
+		{if $row.sip_transport == ''}<item name="account.{$row.line_number}.sip.transport">1</item>{/if}
+		{if $row.sip_transport == 'udp'}<item name="account.{$row.line_number}.sip.transport">0</item>{/if}
+		{if $row.sip_transport == 'tcp'}<item name="account.{$row.line_number}.sip.transport">1</item>{/if}
+		{if $row.sip_transport == 'tls'}<item name="account.{$row.line_number}.sip.transport">2</item>{/if}
+	
 		<!-- SIP Listening Mode -->
 		<!-- TransportOnly, Dual, Dual_BLF_Enforced, Dual_Secured -->
 		<item name="account.{$line}.sip.listeningMode">TransportOnly</item>
@@ -256,7 +259,11 @@
 
 		<!-- BLF Call-pickup  -->
 		<!-- Auto, Force, Disabled -->
-		<item name="account.{$line}.sip.blf.callPickup.forcePrefix">Auto</item>
+		{if isset($grandstream_blf_callpickup_force) }
+			<item name="account.{$line}.sip.blf.callPickup.forcePrefix">{$grandstream_blf_callpickup_force}</item>
+		{else}
+			<item name="account.{$line}.sip.blf.callPickup.forcePrefix">Auto</item>
+		{/if}
 
 		<!-- BLF Call-pickup Prefix -->
 		<item name="account.{$line}.sip.blf.callPickup.prefix">**</item>
@@ -2514,8 +2521,8 @@
 
 		<!-- # String -->
 		<!-- # Mandatory -->
-		{if isset($grandstream_timezone)}
-		<item name="dateTime.timezone">{$grandstream_timezone}</item>
+		{if isset($grandstream_time_zone)}
+		<item name="dateTime.timezone">{$grandstream_time_zone}</item>
 		{elseif isset($grandstream_gxp_time_zone)}
 		<item name="dateTime.timezone">{$grandstream_gxp_time_zone}</item>
 		{else}
@@ -2849,7 +2856,7 @@
 			<item name="pks.vpk.{$row.device_key_id}.keyMode">{$key_types[$row.device_key_type]}</item>
 
 			<!-- # Account. 0 - Account1, 1 - Account2, 2 - Account3, 3 - Account4 -->
-			<item name="pks.vpk.{$row.device_key_id}.account">{if !empty($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
+			<item name="pks.vpk.{$row.device_key_id}.account">{if isset($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
 
 			<!-- # Description. Max length allowed is 32 characters. -->
 			<!-- # String -->
@@ -2884,7 +2891,7 @@
 			<item name="pks.mpk.{$row.device_key_id}.keyMode">{$key_types[$row.device_key_type]}</item>
 
 			<!-- # Account. Account1, Account2, Account3, Account4 -->
-			<item name="pks.mpk.{$row.device_key_id}.account">{if !empty($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
+			<item name="pks.mpk.{$row.device_key_id}.account">{if isset($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
 
 			<!-- MPK Display Name -->
 			<item name="pks.mpk.{$row.device_key_id}.description">{$row.device_key_label}</item>
@@ -2977,7 +2984,7 @@
 			<item name="pks.softkey.{$row.device_key_id}.keyMode">{$programmable_key_types[$row.device_key_type]}</item>
 
 			<!-- # Account. 0 - Account1, 1 - Account2, 2 - Account3, 3 - Account4 -->
-			<item name="pks.softkey.{$row.device_key_id}.account">{if !empty($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
+			<item name="pks.softkey.{$row.device_key_id}.account">{if isset($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
 
 			<!-- # Description.  -->
 			<!-- # String.  -->
@@ -3037,7 +3044,7 @@
 			<item name="pks.ext.{$row.device_key_id}.keyMode">{$key_types[$row.device_key_type]}</item>
 
 			<!-- # Account. Account1, Account2, Account3, Account4, Account5, Account6 -->
-			<item name="pks.ext.{$row.device_key_id}.account">{if !empty($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
+			<item name="pks.ext.{$row.device_key_id}.account">{if isset($row.device_key_line)}Account{$row.device_key_line}{/if}</item>
 
 			<!-- # Description -->
 			<item name="pks.ext.{$row.device_key_id}.description">{$row.device_key_label}</item>

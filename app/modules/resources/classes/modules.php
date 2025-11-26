@@ -17,7 +17,7 @@
 
  The Initial Developer of the Original Code is
  Mark J Crane <markjcrane@fusionpbx.com>
- Portions created by the Initial Developer are Copyright (C) 2008-2019
+ Portions created by the Initial Developer are Copyright (C) 2008-2024
  the Initial Developer. All Rights Reserved.
 
  Contributor(s):
@@ -25,14 +25,13 @@
 */
 
 //define the modules class
-if (!class_exists('modules')) {
 	class modules {
 
 		/**
 		 * declare public variables
 		 */
 		public $dir;
-		public $fp;
+		public $esl;
 		public $modules;
 		public $msg;
 
@@ -47,6 +46,7 @@ if (!class_exists('modules')) {
 		private $uuid_prefix;
 		private $toggle_field;
 		private $toggle_values;
+		private $active_modules;
 
 		/**
 		 * called when the object is created
@@ -63,16 +63,10 @@ if (!class_exists('modules')) {
 				$this->toggle_field = 'module_enabled';
 				$this->toggle_values = ['true','false'];
 
-		}
-
-		/**
-		 * called when there are no references to a particular object
-		 * unset the variables used in the class
-		 */
-		public function __destruct() {
-			foreach ($this as $key => $value) {
-				unset($this->$key);
-			}
+				//get the list of active modules
+				$this->esl = event_socket::create();
+				$json = $this->esl->api("show modules as json");
+				$this->active_modules = json_decode($json, true);
 		}
 
 		//get the additional information about a specific module
@@ -93,6 +87,13 @@ if (!class_exists('modules')) {
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
+					case "mod_av":
+						$mod['module_label'] = 'AV';
+						$mod['module_category'] = 'Applications';
+						$mod['module_description'] = 'Supports libav and RTMP streams.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
 					case "mod_avmd":
 						$mod['module_label'] = 'AVMD';
 						$mod['module_category'] = 'Applications';
@@ -104,6 +105,20 @@ if (!class_exists('modules')) {
 						$mod['module_label'] = 'Blacklist';
 						$mod['module_category'] = 'Applications';
 						$mod['module_description'] = 'Blacklist.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
+					case "mod_b64":
+						$mod['module_label'] = 'B64';
+						$mod['module_category'] = 'Codecs';
+						$mod['module_description'] = 'B64 Codec.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
+					case "mod_bcg729":
+						$mod['module_label'] = 'BCG729';
+						$mod['module_category'] = 'Codecs';
+						$mod['module_description'] = 'G729 Open Source Codec.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
@@ -374,9 +389,9 @@ if (!class_exists('modules')) {
 						$mod['module_label'] = 'Memcached';
 						$mod['module_category'] = 'Applications';
 						$mod['module_description'] = 'API for memcached.';
-						$mod['module_enabled'] = 'true';
+						$mod['module_enabled'] = 'false';
 						$mod['module_order'] = 150;
-						$mod['module_default_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'false';
 						break;
 					case "mod_native_file":
 						$mod['module_label'] = 'Native File';
@@ -406,10 +421,31 @@ if (!class_exists('modules')) {
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
+					case "mod_pgsql":
+						$mod['module_label'] = 'PGSQL';
+						$mod['module_category'] = 'Databases';
+						$mod['module_description'] = 'Client support for PostgreSQL database.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
+					case "mod_png":
+						$mod['module_label'] = 'PNG';
+						$mod['module_category'] = 'Formats';
+						$mod['module_description'] = 'Image format Portable Network Graphics.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
 					case "mod_pocketsphinx":
 						$mod['module_label'] = 'PocketSphinx';
 						$mod['module_category'] = 'Speech Recognition / Text to Speech';
 						$mod['module_description'] = 'Speech Recognition.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
+					case "mod_rtc":
+						$mod['module_label'] = 'RTC';
+						$mod['module_category'] = 'Applications';
+						$mod['module_description'] = 'Supports medias streaming for WebRTC and Verto.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
@@ -423,83 +459,91 @@ if (!class_exists('modules')) {
 					case "mod_say_de":
 						$mod['module_label'] = 'German';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'German sound files used for time, date, digits, etc.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_en":
 						$mod['module_label'] = 'English';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'English sound files used for time, date, digits, etc.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_es":
 						$mod['module_label'] = 'Spanish';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Spanish sound files used for time, date, digits, etc.';
+						$mod['module_enabled'] = 'true';
+						$mod['module_default_enabled'] = 'true';
+						break;
+					case "mod_say_es_ar":
+						$mod['module_label'] = 'Spanish AR';
+						$mod['module_category'] = 'Say';
+						$mod['module_description'] = 'Spanish AR sound files used for time, date, digits, etc.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_fr":
 						$mod['module_label'] = 'French';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play French phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_he":
 						$mod['module_label'] = 'Hebrew';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Hebrew phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_hu":
 						$mod['module_label'] = 'Hungarian';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Hungarian phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_it":
 						$mod['module_label'] = 'Italian';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Italian phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_nl":
 						$mod['module_label'] = 'Dutch';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Dutch phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_pt":
 						$mod['module_label'] = 'Portuguese';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Portuguese phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_ru":
 						$mod['module_label'] = 'Russian';
 						$mod['module_category'] = 'Say';
+						$mod['module_description'] = 'Play Russian phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_th":
 						$mod['module_label'] = 'Thai';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Thai phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
 					case "mod_say_zh":
 						$mod['module_label'] = 'Chinese';
 						$mod['module_category'] = 'Say';
-						$mod['module_description'] = '';
+						$mod['module_description'] = 'Play Chinese phrases using sound files for time, date, digits, and more.';
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
@@ -596,6 +640,13 @@ if (!class_exists('modules')) {
 						$mod['module_enabled'] = 'true';
 						$mod['module_default_enabled'] = 'true';
 						break;
+					case "mod_test":
+						$mod['module_label'] = 'Test';
+						$mod['module_category'] = 'Applications';
+						$mod['module_description'] = 'Test application.';
+						$mod['module_enabled'] = 'false';
+						$mod['module_default_enabled'] = 'false';
+						break;
 					case "mod_tone_stream":
 						$mod['module_label'] = 'Tone Stream';
 						$mod['module_category'] = 'Streams / Files';
@@ -666,6 +717,13 @@ if (!class_exists('modules')) {
 						$mod['module_enabled'] = 'false';
 						$mod['module_default_enabled'] = 'false';
 						break;
+					case "mod_xml_scgi":
+						$mod['module_label'] = 'XML SCGI';
+						$mod['module_category'] = 'XML Interfaces';
+						$mod['module_description'] = 'SCGI XML Gateway.';
+						$mod['module_enabled'] = 'false';
+						$mod['module_default_enabled'] = 'false';
+						break;
 					default:
 						$mod['module_category'] = 'Auto';
 						$mod['module_enabled'] = 'false';
@@ -679,7 +737,7 @@ if (!class_exists('modules')) {
 				//set the default
 					$result = false;
 				//look for the module
-					foreach ($this->modules as &$row) {
+					foreach ($this->modules as $row) {
 						if ($row['module_name'] == $name) {
 							$result = true;
 							break;
@@ -691,22 +749,17 @@ if (!class_exists('modules')) {
 
 		//check the status of the module
 			public function active($name) {
-				if (!$this->fp) {
-					$this->fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+				foreach ($this->active_modules['rows'] as $row) {
+					if ($row['ikey'] === $name) {
+						return true;
+					}
 				}
-				if ($this->fp) {
-					$cmd = "api module_exists ".$name;
-					$response = trim(event_socket_request($this->fp, $cmd));
-					return $response == "true" ? true : false;
-				}
-				else {
-					return false;
-				}
+				return false;
 			}
 
 		//get the list of modules
 			public function get_modules() {
-				$sql = " select * from v_modules ";
+				$sql = "select * from v_modules ";
 				$sql .= "order by module_category,  module_label";
 				$database = new database;
 				$this->modules = $database->select($sql, null, 'all');
@@ -715,7 +768,7 @@ if (!class_exists('modules')) {
 
 		//add missing modules for more module info see http://wiki.freeswitch.com/wiki/Modules
 			public function synch() {
-				if ($handle = opendir($this->dir)) {
+				if (false !== ($handle = opendir($this->dir ?? ''))) {
 					$modules_new = '';
 					$module_found = false;
 					$x = 0;
@@ -730,39 +783,39 @@ if (!class_exists('modules')) {
 								}
 								if (!$this->exists($name)) {
 									//set module found to true
-										$module_found = true;
+									$module_found = true;
 									//get the module array
-										$mod = $this->info($name);
+									$mod = $this->info($name);
 									//append the module label
-										$modules_new .= "<li>".$mod['module_label']."</li>\n";
+									$modules_new .= "<li>".$mod['module_label']."</li>\n";
 									//set the order
-										$order = $mod['module_order'];
+									$order = $mod['module_order'];
 									//build insert array
-										$array['modules'][$x]['module_uuid'] = uuid();
-										$array['modules'][$x]['module_label'] = $mod['module_label'];
-										$array['modules'][$x]['module_name'] = $mod['module_name'];
-										$array['modules'][$x]['module_description'] = $mod['module_description'];
-										$array['modules'][$x]['module_category'] = $mod['module_category'];
-										$array['modules'][$x]['module_order'] = $order;
-										$array['modules'][$x]['module_enabled'] = $mod['module_enabled'];
-										$array['modules'][$x]['module_default_enabled'] = $mod['module_default_enabled'];
+									$array['modules'][$x]['module_uuid'] = uuid();
+									$array['modules'][$x]['module_label'] = $mod['module_label'];
+									$array['modules'][$x]['module_name'] = $mod['module_name'];
+									$array['modules'][$x]['module_description'] = $mod['module_description'];
+									$array['modules'][$x]['module_category'] = $mod['module_category'];
+									$array['modules'][$x]['module_order'] = $order;
+									$array['modules'][$x]['module_enabled'] = $mod['module_enabled'];
+									$array['modules'][$x]['module_default_enabled'] = $mod['module_default_enabled'];
 									$x++;
 								}
 							}
 						}
 					}
-					if (is_array($array) && @sizeof($array) != 0) {
+					if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
 						//grant temporary permissions
-							$p = new permissions;
-							$p->add('module_add', 'temp');
+						$p = permissions::new();
+						$p->add('module_add', 'temp');
 						//execute insert
-							$database = new database;
-							$database->app_name = 'modules';
-							$database->app_uuid = '5eb9cba1-8cb6-5d21-e36a-775475f16b5e';
-							$database->save($array);
-							unset($array);
+						$database = new database;
+						$database->app_name = 'modules';
+						$database->app_uuid = '5eb9cba1-8cb6-5d21-e36a-775475f16b5e';
+						$database->save($array);
+						unset($array);
 						//revoke temporary permissions
-							$p->delete('module_add', 'temp');
+						$p->delete('module_add', 'temp');
 					}
 					closedir($handle);
 					if ($module_found) {
@@ -809,7 +862,7 @@ if (!class_exists('modules')) {
 					$xml .= "	</modules>\n";
 					$xml .= "</configuration>";
 
-					if (file_exists($_SESSION['switch']['conf']['dir'].'/autoload_configs')) {
+					if (!empty($_SESSION['switch']['conf']['dir']) && is_writable($_SESSION['switch']['conf']['dir'].'/autoload_configs/modules.conf.xml')) {
 						$fout = fopen($_SESSION['switch']['conf']['dir']."/autoload_configs/modules.conf.xml","w");
 						fwrite($fout, $xml);
 						unset($xml);
@@ -870,18 +923,18 @@ if (!class_exists('modules')) {
 					if (is_array($records) && @sizeof($records) != 0) {
 
 						//filter out unchecked modules, build where clause for below
-							foreach($records as $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+							foreach ($records as $record) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$uuids[] = "'".$record['uuid']."'";
 								}
 							}
 
 						//get module details
-							if (is_array($uuids) && @sizeof($uuids) != 0) {
+							if (!empty($uuids) && is_array($uuids) && @sizeof($uuids) != 0) {
 								$sql = "select ".$this->uuid_prefix."uuid as uuid, module_name as module, module_enabled as enabled from v_".$this->table." ";
 								$sql .= "where ".$this->uuid_prefix."uuid in (".implode(', ', $uuids).") ";
 								$database = new database;
-								$rows = $database->select($sql, $parameters, 'all');
+								$rows = $database->select($sql, $parameters ?? null, 'all');
 								if (is_array($rows) && @sizeof($rows) != 0) {
 									foreach ($rows as $row) {
 										$modules[$row['uuid']]['name'] = $row['module'];
@@ -893,15 +946,14 @@ if (!class_exists('modules')) {
 
 						if (is_array($modules) && @sizeof($modules) != 0) {
 							//create the event socket connection
-								$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+								$esl = event_socket::create();
 
-							if ($fp) {
+							if ($esl->is_connected()) {
 								//control modules
 									foreach ($modules as $module_uuid => $module) {
 										if ($module['enabled'] == 'true') {
-											$cmd = 'api '.$action.' '.$module['name'];
 											$responses[$module_uuid]['module'] = $module['name'];
-											$responses[$module_uuid]['message'] = trim(event_socket_request($fp, $cmd));
+											$responses[$module_uuid]['message'] = trim(event_socket::api($action.' '.$module['name']));
 										}
 										else {
 											$responses[$module_uuid]['module'] = $module['name'];
@@ -946,8 +998,8 @@ if (!class_exists('modules')) {
 					if (is_array($records) && @sizeof($records) != 0) {
 
 						//filter out unchecked modules, build where clause for below
-							foreach($records as $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+							foreach ($records as $record) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$uuids[] = "'".$record['uuid']."'";
 								}
 							}
@@ -957,7 +1009,7 @@ if (!class_exists('modules')) {
 								$sql = "select ".$this->uuid_prefix."uuid as uuid, module_name as module from v_".$this->table." ";
 								$sql .= "where ".$this->uuid_prefix."uuid in (".implode(', ', $uuids).") ";
 								$database = new database;
-								$rows = $database->select($sql, $parameters, 'all');
+								$rows = $database->select($sql, $parameters ?? null, 'all');
 								if (is_array($rows) && @sizeof($rows) != 0) {
 									foreach ($rows as $row) {
 										$modules[$row['uuid']]['name'] = $row['module'];
@@ -979,15 +1031,14 @@ if (!class_exists('modules')) {
 							if (is_array($array) && @sizeof($array) != 0) {
 
 								//create the event socket connection
-									$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+									$esl = event_socket::create();
 
 								//stop modules
-									if ($fp) {
+									if ($esl->is_connected()) {
 										foreach ($modules as $module_uuid => $module) {
 											if ($this->active($module['name'])) {
-												$cmd = 'api unload '.$module['name'];
 												$responses[$module_uuid]['module'] = $module['name'];
-												$responses[$module_uuid]['message'] = trim(event_socket_request($fp, $cmd));
+												$responses[$module_uuid]['message'] = trim(event_socket::api('unload '.$module['name']));
 											}
 										}
 									}
@@ -1004,7 +1055,7 @@ if (!class_exists('modules')) {
 
 								//set message
 									$message = $text['message-delete'];
-									if (is_array($responses) && @sizeof($responses) != 0) {
+									if (!empty($responses) && is_array($responses) && @sizeof($responses) != 0) {
 										foreach ($responses as $response) {
 											$message .= "<br><strong>".$response['module']."</strong>: ".$response['message'];
 										}
@@ -1039,8 +1090,8 @@ if (!class_exists('modules')) {
 					if (is_array($records) && @sizeof($records) != 0) {
 
 						//get current toggle state
-							foreach($records as $x => $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+							foreach ($records as $x => $record) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$uuids[] = "'".$record['uuid']."'";
 								}
 							}
@@ -1048,7 +1099,7 @@ if (!class_exists('modules')) {
 								$sql = "select ".$this->uuid_prefix."uuid as uuid, ".$this->toggle_field." as state, module_name as name from v_".$this->table." ";
 								$sql .= "where ".$this->uuid_prefix."uuid in (".implode(', ', $uuids).") ";
 								$database = new database;
-								$rows = $database->select($sql, $parameters, 'all');
+								$rows = $database->select($sql, $parameters ?? null, 'all');
 								if (is_array($rows) && @sizeof($rows) != 0) {
 									foreach ($rows as $row) {
 										$modules[$row['uuid']]['state'] = $row['state'];
@@ -1079,15 +1130,15 @@ if (!class_exists('modules')) {
 									unset($array);
 
 								//create the event socket connection
-									$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+									$esl = event_socket::create();
 
 								//stop modules if active
-									if ($fp) {
+									if ($esl->is_connected()) {
 										foreach ($modules as $module_uuid => $module) {
 											if ($this->active($module['name'])) {
-												$cmd = 'api unload '.$module['name'];
+												$cmd = 'unload '.$module['name'];
 												$responses[$module_uuid]['module'] = $module['name'];
-												$responses[$module_uuid]['message'] = trim(event_socket_request($fp, $cmd));
+												$responses[$module_uuid]['message'] = trim(event_socket::api($cmd));
 											}
 										}
 									}
@@ -1097,7 +1148,7 @@ if (!class_exists('modules')) {
 
 								//set message
 									$message = $text['message-toggle'];
-									if (is_array($responses) && @sizeof($responses) != 0) {
+									if (!empty($responses) && is_array($responses) && @sizeof($responses) != 0) {
 										foreach ($responses as $response) {
 											$message .= "<br><strong>".$response['module']."</strong>: ".$response['message'];
 										}
@@ -1113,10 +1164,8 @@ if (!class_exists('modules')) {
 
 
 	} //class
-}
 
 /*
-require_once "resources/classes/modules.php";
 $mod = new modules;
 $mod->dir = $_SESSION['switch']['mod']['dir'];
 echo $mod->dir."\n";
@@ -1150,5 +1199,3 @@ echo $mod->dir."\n";
 	//print_r($result);
 	//echo "</pre>\n";
 */
-
-?>

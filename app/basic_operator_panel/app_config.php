@@ -20,6 +20,7 @@
 		$apps[$x]['description']['fr-fr'] = "";
 		$apps[$x]['description']['he-il'] = "";
 		$apps[$x]['description']['it-it'] = "";
+		$apps[$x]['description']['ka-ge'] = "ოპერატორის პანელი სტატუსს აჩვენებს.";
 		$apps[$x]['description']['nl-nl'] = "Bedieningspaneel laat de status zien";
 		$apps[$x]['description']['pl-pl'] = "";
 		$apps[$x]['description']['pt-br'] = "";
@@ -72,8 +73,16 @@
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "group_extensions";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set if extensions are grouped by call_group when viewing all extensions.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "0d3b16b0-5cd6-4d0e-8b58-967972362ef8";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "operator_panel";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "show_unregistered";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether unregistered extensions are displayed or not.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "a9ccd174-5ae1-4f90-8ee2-b79a183a04f8";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
@@ -98,6 +107,30 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#b9c5d8";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set border color (and opacity) of extensions";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "bebc8779-56e2-4568-80a8-002ef0641f9a";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "operator_panel_user_info";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#444444";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set text color for user info";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "45d1a05b-d54e-4ef3-b083-5055aedb780e";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "operator_panel_call_info";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#444444";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set text color for call info";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "8d63aa39-6517-4c5e-921a-a5fa814e95d7";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "operator_panel_caller_info";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "#444444";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set text color for caller info";
 		$y++;
 
 ?>

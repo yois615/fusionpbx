@@ -34,5 +34,30 @@
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'call_recording_download';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-
-?>
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = 'call_recording_transcribe';
+		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+		$y = 0;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "95cb740e-e377-4852-8894-06441c61e78b";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "call_recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "filesystem_retention_days";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "90";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Number of days to retain the maintenance logs in the database.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "e329db05-2967-422a-a71f-d0175b083828";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "call_recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "record_extension";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "mp3";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Call recording file format options: wav, mp3";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "f8dada74-82a0-4175-8268-2333de308d9d";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "call_recordings";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "record_name";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "\${year}\${month_number}\${day}.\${time}.\${caller_id_number}.\${uuid}.mp3";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Call recording download template. Options: \${uuid}, \${caller_id_name}, \${caller_id_number}, \${caller_destination}, \${destination_number}, \${date}, \${call_direction}, \${year}, \${month_name}, \${month_number}, \${day}, \${time}";

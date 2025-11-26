@@ -25,18 +25,21 @@
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
 
-if (!class_exists('modal')) {
 	class modal {
 
 		static function create($array) {
 
-			$modal = "<div id='".($array['id'] ? $array['id'] : 'modal')."' class='modal-window'>\n";
+			//define as global
+			global $settings;
+
+			//add multi-lingual support
+			$language = new text;
+			$text = $language->get();
+
+			$modal = "<div id='".(!empty($array['id']) ? $array['id'] : 'modal')."' class='modal-window'>\n";
 			$modal .= "	<div>\n";
-			$modal .= "		<span title=\"".$text['button-close']."\" class='modal-close' onclick=\"modal_close(); ".$array['onclose']."\">&times</span>\n";
-			if ($array['type'] != '') {
-				//add multi-lingual support
-					$language = new text;
-					$text = $language->get();
+			$modal .= "		<span title=\"".$text['button-close']."\" class='modal-close' onclick=\"modal_close(); ".($array['onclose'] ?? '')."\">&times</span>\n";
+			if (!empty($array['type'])) {
 				//determine type
 					switch ($array['type']) {
 						case 'copy':
@@ -51,24 +54,23 @@ if (!class_exists('modal')) {
 							$array['title'] = $text['modal_title-confirmation'];
 							$array['message'] = $text['confirm-delete'];
 							break;
+						case 'unassign':
+							$array['title'] = $text['modal_title-confirmation'];
+							$array['message'] = $text['confirm-unassign'];
 						default: //general
-							$array['title'] = $array['title'] ? $array['title'] : $text['modal_title-confirmation'];
+							$array['title'] = !empty($array['title']) ? $array['title'] : $text['modal_title-confirmation'];
 					}
 				//prefix cancel button to action
-					$array['actions'] = button::create(['type'=>'button','label'=>$text['button-cancel'],'icon'=>$_SESSION['theme']['button_icon_cancel'],'collapse'=>'never','onclick'=>'modal_close(); '.$array['onclose']]).$array['actions'];
+					$array['actions'] = button::create(['type'=>'button','label'=>$text['button-cancel'],'icon'=>$settings->get('theme', 'button_icon_cancel'),'collapse'=>'never','onclick'=>'modal_close(); '.($array['onclose'] ?? '')]).$array['actions'];
 			}
-			$modal .= $array['title'] ? "		<span class='modal-title'>".$array['title']."</span>\n" : null;
-			$modal .= $array['message'] ? "		<span class='modal-message'>".$array['message']."</span>\n" : null;
-			$modal .= $array['actions'] ? "		<span class='modal-actions'>".$array['actions']."</span>\n" : null;
+			$modal .= !empty($array['title']) ? "		<span class='modal-title'>".$array['title']."</span>\n" : null;
+			$modal .= !empty($array['message']) ? "		<span class='modal-message'>".$array['message']."</span>\n" : null;
+			$modal .= !empty($array['actions']) ? "		<span class='modal-actions'>".$array['actions']."</span>\n" : null;
 			$modal .= "	</div>\n";
 			$modal .= "</div>";
 
 			return $modal;
-			unset($modal);
 
 		}
 
 	}
-}
-
-?>
