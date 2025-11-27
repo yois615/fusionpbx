@@ -517,7 +517,7 @@ if parallel_recording ~= nil and string.len(parallel_recording) > 0 then
 end
 
 -- Daf-mode
-if daf_mode == "true" then
+if session:ready() and daf_mode == "true" then
     freeswitch.consoleLog("WARNING", "We are in daf_mode " .. daf_mode .. "\n")
     session:flushDigits();
     local exit = false;
@@ -595,7 +595,7 @@ end
 --End Daf Daf-mode
 
 --Chumash mode
-if chumash_mode == "true" then
+if session:ready() and chumash_mode == "true" then
     freeswitch.consoleLog("WARNING", "We are in chumash_mode " .. chumash_mode .. "\n")
     session:flushDigits();
     local exit = false;
