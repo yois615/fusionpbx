@@ -72,20 +72,6 @@
 	if (not default_dialect) then default_dialect = 'us'; end
 	if (not default_voice) then default_voice = 'callie'; end
 
---get the user id
-	min_digits = 2;
-	max_digits = 20;
-	user_id = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", "phrase:voicemail_enter_id:#", "", "\\d+");
-	--user_id = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-please_enter_extension_followed_by_pound.wav", "", "\\d+");
-
---get the user password
-	if (authorized == 'false') then
-		min_digits = 2;
-		max_digits = 20;
-		password = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", "phrase:voicemail_enter_pass:#", "", "\\d+");
-		--password = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-please_enter_pin_followed_by_pound.wav", "", "\\d+");
-	end
-
 --get the user and domain name from the user argv user@domain
 	user = session:getVariable("sip_from_user");
 	domain = session:getVariable("sip_from_host");
