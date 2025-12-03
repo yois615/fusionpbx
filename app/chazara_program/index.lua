@@ -234,7 +234,7 @@ end
             elseif (data['digit'] == "0") then
                 return("restart"); --start over
             else
-                return 0;
+                return;
             end
         end
     end
