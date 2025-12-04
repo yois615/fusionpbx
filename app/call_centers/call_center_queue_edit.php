@@ -124,6 +124,7 @@
 			$queue_max_wait_time_with_no_agent_time_reached = $_POST["queue_max_wait_time_with_no_agent_time_reached"];
 			$queue_tier_rules_apply = $_POST["queue_tier_rules_apply"];
 			$queue_tier_rule_wait_second = $_POST["queue_tier_rule_wait_second"];
+			$queue_ring_progressively_delay = $_POST['queue_ring_progressively_delay'];
 			$queue_tier_rule_wait_multiply_level = $_POST["queue_tier_rule_wait_multiply_level"];
 			$queue_tier_rule_no_agent_no_wait = $_POST["queue_tier_rule_no_agent_no_wait"];
 			$queue_timeout_action = $_POST["queue_timeout_action"] ?? null;
@@ -359,6 +360,7 @@
 			}
 			$array['call_center_queues'][0]['queue_tier_rules_apply'] = $queue_tier_rules_apply;
 			$array['call_center_queues'][0]['queue_tier_rule_wait_second'] = $queue_tier_rule_wait_second;
+			$array['call_center_queues'][0]['queue_ring_progressively_delay'] = $queue_ring_progressively_delay;
 			$array['call_center_queues'][0]['queue_tier_rule_wait_multiply_level'] = $queue_tier_rule_wait_multiply_level;
 			$array['call_center_queues'][0]['queue_tier_rule_no_agent_no_wait'] = $queue_tier_rule_no_agent_no_wait;
 			$array['call_center_queues'][0]['queue_discard_abandoned_after'] = $queue_discard_abandoned_after;
@@ -610,6 +612,7 @@
 				$queue_timeout_action = $row["queue_timeout_action"];
 				$queue_tier_rules_apply = $row["queue_tier_rules_apply"];
 				$queue_tier_rule_wait_second = $row["queue_tier_rule_wait_second"];
+				$queue_ring_progressively_delay = $row["queue_ring_progressively_delay"];
 				$queue_tier_rule_wait_multiply_level = $row["queue_tier_rule_wait_multiply_level"];
 				$queue_tier_rule_no_agent_no_wait = $row["queue_tier_rule_no_agent_no_wait"];
 				$queue_discard_abandoned_after = $row["queue_discard_abandoned_after"];
@@ -700,6 +703,7 @@
 	$queue_max_wait_time_with_no_agent = $queue_max_wait_time_with_no_agent ?? "90";
 	$queue_max_wait_time_with_no_agent_time_reached = $queue_max_wait_time_with_no_agent_time_reached ?? "30";
 	$queue_tier_rule_wait_second = $queue_tier_rule_wait_second ?? "30";
+	$queue_ring_progressively_delay = $queue_ring_progressively_delay ?? "10";
 	$queue_discard_abandoned_after = $queue_discard_abandoned_after ?? "900";
 	$queue_record_enabled = $queue_record_template ? true : false;
 	$queue_tier_rules_apply = $queue_tier_rules_apply ?? false;
@@ -1234,6 +1238,17 @@
 	echo "  <input class='formfld' type='number' name='queue_tier_rule_wait_second' maxlength='255' min='0' step='1' value='".escape($queue_tier_rule_wait_second)."'>\n";
 	echo "<br />\n";
 	echo $text['description-tier_rule_wait_second']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "	".$text['label-ring_progressively_delay']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "  <input class='formfld' type='number' name='queue_ring_progressively_delay' maxlength='255' min='0' step='1' value='".escape($queue_ring_progressively_delay)."'>\n";
+	echo "<br />\n";
+	echo $text['description-ring_progressively_delay']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

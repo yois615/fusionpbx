@@ -1202,6 +1202,8 @@ $text['label-time_base_score_sec']['zh-cn'] = "时基分数秒";
 $text['label-time_base_score_sec']['ja-jp'] = "タイムベーススコア秒";
 $text['label-time_base_score_sec']['ko-kr'] = "시간 기준 점수 초";
 
+$text['label-ring_progressively_delay']['en-us'] = "Ring Progressively Delay";
+
 $text['label-tiers']['en-us'] = "Tiers";
 $text['label-tiers']['en-gb'] = "Tiers";
 $text['label-tiers']['ar-eg'] = "المستويات";

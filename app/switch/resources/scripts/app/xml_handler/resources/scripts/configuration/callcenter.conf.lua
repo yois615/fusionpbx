@@ -116,6 +116,7 @@
 					queue_tier_rule_wait_second = row.queue_tier_rule_wait_second;
 					queue_tier_rule_wait_multiply_level = row.queue_tier_rule_wait_multiply_level;
 					queue_tier_rule_no_agent_no_wait = row.queue_tier_rule_no_agent_no_wait;
+					queue_ring_progressively_delay = row.queue_ring_progressively_delay;
 					queue_discard_abandoned_after = row.queue_discard_abandoned_after;
 					queue_abandoned_resume_allowed = row.queue_abandoned_resume_allowed;
 					queue_announce_sound = row.queue_announce_sound;
@@ -156,6 +157,9 @@
 					end
 					if (queue_max_wait_time_with_no_agent_time_reached ~= nil) then
 						xml:append([[                                    <param name="max-wait-time-with-no-agent-time-reached" value="]] .. xml.sanitize(queue_max_wait_time_with_no_agent_time_reached) .. [["/>]]);
+					end
+					if (queue_ring_progressively_delay ~= nil) then
+						xml:append([[                                    <param name="ring-progressively-delay" value="]] .. xml.sanitize(queue_ring_progressively_delay) .. [["/>]]);
 					end
 					if (queue_tier_rules_apply ~= nil) then
 						xml:append([[                                    <param name="tier-rules-apply" value="]] .. xml.sanitize(queue_tier_rules_apply) .. [["/>]]);

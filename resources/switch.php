@@ -570,6 +570,7 @@ if (!function_exists('save_call_center_xml')) {
 						$queue_time_base_score = $row["queue_time_base_score"];
 						$queue_max_wait_time = $row["queue_max_wait_time"];
 						$queue_max_wait_time_with_no_agent = $row["queue_max_wait_time_with_no_agent"];
+						$queue_ring_progressively_delay = $row["queue_ring_progressively_delay"];
 						$queue_tier_rules_apply = $row["queue_tier_rules_apply"];
 						$queue_tier_rule_wait_second = $row["queue_tier_rule_wait_second"];
 						$queue_tier_rule_wait_multiply_level = $row["queue_tier_rule_wait_multiply_level"];
@@ -610,6 +611,7 @@ if (!function_exists('save_call_center_xml')) {
 						$v_queues .= "			<param name=\"max-wait-time\" value=\"$queue_max_wait_time\"/>\n";
 						$v_queues .= "			<param name=\"max-wait-time-with-no-agent\" value=\"$queue_max_wait_time_with_no_agent\"/>\n";
 						$v_queues .= "			<param name=\"max-wait-time-with-no-agent-time-reached\" value=\"$queue_max_wait_time_with_no_agent_time_reached\"/>\n";
+						$v_queues .= "			<param name=\"queue_ring_progressively_delay\" value=\"$queue_ring_progressively_delay\"/>\n";
 						$v_queues .= "			<param name=\"tier-rules-apply\" value=\"$queue_tier_rules_apply\"/>\n";
 						$v_queues .= "			<param name=\"tier-rule-wait-second\" value=\"$queue_tier_rule_wait_second\"/>\n";
 						$v_queues .= "			<param name=\"tier-rule-wait-multiply-level\" value=\"$queue_tier_rule_wait_multiply_level\"/>\n";
