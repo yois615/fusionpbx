@@ -576,6 +576,8 @@ $text['option-ring_all']['zh-cn'] = "全部响铃";
 $text['option-ring_all']['ja-jp'] = "リングオール";
 $text['option-ring_all']['ko-kr'] = "모두 울리기";
 
+$text['option-ring_progressively']['en-us'] = "Ring Progressively";
+
 $text['option-random']['en-us'] = "Random";
 $text['option-random']['en-gb'] = "Random";
 $text['option-random']['ar-eg'] = "عشوائي";

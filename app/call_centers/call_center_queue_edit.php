@@ -963,6 +963,12 @@
 	else {
 		echo "	<option value='ring-all'>".$text['option-ring_all']."</option>\n";
 	}
+	if ($queue_strategy == "ring-progressively") {
+		echo "	<option value='ring-progressively' selected='selected' >".$text['option-ring_progressively']."</option>\n";
+	}
+	else {
+		echo "	<option value='ring-progressively'>".$text['option-ring_progressively']."</option>\n";
+	}
 	if ($queue_strategy == "longest-idle-agent") {
 		echo "	<option value='longest-idle-agent' selected='selected' >".$text['option-longest_idle_agent']."</option>\n";
 	}
