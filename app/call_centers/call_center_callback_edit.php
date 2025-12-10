@@ -120,7 +120,7 @@
 			$array['call_center_callback_profile'][0]['callback_retry_delay'] = $callback_retry_delay;
 
 		//grant temporary permissions
-			$p = new permissions;
+			$p = permissions::new();
 			$p->add('call_center_callback_profile_add', 'temp');
 			$p->add('call_center_callback_profile_edit', 'temp');
 

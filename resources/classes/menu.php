@@ -517,7 +517,7 @@
 						//add the checked rows fro group
 							if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
 							//grant temporary permissions
-								$p = new permissions;
+								$p = permissions::new();
 								$p->add('menu_language_delete', 'temp');
 								$p->add('menu_item_group_delete', 'temp');
 

@@ -527,7 +527,7 @@
 								if (is_array($array) && @sizeof($array) != 0) {
 
 									//grant temporary permissions
-										$p = new permissions;
+										$p = permissions::new();
 										$p->add('call_center_callback_profile_delete', 'temp');
 	
 									//execute delete
