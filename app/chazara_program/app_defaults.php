@@ -58,7 +58,7 @@
 										$array['recordings'][0]['domain_uuid'] = $recording_domain_uuid;
 										$array['recordings'][0]['recording_base64'] = $recording_base64;
 									//grant temporary permissions
-										$p = new permissions;
+										$p = permissions::new();
 										$p->add('recording_edit', 'temp');
 									//update recording record with base64
 										$database = new database;
@@ -103,7 +103,7 @@
 								$array['recordings'][0]['domain_uuid'] = $recording_domain_uuid;
 								$array['recordings'][0]['recording_base64'] = null;
 							//grant temporary permissions
-								$p = new permissions;
+								$p = permissions::new();
 								$p->add('recording_edit', 'temp');
 							//update recording record
 								$database = new database;
