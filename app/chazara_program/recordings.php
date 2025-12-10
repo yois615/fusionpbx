@@ -260,7 +260,7 @@
 								$array['chazara_recordings'][0]['recording_name'] = $recording_name;
 								$array['chazara_recordings'][0]['recording_description'] = $recording_description;
 							//set temporary permissions
-								$p = new permissions;
+								$p = permissions::new();
 								$p->add('chazara_recording_add', 'temp');
 							//execute insert
 								$database = new database;

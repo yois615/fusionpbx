@@ -140,7 +140,7 @@
 
 // print_r($array); exit;
 				//grant temporary permissions
-					$p = new permissions;
+					$p = permissions::new();
 					if ($action == 'add') {
 						$p->add('chazara_daf_teacher_add', 'temp');
 					} elseif ($action == 'update') {

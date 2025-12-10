@@ -132,7 +132,7 @@
 // print_r($array); exit;
 
 				//grant temporary permissions
-					$p = new permissions;
+					$p = permissions::new();
 					$p->add('chazara_ivr_recording_add', 'temp');
 					$p->add('chazara_ivr_recording_edit', 'temp');
 					$p->add('chazara_ivr_add', 'temp');
