@@ -138,6 +138,12 @@
     cursor: default;
 }
 
+.UiDeleteButton{
+    color: #ac2121;
+    border: 1px solid #ac2121;
+    background-color: #ffeef1;
+}
+
 .UiInputText{
     margin-bottom: 5px !important;
     width: 100% !important;
@@ -389,6 +395,11 @@ body {
 /* Windows */
 .ui-dialog{
     position: fixed !important;
+
+    /* We add padding here so we can remove it in resize */
+    padding: 2px !important; 
+
+    /* This creates a resize issue, but makes it work nicely at fullscreen */
     /* box-sizing: border-box; */
 }
 
@@ -856,6 +867,21 @@ input[type=range]{
     display: inline-block;
 }
 
+.pinnedBuddy{
+    position: absolute;
+    top: 5px;
+    left: 33px;
+    font-size: 10px;
+    background-color: #3478f3;
+    color: #FFFFFF;
+    width: 15px;
+    height: 15px;
+    border-radius: 100%;
+    text-align: center;
+    line-height: 15px;
+    box-shadow: 1px 1px 2px rgb(0 0 0 / 25%);
+}
+
 .profileContainer{
     position: absolute;
     top: 0;
@@ -900,10 +926,15 @@ input[type=range]{
     text-overflow: ellipsis;
 }
 
+.hiddenBuddiesText{
+    padding: 10px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
 .searchClean {
-    border-radius: 50px;
-    padding: 3px;
-    padding-left: 5px;
+    border-radius: 5px;
+    padding: 5px;
     box-sizing: border-box;
     display: inline;
 }
@@ -917,7 +948,6 @@ input[type=range]{
     border: none !important;
     margin-left: 5px;
     outline: none;
-    background-color: transparent;
 }
 
 .searchClean INPUT:focus {
@@ -1415,7 +1445,7 @@ input[type=range]{
     padding: 10px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-    width: 320px;
+    /* width: 320px; */
     box-sizing: border-box;
 }
 
@@ -1462,6 +1492,14 @@ input[type=range]{
 .hangupButton {
     padding-left: 15px;
     padding-right: 15px;
+}
+
+.dotDefault {
+    display: inline-block;
+}
+.dotDefault:before {
+    content: "\f098";
+    font-family: FontAwesome;
 }
 
 .dotOnline {
@@ -1553,8 +1591,8 @@ input[type=range]{
 .voiceMessageNotifyer {
     background-color: #ff0000;
     position: absolute;
-    top: 0px;
-    right: -5px;
+    top: 3px;
+    left: 35px;
     line-height: 16px;
     padding-left: 4px;
     padding-right: 4px;
@@ -1563,6 +1601,7 @@ input[type=range]{
     color: #FFFFFF;
     font-size: 11px;
     text-align: center;
+    display: none;
 }
 
 .startDragDrop {

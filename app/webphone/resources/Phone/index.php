@@ -73,11 +73,11 @@
         <div id=Phone></div>
 
         <!-- Scripts -->
-        <script type="text/javascript" src="../lib/jquery/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="../lib/jquery/jquery-3.6.1.min.js"></script>
         <script type="text/javascript" src="../lib/jquery/jquery.md5-min.js"></script>
-        <script type="text/javascript" src="../lib/jquery/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="../lib/Chart/Chart.bundle-2.7.2.js"></script>
-        <script type="text/javascript" src="../lib/SipJS/sip-0.21.1.min.js"></script>
+        <script type="text/javascript" src="../lib/jquery/jquery-ui-1.13.2.min.js"></script>
+        <script type="text/javascript" src="../lib/Chart/Chart.bundle-2.7.2.min.js"></script>
+        <script type="text/javascript" src="../lib/SipJS/sip-0.20.0.min.js"></script>
         <script type="text/javascript" src="../lib/FabricJS/fabric-2.4.6.min.js"></script>
         <script type="text/javascript" src="../lib/Moment/moment-with-locales-2.24.0.min.js"></script>
         <script type="text/javascript" src="../lib/Croppie/Croppie-2.6.4/croppie.min.js"></script>
