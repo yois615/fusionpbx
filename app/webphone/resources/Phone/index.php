@@ -25,7 +25,7 @@
         <link rel="stylesheet" type="text/css" href="../lib/fonts/font_roboto/roboto.css"/>
         <link rel="stylesheet" type="text/css" href="../lib/fonts/font_awesome/css/font-awesome.min.css"/>
         <link rel="stylesheet" type="text/css" href="../lib/jquery/jquery-ui.min.css"/>
-        <link rel="stylesheet" type="text/css" href="../lib/Croppie/Croppie-2.6.4/croppie.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/Croppie/croppie.css"/>
         <link rel="stylesheet" type="text/css" href="phone.css"/>
         <script type="text/javascript">
             // Provision runtime options can go here.
@@ -80,7 +80,7 @@
         <script type="text/javascript" src="../lib/SipJS/sip-0.20.0.min.js"></script>
         <script type="text/javascript" src="../lib/FabricJS/fabric-2.4.6.min.js"></script>
         <script type="text/javascript" src="../lib/Moment/moment-with-locales-2.24.0.min.js"></script>
-        <script type="text/javascript" src="../lib/Croppie/Croppie-2.6.4/croppie.min.js"></script>
+        <script type="text/javascript" src="../lib/Croppie/croppie-2.6.4.min.js"></script>
         <script type="text/javascript" src="../lib/XMPP/strophe-1.4.1.umd.min.js"></script>
         <script type="text/javascript">
             const server = "<?php echo $_GET['server'] ?>";
