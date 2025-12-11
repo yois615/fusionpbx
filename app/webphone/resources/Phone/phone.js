@@ -80,13 +80,13 @@ let wallpaperDark = getDbItem("wallpaperDark", "wallpaper.dark.webp");     // Wa
  * index.html for some sample provisioning and web_hook options.
  */
 let profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
-let profileName = getDbItem("profileName", null);       // eg: Keyla James
-let wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
-let WebSocketPort = getDbItem("WebSocketPort", null);   // eg: 444 | 4443
-let ServerPath = getDbItem("ServerPath", null);         // eg: /ws
-let SipDomain = getDbItem("SipDomain", null);           // eg: raspberrypi.local
-let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
-let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
+let profileName = getDbItem("profileName", fullname);       // eg: Keyla James
+let wssServer = getDbItem("wssServer", server);           // eg: raspberrypi.local
+let WebSocketPort = getDbItem("WebSocketPort", webPort);   // eg: 444 | 4443
+let ServerPath = getDbItem("ServerPath", webPath);         // eg: /ws
+let SipDomain = getDbItem("SipDomain", server);           // eg: raspberrypi.local
+let SipUsername = getDbItem("SipUsername", extension);       // eg: webrtc
+let SipPassword = getDbItem("SipPassword", password);       // eg: webrtc
 
 let SingleInstance = (getDbItem("SingleInstance", "1") == "1");      // Un-registers this account if the phone is opened in another tab/window
 
