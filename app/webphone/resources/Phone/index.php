@@ -21,11 +21,11 @@
         <link rel="icon" href="favicon.ico">
 
         <!-- Styles -->
-        <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/Normalize/normalize-v8.0.1.css"/>
-        <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/fonts/font_roboto/roboto.css"/>
-        <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/fonts/font_awesome/css/font-awesome.min.css"/>
-        <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-ui.min.css"/>
-        <link rel="stylesheet" type="text/css" href="https://dtd6jl0d42sve.cloudfront.net/lib/Croppie/Croppie-2.6.4/croppie.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/Normalize/normalize-v8.0.1.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/fonts/font_roboto/roboto.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/fonts/font_awesome/css/font-awesome.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/jquery/jquery-ui.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/Croppie/Croppie-2.6.4/croppie.css"/>
         <link rel="stylesheet" type="text/css" href="phone.css"/>
         <script type="text/javascript">
             // Provision runtime options can go here.
@@ -73,15 +73,15 @@
         <div id=Phone></div>
 
         <!-- Scripts -->
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-3.3.1.min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery.md5-min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/Chart/Chart.bundle-2.7.2.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/SipJS/sip-0.20.0.min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/FabricJS/fabric-2.4.6.min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/Moment/moment-with-locales-2.24.0.min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/Croppie/Croppie-2.6.4/croppie.min.js"></script>
-        <script type="text/javascript" src="https://dtd6jl0d42sve.cloudfront.net/lib/XMPP/strophe-1.4.1.umd.min.js"></script>
+        <script type="text/javascript" src="../lib/jquery/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="../lib/jquery/jquery.md5-min.js"></script>
+        <script type="text/javascript" src="../lib/jquery/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="../lib/Chart/Chart.bundle-2.7.2.js"></script>
+        <script type="text/javascript" src="../lib/SipJS/sip-0.21.1.min.js"></script>
+        <script type="text/javascript" src="../lib/FabricJS/fabric-2.4.6.min.js"></script>
+        <script type="text/javascript" src="../lib/Moment/moment-with-locales-2.24.0.min.js"></script>
+        <script type="text/javascript" src="../lib/Croppie/Croppie-2.6.4/croppie.min.js"></script>
+        <script type="text/javascript" src="../lib/XMPP/strophe-1.4.1.umd.min.js"></script>
         <script type="text/javascript">
             const server = "<?php echo $_GET['server'] ?>";
             const webPort = '7443';
