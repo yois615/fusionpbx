@@ -20,7 +20,19 @@
 	require_once "resources/header.php";
 
 //includes
-echo "<style> .card{height:77vh;} </style>";
+?>
+<style>
+  nav ~ .container-fluid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  #main_content {
+    flex-grow: 1;
+  }
+</style>
+<?php
 
 $document['title'] = "Phone";
 
@@ -47,8 +59,9 @@ $contactName = $database->select($sql, null, 'column');
 unset($sql);
 
 
-echo "<div style='position: fixed;  top: 0;  left: 0;  bottom: 0;  right: 0;  overflow: auto;'><iframe src='https://$_SESSION[domain_name]/app/webphone/resources/Phone/index.php?server=$_SESSION[domain_name]&extension=$extension&password=$password&fullname=$contactName' width='100%' height='100%' frameborder='none'></iframe>";
-echo "</div><br /><br />";
+
+echo "<iframe src='https://$_SESSION[domain_name]/app/webphone/resources/Phone/index.php?server=$_SESSION[domain_name]&extension=$extension&password=$password&fullname=$contactName' width='100%' height='100%' frameborder='none'></iframe>";
+echo "<br /><br />";
 
 //include the footer
 require_once "resources/footer.php";
