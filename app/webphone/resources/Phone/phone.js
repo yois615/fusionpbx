@@ -7215,6 +7215,12 @@ function conferenceOnkeydown(event, obj, lineNum) {
         return false;
     }
 }
+function dtmfOnKeydown(event, lineNum){
+    if(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "*", "#"].includes(event.key)){
+        console.log(`Key pressed: ${event.key}`);
+        sendDTMF(lineNum, event.key);
+    }
+}
 function ConferenceDial(lineNum){
     var dstNo = $("#line-"+ lineNum +"-txt-FindConferenceBuddy").val();
     if(EnableAlphanumericDial){
@@ -8344,7 +8350,7 @@ function ShowDtmfMenu(lineNum){
 
     // DTMF
     var html = ""
-    html += "<div>";
+    html += "<div tabindex=0 onkeydown=\"dtmfOnKeydown(event, lineNum)\">";
     html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
     html += "<tr><td><button class=dialButtons onclick=\"sendDTMF('"+ lineNum +"', '1')\"><div>1</div><span>&nbsp;</span></button></td>"
     html += "<td><button class=dialButtons onclick=\"sendDTMF('"+ lineNum +"', '2')\"><div>2</div><span>ABC</span></button></td>"
