@@ -103,7 +103,6 @@
             const extension = "<?php echo $_GET['extension'] ?>";
             const password = "<?php echo $_GET['password'] ?>";
             const fullname = "<?php echo $_GET['fullname'] ?>";
-            const phoneOptions = {};
             phoneOptions.EnableAccountSettings = 0;
             phoneOptions.VoicemailDid = "*97";
         </script>
