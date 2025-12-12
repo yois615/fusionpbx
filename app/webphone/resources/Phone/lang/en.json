@@ -146,7 +146,7 @@
     "conference_call_terminated" : "Conference Call Terminated",
     "null_session" : "Session Error, Null",
     "call_on_hold" : "Call on Hold",
-    "send_dtmf" : "Sent DTMF",
+    "send_dtmf" : "Send DTMF",
     "switching_video_source" : "Switching video source",
     "switching_to_canvas" : "Switching to canvas",
     "switching_to_shared_video" : "Switching to Shared Video",
