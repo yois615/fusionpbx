@@ -91,7 +91,7 @@
         <script type="text/javascript" src="../lib/jquery/jquery.md5-min.js"></script>
         <script type="text/javascript" src="../lib/jquery/jquery-ui-1.13.2.min.js"></script>
         <script type="text/javascript" src="../lib/Chart/Chart.bundle-2.7.2.min.js"></script>
-        <script type="text/javascript" src="../lib/SipJS/sip-0.20.0.min.js"></script>
+        <script type="text/javascript" src="../lib/SipJS/sip-0.21.2.min.js"></script>
         <script type="text/javascript" src="../lib/FabricJS/fabric-2.4.6.min.js"></script>
         <script type="text/javascript" src="../lib/Moment/moment-with-locales-2.24.0.min.js"></script>
         <script type="text/javascript" src="../lib/Croppie/croppie-2.6.4.min.js"></script>

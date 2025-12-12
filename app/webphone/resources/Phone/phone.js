@@ -10,13 +10,13 @@
 * License: GNU Affero General Public License v3.0
 * Owner: Conrad de Wet
 * Date: April 2020
-* Git: https://github.com/InnovateAsterisk/Browser-Phone
+* Git: https://github.com/Siperb/Browser-Phone
 */
 
 // Global Settings
 // ===============
 const appversion = "0.3.34";
-const sipjsversion = "0.20.0";
+const sipjsversion = "0.21.2";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 const instanceID = String(Date.now());
 const localDB = window.localStorage;
@@ -395,10 +395,11 @@ $(window).on("beforeunload", function(event) {
     if(CurrentCalls > 0){
         console.warn("Warning, you have current calls open");
         // The best we can do is throw up a system alert question.
-        event.preventDefault();
-        return event.returnValue = "";
+        // 12-2025 This blocks disconnect of the session and calls run indefinitely
+        //event.preventDefault();
+        //return event.returnValue = "";
     }
-    Unregister(true);
+    userAgent.stop();
     if(XMPP) XMPP.disconnect("");
 });
 $(window).on("resize", function() {
@@ -1964,8 +1965,6 @@ function CreateUserAgent() {
         authorizationPassword: SipPassword,
         hackIpInContact: IpInContact,           // Asterisk should also be set to rewrite contact
         userAgentString: userAgentStr,
-        autoStart: false,
-        autoStop: true,
         register: false,
         noAnswerTimeout: NoAnswerTimeout,
         // sipExtension100rel: // UNSUPPORTED | SUPPORTED | REQUIRED NOTE: rel100 is not supported
@@ -2015,6 +2014,7 @@ function CreateUserAgent() {
     userAgent.lastVoicemailCount = 0;
 
     console.log("Creating User Agent... Done");
+
     // Custom Web hook
     if(typeof web_hook_on_userAgent_created !== 'undefined') web_hook_on_userAgent_created(userAgent);
 
