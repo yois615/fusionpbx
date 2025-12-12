@@ -105,6 +105,7 @@
             const fullname = "<?php echo $_GET['fullname'] ?>";
             phoneOptions.EnableAccountSettings = 0;
             phoneOptions.VoicemailDid = "*97";
+            phoneOptions.welcomeScreen = 0;
         </script>
         <script type="text/javascript" src="phone.js"></script>
     </body>
