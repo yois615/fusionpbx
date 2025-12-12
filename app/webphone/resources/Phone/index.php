@@ -1,3 +1,17 @@
+<?php
+//includes files
+	require_once dirname(__DIR__, 2) . "/resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('webphone_view') && !empty($_GET['password'])) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
+?>
 <!DOCTYPE html>
 <html>
     <head>

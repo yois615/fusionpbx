@@ -43,6 +43,11 @@ $database = new database;
 $extension_uuid = $database->select($sql, null, 'column');
 unset($sql);
 
+if (empty($extension_uuid)){
+		echo "Your user is not set up to use the webphone.<br>Please contact your administrator.";
+		exit;
+}
+
  $sql = "SELECT extension, password FROM v_extensions WHERE extension_uuid = '".$extension_uuid."'";
 $database = new database;
 $row = $database->select($sql, null, 'all');
