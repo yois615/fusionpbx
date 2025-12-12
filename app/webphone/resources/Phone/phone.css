@@ -37,7 +37,7 @@
 
 .UiText {
     font-family: Roboto, Arial, Helvetica;
-    font-size: 15px;
+    font-size: 14px;
     margin-top: 10px;
 }
 
@@ -347,8 +347,9 @@ body {
     font-family: Roboto, Arial, Helvetica !important;
 }
 .ui-widget-overlay {
-    background-color: #000000 !important;
-    opacity: .6 !important;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    opacity: unset !important;
+    backdrop-filter: blur(4px);
 }
 /* Popup Menu */
 .ui-menu{
@@ -423,14 +424,31 @@ body {
     border: 1px solid transparent !important;
     color: #222222 !important;
     font-family: Roboto, Arial, Helvetica !important;
-    font-size: 17px !important;
-    font-weight: normal !important;
+    font-size: 14px !important;
 }
+
+.ui-dialog .ui-icon-expand:before {
+    content: "\f065"; /* fa-expand */
+    font-family: FontAwesome;
+    display: block;
+    font-size: 14px;
+}
+.ui-dialog .ui-dialog-titlebar-expand{
+    position: absolute;
+    right: 35px;
+    top: 50%;
+    width: 20px;
+    margin: -10px 0 0 0;
+    padding: 1px;
+    height: 20px;
+}
+
+
 .ui-icon-closethick:before {
     content: "\f00d"; /* Close */
     font-family: FontAwesome;
     display: block;
-    font-size: 15px;
+    font-size: 14px;
 }
 .ui-icon {
     text-indent:0px !important;
@@ -530,7 +548,7 @@ button:disabled:hover {
 
 /* Text Field */
 input[type=text],input[type=password],input[type=email],input[type=tel] {
-    font-size: 15px;
+    font-size: 14px;
     padding: 5px;
     border: none;
     border-radius: 0px;
@@ -902,7 +920,7 @@ input[type=range]{
 
 .contactNameText {
     margin-left: 50px;
-    font-size: 15px;
+    font-size: 14px;
 
     margin-right: 25px;
     white-space: nowrap;
@@ -1147,7 +1165,7 @@ input[type=range]{
     outline: none;
     resize: none;
     font-family: Roboto, Arial, Helvetica;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .buddyIconSmall {
@@ -1193,7 +1211,7 @@ input[type=range]{
     display: inline-block;
     padding: 5px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 14px;
     position: relative;
 }
 
@@ -1229,7 +1247,7 @@ input[type=range]{
     display: inline-block;
     padding: 5px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 14px;
     position: relative;
 }
 
@@ -1918,7 +1936,7 @@ input[type=range]{
     padding: 5px;
     border-radius: 10px;
     margin-left: 10px;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .CallPictureUnderlay{

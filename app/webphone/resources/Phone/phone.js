@@ -15,7 +15,7 @@
 
 // Global Settings
 // ===============
-const appversion = "0.3.29";
+const appversion = "0.3.34";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 const instanceID = String(Date.now());
@@ -61,7 +61,7 @@ welcomeScreen += "</div>";
  * "en.json" is always loaded by default
  */
 let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional language packs other thAan /en.json
-const availableLang = ["fr", "ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
+const availableLang = ["he", "fr", "ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
 
 /**
  * Image Assets
@@ -406,22 +406,10 @@ $(window).on("resize", function() {
 });
 $(window).on("offline", function(){
     console.warn('Offline!');
-
-    $("#regStatus").html(lang.disconnected_from_web_socket);
-    $("#WebRtcFailed").show();
-
-    // If there is an issue with the WS connection
-    // We unregister, so that we register again once its up
-    console.log("Disconnect Transport...");
-    try{
-        // userAgent.registerer.unregister();
-        userAgent.transport.disconnect();
-    } catch(e){
-        // I know!!!
-    }
+    DisconnectTransport();
 });
 $(window).on("online", function(){
-    console.log('Online!');
+    console.warn('Online!');
     ReconnectTransport();
 });
 $(window).on("keypress", function(event) {
@@ -788,12 +776,14 @@ function UpdateUI(){
         } else {
             $("#rightContent").css("border-right-width", "1px");
         }
-    } else {
+    }
+    else {
         // Touching Edges
         $("#leftContentTable").css("border-left-width", "0px");
         if(selectedBuddy == null && selectedLine == null) {
             $("#leftContentTable").css("border-right-width", "0px");
-        } else {
+        }
+        else {
             $("#leftContentTable").css("border-right-width", "1px");
         }
         $("#rightContent").css("border-right-width", "0px");
@@ -843,17 +833,18 @@ function UpdateUI(){
 
     if(windowObj != null){
         var offsetTextHeight = windowObj.parent().outerHeight();
-        var width = windowObj.width();
+        // var width = windowObj.width();
+        var width = windowObj.parent().outerWidth();
         if(windowWidth <= width || windowHeight <= offsetTextHeight) {
             // First apply to dialog, then set css
-            windowObj.dialog("option", "height", windowHeight);
-            windowObj.dialog("option", "width", windowWidth - (1+1+2+2)); // There is padding and a border
-            windowObj.parent().css('top', '0px');
-            windowObj.parent().css('left', '0px');
+            windowObj.dialog("option", "height", windowHeight - 4);
+            windowObj.dialog("option", "width", windowWidth - (1+1+2+2) - 4); // There is padding and a border
+            windowObj.parent().css('top', '2px');
+            windowObj.parent().css('left', '2px');
         } 
         else {
-            windowObj.parent().css('left', windowWidth/2 - width/2 + 'px');
-            windowObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+            // windowObj.parent().css('left', windowWidth/2 - width/2 + 'px');
+            // windowObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
         }
     }
     if(alertObj != null){
@@ -1585,7 +1576,7 @@ function InitUi(){
     leftHTML += "<div class=contactNameText style=\"margin-right: 0px;\">"
     // Status
     leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"></span>";
-    leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"></span>";
+    // leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"></span>";
     leftHTML += "<span id=reglink class=dotOffline></span>";
     // User
     leftHTML += " <span id=UserCallID></span>"
@@ -1845,6 +1836,21 @@ function ShowMyProfileMenu(obj){
     }
     PopupMenu(obj, menu);
 }
+function SetStatusMessage(msg, icon, sticky, timeout){
+    if(icon){
+        $("#regStatus").html(`<i class="fa ${icon}"></i> ${msg}`);
+    }
+    else {
+        $("#regStatus").html(msg);
+    }
+    if(!sticky){
+        window.clearTimeout(window.StatusHandle);
+        window.StatusHandle = window.setTimeout(function(){
+            // If there is no sticky message, then use the online/offline status
+            $("#regStatus").html((window.navigator.onLine)? `<i class="fa fa-wifi" aria-hidden="true"></i> Online` : `<i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Offline`);
+        }, (timeout)? timeout : 3000);
+    }
+}
 function ApplyThemeColor(){
     //UiThemeStyle = light | dark | system (can change at any time)
     var cssUrl = hostingPrefix +"phone.light.css";
@@ -1928,13 +1934,14 @@ function CreateUserAgent() {
     console.log("Creating User Agent...");
     if(SipDomain==null || SipDomain=="" || SipDomain=="null" || SipDomain=="undefined") SipDomain = wssServer; // Sets globally
     var options = {
+        logLevel : "debug",
         logConfiguration: false,            // If true, constructor logs the registerer configuration.
         uri: SIP.UserAgent.makeURI("sip:"+ SipUsername + "@" + SipDomain),
         transportOptions: {
             server: "wss://"+ wssServer +":"+ WebSocketPort +""+ ServerPath,
             traceSip: false,
-            connectionTimeout: TransportConnectionTimeout
-            // keepAliveInterval: 30 // Uncomment this and make this any number greater then 0 for keep alive... 
+            connectionTimeout: TransportConnectionTimeout,
+            keepAliveInterval: 30
             // NB, adding a keep alive will NOT fix bad internet, if your connection cannot stay open (permanent WebSocket Connection) you probably 
             // have a router or ISP issue, and if your internet is so poor that you need to some how keep it alive with empty packets
             // upgrade you internet connection. This is voip we are talking about here.
@@ -1984,6 +1991,7 @@ function CreateUserAgent() {
     }
     if(WssInTransport){
         try{
+            // Note: In some versions of Asterisk we must be sent transport=ws, since it will respond with transport=WS in the contact
             options.contactParams.transport = "wss";
         } catch(e){}
     }
@@ -2057,8 +2065,8 @@ function CreateUserAgent() {
     }
 
     userAgent.registerer = new SIP.Registerer(userAgent, RegistererOptions);
-    console.log("Creating Registerer... Done");
 
+    console.log("Creating Registerer... Done");
     userAgent.registerer.stateChange.addListener(function(newState){
         console.log("User Agent Registration State:", newState);
         switch (newState) {
@@ -2078,8 +2086,13 @@ function CreateUserAgent() {
     });
 
     console.log("User Agent Connecting to WebSocket...");
-    $("#regStatus").html(lang.connecting_to_web_socket);
-    userAgent.start().catch(function(error){
+    SetStatusMessage(lang.connecting_to_web_socket, "fa-wifi");
+
+    // Stat the User Agent
+    userAgent.start().then(function(){
+        // Started to register
+        console.log("User Agent Started");
+    }).catch(function(error){
         onTransportConnectError(error);
     });
 
@@ -2089,9 +2102,7 @@ function CreateUserAgent() {
 // ================
 function onTransportConnected(){
     console.log("Connected to Web Socket!");
-    $("#regStatus").html(lang.connected_to_web_socket);
-
-    $("#WebRtcFailed").hide();
+    SetStatusMessage(lang.connected_to_web_socket, "fa-wifi");
 
     // Reset the ReconnectionAttempts
     userAgent.isReRegister = false;
@@ -2099,85 +2110,108 @@ function onTransportConnected(){
     userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
 
     // Auto start register
-    if(userAgent.transport.attemptingReconnection == false && userAgent.registering == false){
-        window.setTimeout(function (){
-            Register();
-        }, 500);
-    } else{
-        console.warn("onTransportConnected: Register() called, but attemptingReconnection is true or registering is true")
-    }
+    window.setTimeout(function (){
+        Register();
+    }, 100);
 }
 function onTransportConnectError(error){
+    // Transport was closed with error (this often means on the server side).
     console.warn("WebSocket Connection Failed:", error);
-
-    // We set this flag here so that the re-register attempts are fully completed.
-    userAgent.isReRegister = false;
-
-    // If there is an issue with the WS connection
-    // We unregister, so that we register again once its up
-    console.log("Unregister...");
-    try{
-        userAgent.registerer.unregister();
-    } catch(e){
-        // I know!!!
-    }
-
-    $("#regStatus").html(lang.web_socket_error);
-    $("#WebRtcFailed").show();
-
-    ReconnectTransport();
+    SetStatusMessage(lang.web_socket_error, "fa-wifi");
 
     // Custom Web hook
     if(typeof web_hook_on_transportError !== 'undefined') web_hook_on_transportError(userAgent.transport, userAgent);
+
+    // Give it a second, and try to connect again
+    window.setTimeout(function(){
+        userAgent.isReRegister = false;
+        userAgent.transport.attemptingReconnection = false;
+        // Try connect again.
+        ReconnectTransport();
+    }, 1000);
 }
 function onTransportDisconnected(){
+    // Gracefully Disconnected
+    // Not going to connect again, this is exit code.
     console.log("Disconnected from Web Socket!");
-    $("#regStatus").html(lang.disconnected_from_web_socket);
+    SetStatusMessage(lang.disconnected_from_web_socket, "fa-wifi");
+}
+function DisconnectTransport(){
+    if(userAgent == null) return;
 
-    userAgent.isReRegister = false;
+    // Note: the transport layer may not know that its disconnected yet
+    SetStatusMessage(lang.disconnected_from_web_socket, "fa-wifi");
+
+    // Force the Transport to close
+    console.log("Forcing the WebSocket to close, this can take up to 30 seconds...");
+    // userAgent.transport.disconnect();
+    // Pull the plug!
+    userAgent.transport._ws.onclose = function(){};
+    userAgent.transport._ws.onerror = function(){};
+    userAgent.transport._ws.onopen = function(){};
+    userAgent.transport._ws.onmessage = function(){};
+    userAgent.transport._ws.close(3000, "Offline Detected");
+    userAgent.transport._ws = undefined;
+    userAgent.transport.transitioningState = false;
+    userAgent.transport._state = SIP.TransportState.Disconnected;
+
+    //userAgent.registerer.unregister();
+    // If your network is ripped out... you will not be registered
+    userAgent.registerer._state = SIP.RegistererState.Unregistered;
+    userAgent.registerer._waiting = false;
+    onUnregistered();
+
+    // Any sending will fail now
 }
 function ReconnectTransport(){
     if(userAgent == null) return;
-
-    userAgent.registering = false; // if the transport was down, you will not be registered
-    if(userAgent.transport && userAgent.transport.isConnected()){
-        // Asked to re-connect, but ws is connected
-        onTransportConnected();
+    if(userAgent.transport.attemptingReconnection == true){
+        console.warn("User Agent appears to be reconnecting already.");
         return;
     }
-    console.log("Reconnect Transport...");
-
-    window.setTimeout(function(){
-        $("#regStatus").html(lang.connecting_to_web_socket);
-        console.log("ReConnecting to WebSocket...");
-
-        if(userAgent.transport && userAgent.transport.isConnected()){
-            // Already Connected
-            onTransportConnected();
-            return;
-        } else {
-            userAgent.transport.attemptingReconnection = true
-            userAgent.reconnect().catch(function(error){
-                userAgent.transport.attemptingReconnection = false
-                console.warn("Failed to reconnect", error);
-
-                // Try Again
-                ReconnectTransport();
-            });
-        }
-    }, TransportReconnectionTimeout * 1000);
-
-    $("#regStatus").html(lang.connecting_to_web_socket);
-    console.log("Waiting to Re-connect...", TransportReconnectionTimeout, "Attempt remaining", userAgent.transport.ReconnectionAttempts);
+    if (userAgent.transport.ReconnectionAttempts <= 0) {
+        console.warn("User Agent reconnect attempts exhausted.");
+        return;
+    }
     userAgent.transport.ReconnectionAttempts = userAgent.transport.ReconnectionAttempts - 1;
+
+    console.log("Reconnect Transport...");
+    SetStatusMessage(lang.connecting_to_web_socket, "fa-wifi");
+
+    // if the transport was down, you will not be registered
+    userAgent.registering = false;
+
+    // Start Reconnect Process
+    userAgent.transport.attemptingReconnection = true;
+    userAgent.reconnect().then(function(){
+        // Reconnect worked!
+        console.log("Reconnect Transport Successful");
+
+        userAgent.isReRegister = false;
+        userAgent.transport.attemptingReconnection = false;
+        userAgent.transport.ReconnectionAttempts = TransportReconnectionAttempts;
+        // onTransportConnected() will now fire 
+    }).catch(function(e){
+        // Failed to connect or register
+        console.log("Reconnect Transport Failed, trying again.", e);
+        console.log("Attempt remaining:", userAgent.transport.ReconnectionAttempts);
+        // The onTransportConnectError() will not continue this loop, so
+        // we add the loop here.
+        userAgent.transport.attemptingReconnection = false;
+        window.setTimeout(function(){
+            ReconnectTransport();
+        }, TransportReconnectionTimeout * 1000);
+    });
 }
 
 // Registration
 // ============
 function Register() {
     if (userAgent == null) return;
-    if (userAgent.registering == true) return;
-    if (userAgent.isRegistered()) return;
+    if (userAgent.registering == true) {
+        console.warn("User Agent is already registering");
+        return;
+    }
 
     var RegistererRegisterOptions = {
         requestDelegate: {
@@ -2188,25 +2222,29 @@ function Register() {
     }
 
     console.log("Sending Registration...");
-    $("#regStatus").html(lang.sending_registration);
-    userAgent.registering = true
+    SetStatusMessage(lang.sending_registration);
+    userAgent.registering = true;
     userAgent.registerer.register(RegistererRegisterOptions);
 }
 function Unregister(skipUnsubscribe) {
-    if (userAgent == null || !userAgent.isRegistered()) return;
+    if (userAgent == null) return;
+    if (!userAgent.isRegistered()) {
+        console.warn("User Agent is not registered");
+        return;
+    }
 
     if(skipUnsubscribe == true){
         console.log("Skipping Unsubscribe");
     } else {
         console.log("Unsubscribing...");
-        $("#regStatus").html(lang.unsubscribing);
+        SetStatusMessage(lang.unsubscribing);
         try {
             UnsubscribeAll();
         } catch (e) { }
     }
 
     console.log("Unregister...");
-    $("#regStatus").html(lang.disconnecting);
+    SetStatusMessage(lang.disconnecting);
     userAgent.registerer.unregister();
 
     userAgent.transport.attemptingReconnection = false;
@@ -2242,18 +2280,12 @@ function onRegistered(){
         }, 500);
 
         // Output to status
-        $("#regStatus").html(lang.registered);
+        SetStatusMessage(lang.registered);
 
         // Start XMPP
         if(ChatEngine == "XMPP") reconnectXmpp();
 
         userAgent.registering = false;
-
-        // Close possible Alerts that may be open. (Can be from failed registers)
-        if (alertObj != null) {
-            alertObj.dialog("close");
-            alertObj = null;
-        }
 
         // Custom Web hook
         if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
@@ -2271,13 +2303,11 @@ function onRegistered(){
  * @param {string} cause Cause message. Unused
 **/
 function onRegisterFailed(response, cause){
-    console.log("Registration Failed: " + response);
-    $("#regStatus").html(lang.registration_failed);
+    console.log("Registration Failed: ", response);
+    SetStatusMessage(lang.registration_failed, null, true);
 
     $("#reglink").show();
     $("#dereglink").hide();
-
-    Alert(lang.registration_failed +":"+ response, lang.registration_failed);
 
     userAgent.registering = false;
 
@@ -2290,7 +2320,7 @@ function onRegisterFailed(response, cause){
 function onUnregistered(){
     if(userAgent.registrationCompleted){
         console.log("Unregistered, bye!");
-        $("#regStatus").html(lang.unregistered);
+        SetStatusMessage(lang.unregistered);
 
         $("#reglink").show();
         $("#dereglink").hide();
@@ -2315,20 +2345,22 @@ function ReceiveCall(session) {
     if (typeof callerID === 'undefined') callerID = did;
 
     var sipHeaders = session.incomingInviteRequest.message.headers;
-    // If a P-Asserted-Identity is parsed, use that
+    if(session.assertedIdentity){
+        // Handle P-Asserted-Identity
+    }
     if(sipHeaders.hasOwnProperty("P-Asserted-Identity")){
+        // If a P-Asserted-Identity is parsed, use that
+        // https://www.ietf.org/rfc/rfc3325.txt
+        // P-Asserted-Identity: "Cullen Jennings" <sip:fluffy@cisco.com>
         var rawUri = sipHeaders["P-Asserted-Identity"][0].raw;
         if(rawUri.includes("<sip:")) {
             var uriParts = rawUri.split("<sip:");
             if(uriParts[1].endsWith(">")) uriParts[1] = uriParts[1].substring(0, uriParts[1].length -1);
-            if(uriParts[1].endsWith("@"+SipDomain)){
-                var assertId = SIP.UserAgent.makeURI("sip:"+ uriParts[1]); // should be sip:123@domain.com
-                did = assertId.user;
-                console.log("Found P-Asserted-Identity, will use that to identify user:", did);
-            }
-            else {
-                console.warn("Found P-Asserted-Identity but not in trust domain: ", rawUri);
-            }
+            // Use P-Asserted-Identity
+
+            var assertId = SIP.UserAgent.makeURI("sip:"+ uriParts[1]); // should be sip:123@domain.com
+            did = assertId.user;
+            console.log("Found P-Asserted-Identity, will use that to identify user:", did);
         }
         else {
             console.warn("Found P-Asserted-Identity but not in a URI: ", rawUri);
@@ -2607,9 +2639,17 @@ function ReceiveCall(session) {
     // Browser Window Notification
     if ("Notification" in window) {
         if (Notification.permission === "granted") {
-            var noticeOptions = { body: lang.incoming_call_from +" " + callerID +" <"+ did +">", icon: getPicture(buddyObj.identity) }
+            var noticeOptions = { 
+                body: lang.incoming_call_from +" " + callerID +" <"+ did +">", 
+                icon: getPicture(buddyObj.identity) 
+            }
             var inComingCallNotification = new Notification(lang.incoming_call, noticeOptions);
             inComingCallNotification.onclick = function (event) {
+
+                // focus the window
+                console.log("Notification Clicked:", callerID, did);
+                event.preventDefault(); // prevent the browser from focusing the Notification's tab
+                window.focus();
 
                 var lineNo = lineObj.LineNumber;
                 var videoInvite = lineObj.SipSession.data.withvideo
@@ -3139,6 +3179,16 @@ function onInviteProgress(lineObj, response){
 
         // Add UI to allow DTMF
         $("#line-" + lineObj.LineNumber + "-early-dtmf").show();
+
+        // Early Media
+        console.log("The 183 has an SDP, turn off the early media");
+        var session = lineObj.SipSession;
+        if(session.data.earlyMedia){
+            session.data.earlyMedia.pause();
+            session.data.earlyMedia.removeAttribute('src');
+            session.data.earlyMedia.load();
+            session.data.earlyMedia = null;
+        }
     }
     else {
         // 181 = Call is Being Forwarded
@@ -4698,6 +4748,12 @@ function VoicemailNotify(notification){
 
                         var vmNotification = new Notification(lang.new_voice_mail, noticeOptions);
                         vmNotification.onclick = function (event) {
+
+                            // focus the window
+                            console.log("Notification Clicked: New Voicemail");
+                            event.preventDefault(); // prevent the browser from focusing the Notification's window
+                            window.focus();
+
                             if(VoicemailDid != ""){
                                 DialByLine("audio", null, VoicemailDid, lang.voice_mail);
                             }
@@ -5316,9 +5372,17 @@ function ActivateStream(buddyObj, message){
         if ("Notification" in window) {
             if (Notification.permission === "granted") {
                 var imageUrl = getPicture(buddyObj.identity);
-                var noticeOptions = { body: message.substring(0, 250), icon: imageUrl }
+                var noticeOptions = { 
+                    body: message.substring(0, 250), 
+                    icon: imageUrl 
+                }
                 var inComingChatNotification = new Notification(lang.message_from + " : " + buddyObj.CallerIDName, noticeOptions);
                 inComingChatNotification.onclick = function (event) {
+                    // Focus on the window
+                    console.log("Notification Clicked:", buddyObj.identity);
+                    event.preventDefault(); // prevent the browser from focusing the Notification's window
+                    window.focus();
+
                     // Show Message
                     SelectBuddy(buddyObj.identity);
                 }
@@ -6059,6 +6123,7 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     }
     lineObj.SipSession.invite(inviterOptions).catch(function(e){
         console.warn("Failed to send INVITE:", e);
+
     });
 
     $("#line-" + lineObj.LineNumber + "-btn-settings").removeAttr('disabled');
@@ -13996,8 +14061,17 @@ function OpenWindow(html, title, height, width, hideCloseButton, allowResize, bu
     windowObj.dialog("open");
 
     if (hideCloseButton) windowObj.dialog({ dialogClass: 'no-close' });
-    // Doubl Click to maximise
-    $(".ui-dialog-titlebar").dblclick(function(){
+
+    // add the button to title bar
+    var titleBar = windowObj.dialog("instance").uiDialogTitlebar; 
+    titleBar.append("<button id='btnMaximise'>Expand</button>"); 
+    // make it an button
+    $("#btnMaximise").button({
+        icon: "ui-icon-expand",
+        showLabel: false,
+    });
+    $("#btnMaximise").addClass('ui-dialog-titlebar-expand');
+    $("#btnMaximise").click(function () {
         var windowWidth = $(window).outerWidth()
         var windowHeight = $(window).outerHeight();
         windowObj.parent().css('top', '0px'); // option
@@ -14009,6 +14083,16 @@ function OpenWindow(html, title, height, width, hideCloseButton, allowResize, bu
 
     // Call UpdateUI to perform all the nesesary UI updates.
     UpdateUI();
+
+    // Center the window
+    var windowWidth = $(window).outerWidth()
+    var windowHeight = $(window).outerHeight();
+    var offsetTextHeight = windowObj.parent().outerHeight();
+    var offsetWidth = windowObj.parent().outerWidth();
+
+    windowObj.parent().css('left', windowWidth/2 - offsetWidth/2 + 'px');
+    windowObj.parent().css('top', windowHeight/2 - offsetTextHeight/2 + 'px');
+
 }
 function CloseWindow(all) {
     console.log("Call to close any open window");
@@ -14440,7 +14524,7 @@ function XmppSetMyPresence(str, desc, updateVcard){
     console.log("Setting My Own Presence to: "+ str + "("+ desc +")");
 
     if(desc == "") desc = lang.default_status;
-    $("#regStatus").html("<i class=\"fa fa-comments\"></i> "+ desc);
+    SetStatusMessage(str, "fa-comments", true);
 
     var pres_request = $pres({"id": XMPP.getUniqueId(), "from": XMPP.jid });
     pres_request.c("show").t(str);

@@ -38,7 +38,7 @@
         <link rel="stylesheet" type="text/css" href="../lib/Normalize/normalize-v8.0.1.css"/>
         <link rel="stylesheet" type="text/css" href="../lib/fonts/font_roboto/roboto.css"/>
         <link rel="stylesheet" type="text/css" href="../lib/fonts/font_awesome/css/font-awesome.min.css"/>
-        <link rel="stylesheet" type="text/css" href="../lib/jquery/jquery-ui.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/jquery/jquery-ui-1.13.2.min.css"/>
         <link rel="stylesheet" type="text/css" href="../lib/Croppie/croppie.css"/>
         <link rel="stylesheet" type="text/css" href="phone.css"/>
         <script type="text/javascript">
