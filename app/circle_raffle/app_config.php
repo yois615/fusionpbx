@@ -37,9 +37,6 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'caller_id_name';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'zip';
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
-		$z++;
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'circle_raffle_numbers';
@@ -47,6 +44,7 @@
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'winnning_number';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "primary";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'winning_customer_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
@@ -56,6 +54,12 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'call_epoch';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
+		//For finding the voicemail
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'call_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
 		$z++;
 
 		$y++;
