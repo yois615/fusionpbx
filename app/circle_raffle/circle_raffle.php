@@ -39,7 +39,7 @@
 	}
 
 //process the http post data by action
-	if ($action == 'delete' && permission_exists('circle_raffle_delete')) {
+	if ($_POST['action'] == 'delete' && permission_exists('circle_raffle_delete')) {
 		$sql = "DELETE FROM circle_raffle_numbers ";
 	    $database = new database;
 	    $vote_results = $database->select($sql);
@@ -56,7 +56,7 @@
 	    unset($sql, $parameters);
 
 		//delete the voicemails
-		$voicemail_id = $vote_id;
+		$voicemail_id = "375";
 		//Get the VM uuid
 		$sql = "SELECT voicemail_uuid FROM v_voicemails ";
 		$sql .= "WHERE domain_uuid = :domain_uuid ";
@@ -84,7 +84,7 @@
 		exit;
 	}
 
-	if ($action == 'save' && permission_exists('circle_raffle_delete')) {
+	if ($_POST['action'] == 'save' && permission_exists('circle_raffle_delete')) {
 		//Winning numbers can only be added/saved by deleting the old database
 		$sql = "DELETE FROM circle_raffle_numbers ";
 	    $database = new database;
@@ -102,7 +102,7 @@
 	    unset($sql, $parameters);
 
 		//delete the voicemails
-		$voicemail_id = $vote_id;
+		$voicemail_id = "375";
 		//Get the VM uuid
 		$sql = "SELECT voicemail_uuid FROM v_voicemails ";
 		$sql .= "WHERE domain_uuid = :domain_uuid ";
@@ -127,24 +127,29 @@
 			@unlink($file_name); //remove all recordings
 		}
 
-		$winning_numbers = $_POST["winning_numbers"];
+		$winning_numbers = $_POST["circle_raffle_numbers"];
 
 		if (is_array($winning_numbers)) {
 			foreach ($winning_numbers as $i => $r) {
-				$sql = "INSERT INTO v_circle_raffle_numbers (winning_number) VALUES (".$r['winning_number'].")";
+				$sql = "INSERT INTO circle_raffle_numbers (winning_number) VALUES (".$r['winning_number'].")";
 				$database = new database;
 				$database->select($sql);
 				unset($sql, $parameters);
 			}
-		}			
+				if ($action == "save") {
+					$_SESSION["message"] = $text['message-update'];
+				}
+				header('Location: circle_raffle.php');
+				return;
+		}
 	}
 
 
 //get the raffle numbers
 	$sql = "select r.winning_number, r.winning_customer_id, r.call_epoch, r.call_uuid, c.caller_id_name, c.caller_id_number, vmm.voicemail_uuid, vm.voicemail_id ";
-    $sql .= "FROM circle_raffle_numbers r INNER JOIN circle_raffle_customer c ON r.winning_customer_id = c.customer_id ";
-	$sql .= "INNER JOIN v_voicemail_messages vmm ON v.call_uuid = vmm.voicemail_message_uuid ";
-	$sql .= "INNER JOIN v_voicemails vm ON vmm.voicemail_uuid = vm.voicemail_uuid ORDER BY r.call_epoch, r.winning_number ";
+    $sql .= "FROM circle_raffle_numbers r LEFT JOIN circle_raffle_customer c ON r.winning_customer_id = c.customer_id ";
+	$sql .= "LEFT JOIN v_voicemail_messages vmm ON r.call_uuid = vmm.voicemail_message_uuid ";
+	$sql .= "LEFT JOIN v_voicemails vm ON vmm.voicemail_uuid = vm.voicemail_uuid ORDER BY r.call_epoch, r.winning_number ";
 
 	$database = new database;
 	$winning_number_results = $database->select($sql, $parameters, 'all');
@@ -160,31 +165,25 @@
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
-	echo "	<div class='heading'><b>".$text['title-circle-raffle']." (".count($raffle_numbers).")</b></div>\n";
-	echo "	<div class='actions'>\n";
-	
-	if (permission_exists('circle_votes_delete')) {
-		echo button::create(['type'=>'button','label'=>$text['button-circle-raffle-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
-	}
-	echo "	</div>\n";
-	echo "	<div style='clear: both;'></div>\n";
+	echo "	<div class='heading'><b>Circle Raffle(".count($raffle_numbers).")</b></div>\n";
 	echo "</div>\n";
-
-	if (permission_exists('circle_votes_delete')) {
-		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
-	}
 
 
 	echo "<br /><br />\n";
 
 	echo "<form id='form_list' method='post'>\n";
-echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>Raffle Config</b></div>\n";
-	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','name'=>'action','value'=>'save']);
+	echo "<input type='hidden' id='action' name='action' value=''>\n";
+		echo "	<div class='actions'>\n";
+	
+	if (permission_exists('circle_votes_delete')) {
+		echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','name'=>'action','value'=>'save']);
+		echo button::create(['type'=>'button','label'=>'Delete All Data','icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+		
+	}
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
-	echo "</div>\n";
 
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
@@ -199,7 +198,7 @@ echo "<div class='action_bar' id='action_bar'>\n";
 	 <?php
 	echo "</tr>\n";
 
-	if (is_array($winning_number_results) && @sizeof($winning_number_results) != 0) {
+	//if (is_array($winning_number_results) && @sizeof($winning_number_results) != 0) {
 		$x = 0;
 		foreach ($winning_number_results as $row) {		
 			$array = explode(' ', $row['call_epoch']);
@@ -219,24 +218,25 @@ echo "<div class='action_bar' id='action_bar'>\n";
             echo "	<td>".escape($row['caller_id_number'])."</td>\n";
 			echo "	<td>".escape($row['caller_id_name'])."</td>\n";
 			echo "	<td class='button center no-link no-wrap'>";
-			echo 		"<audio id='recording_audio_".escape($row['call_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['call_uuid'])."')\" onended=\"recording_reset('".escape($row['call_uuid'])."');\" src='/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".urlencode($row['voicemail_uuid'])."&uuid=".urlencode($row['call_uuid'])."&r=".uuid()."'></audio>";
-			echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['call_uuid']),'onclick'=>"recording_play('".escape($row['call_uuid'])."');"]);
-			echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".escape($row['voicemail_uuid'])."&uuid=".escape($row['call_uuid'])."&t=bin&r=".uuid(),'onclick'=>"$(this).closest('tr').children('td').css('font-weight','normal');"]);
+			if (!empty($row['call_epoch'])) {
+				echo 		"<audio id='recording_audio_".escape($row['call_uuid'])."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($row['call_uuid'])."')\" onended=\"recording_reset('".escape($row['call_uuid'])."');\" src='/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".urlencode($row['voicemail_uuid'])."&uuid=".urlencode($row['call_uuid'])."&r=".uuid()."'></audio>";
+				echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.escape($row['call_uuid']),'onclick'=>"recording_play('".escape($row['call_uuid'])."');"]);
+				echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"/app/voicemails/voicemail_messages.php?action=download&id=".urlencode($row['voicemail_id'])."&voicemail_uuid=".escape($row['voicemail_uuid'])."&uuid=".escape($row['call_uuid'])."&t=bin&r=".uuid(),'onclick'=>"$(this).closest('tr').children('td').css('font-weight','normal');"]);
+			}
 			echo "	</td>\n";
 			echo "</tr>\n";
 			$x++;
 		}
-		if ($x < 21) {
+		for ($x = $x; $x < 21; $x++) {
 			// Add more blank rows
 			echo "<tr class='list-row'>\n";
 			echo "<td class='vtable' align='left'>\n";
 			echo "	<input class='formfld' type='text' name=\"circle_raffle_numbers[".$x."][winning_number]\" maxlength='5'>\n";
 			echo "</td>\n";
 			echo "</tr>\n";
-			$x++;
 		}
 		unset($winning_number_results);
-	}
+	//}
 
 	echo "</table>\n";
 	echo "<br />\n";

@@ -12,9 +12,6 @@ audio_dir = "/usr/share/freeswitch/sounds/the_circle/top_ten_hotline/"
 debug.sql = true;
 json = freeswitch.JSON();
 
-vote_id = argv[1];
--- require "app.the_loop.applications.record_to_upload";
-
 -- connect to the database
 local Database = require "resources.functions.database";
 dbh = Database.new('system');
@@ -123,60 +120,6 @@ function save_vm()
     end
 end
 
-function save_vote(vote)
-    if (customer_id == nil) then
-        local sql = "INSERT INTO circle_customer (caller_id_number, caller_id_name, ";
-	sql = sql .. "age, gender, zip)";
-        sql = sql .. " values (:caller_id_number, :caller_id_name, :age, :gender, :zip)";
-        local params = {
-            caller_id_name = caller_id_name,
-            caller_id_number = caller_id_number,
-            age = age,
-            gender = gender,
-            zip = zip
-        }
-        if (debug["sql"]) then
-            freeswitch.consoleLog("notice", "[loop_story] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
-        end
-        dbh:query(sql, params);
-        -- get the customer id
-        local sql = "SELECT customer_id FROM circle_customer WHERE caller_id_number = :caller_id_number";
-        local params = {
-            caller_id_number = caller_id_number
-        }
-        dbh:query(sql, params, function(row)
-            customer_id = row.customer_id;
-        end);
-    else
-	--Update with new values
-	local sql = "UPDATE circle_customer SET zip = :zip ";
-        sql = sql .. "WHERE customer_id = :customer_id ";
-	local params = {
-		customer_id = customer_id,
-		zip = zip
-	}
-    if (debug["sql"]) then
-        freeswitch.consoleLog("notice", "[loop_story] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
-    end
-	dbh:query(sql, params);
-    end
-    -- save the vote
-    local sql = "INSERT INTO circle_tt_votes (customer_id, vote_id, vote, call_uuid, age, gender)"
-    sql = sql .. " values (:customer_id, :vote_id, :vote, :uuid, :age, :gender)";
-    local params = {
-        customer_id = customer_id,
-        vote_id = vote_id;
-        vote = vote,
-        uuid = uuid,
-        age = age,
-        gender = gender
-    }
-    dbh:query(sql, params);
-    -- Play confirmation
-    session:streamFile(audio_dir .. "top_ten_goodbye.wav");
-    story_incomplete = 0;
-end
-
 -- set the defaults
 digit_max_length = 3;
 timeout_pin = 5000;
@@ -184,7 +127,7 @@ max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
 story_incomplete = 1;
-voicemail_id = vote_id;
+voicemail_id = 375;
 
 -- get session variables
 caller_id_name = session:getVariable("caller_id_name");
@@ -199,12 +142,12 @@ if (string.sub(caller_id_number, 1, 1) == "+") then
 end
 
 -- Check if any recordings associated with this phone number
-local sql = "select customer_id from circle_customer WHERE caller_id_number = :caller_id_number; ";
+local sql = "select customer_id from circle_raffle_customer WHERE caller_id_number = :caller_id_number; ";
 local params = {
     caller_id_number = caller_id_number
 };
 if (debug["sql"]) then
-    freeswitch.consoleLog("notice", "[directory] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+    freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
 end
 dbh:query(sql, params, function(row)
     customer_id = tonumber(row.customer_id);
@@ -223,45 +166,61 @@ if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
     session:hangup();
 end
 
-if (session:ready()) then
-    -- Play greeting without interruption
-session:streamFile(audio_dir .. "top_ten_greeting.wav");
--- collect age
-::start_age::
-age = session:playAndGetDigits(1, 2, 5, 3000, "#", audio_dir .. "top_ten_age.wav", "", "");
-if tonumber(age) < 3 or tonumber(age) > 25 then
-	goto start_age
+-- Check how many times they called
+local sql = "select count(call_uuid) from circle_raffle_cdr WHERE customer_id = :customer_id and call_epoch > :os_time; ";
+local params = {
+    customer_id = customer_id,
+    os_time = os.time() - 86400
+};
+if (debug["sql"]) then
+    freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
 end
--- Collect gender
-::start_gender::
-gender = session:playAndGetDigits(1, 1, 5, 3000, "#", audio_dir .. "top_ten_gender.wav", "", "");
-if tonumber(gender) < 1 or tonumber(gender) > 2 then
-	goto start_gender
-end
-if gender == "1" then gender = "male"; end
-if gender == "2" then gender = "female"; end
-
--- Collect zip
-zip = session:playAndGetDigits(5, 5, 5, 3000, "#", audio_dir .. "top_ten_zip.wav", "", "");
-    -- play main menu and instructions
-    ::start_vote::
-    vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. "top_ten_main_vote.wav", "",
-        "");
-    if (vote_dtmf_digits ~= nil and vote_dtmf_digits == "1") then
-        vote_dtmf_digits = vote_dtmf_digits .. session:getDigits(1, "#", 3000);
-    end
-    if (tonumber(vote_dtmf_digits) == nil) then
+dbh:query(sql, params, function(row)
+    if row.count > 3 then
+        session:streamFile(audio_dir .. "try_again_tomorrow.wav");
         session:hangup();
     end
+end)
 
-    if (session:ready() and tonumber(vote_dtmf_digits) < 1 or tonumber(vote_dtmf_digits) > 10) then
-        goto start_vote
+if (session:ready()) then
+    -- Play greeting without interruption
+
+
+-- Type in your number
+number_picked = session:playAndGetDigits(5, 5, 2, 3000, "#", audio_dir .. "raffle_greeting.wav", "", "");
+
+-- Is that number available?
+local sql = "select count(winning_number) from circle_raffle_numbers WHERE winning_number = :number_picked and call_epoch IS NULL or call_epoch = '' ";
+local params = {
+    number_picked = number_picked
+};
+if (debug["sql"]) then
+    freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+end
+dbh:query(sql, params, function(row)
+    if row.count == 0 then
+        session:streamFile(audio_dir .. "you_lost.wav");
+        session:hangup();
+        local sql = "INSERT INTO circle_raffle_cdr (customer_id, call_epoch) VALUES (:customer_id, :call_epoch); ";
+        local params = {
+            customer_id = customer_id,
+            call_epoch = os.time()
+        };
+        if (debug["sql"]) then
+            freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+        end
+        dbh:query(sql, params)
     end
+end)
+
+-- WE HAVE A WINNER!
+
+session:streamFile(audio_dir .. "you_won.wav");
 
     -- record vM    
     if (session:ready()) then
         session:setInputCallback("on_dtmf", "");
-        dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", audio_dir .. "top_ten_record_info.wav", "", "\\d+")
+        dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", audio_dir .. "raffle_winner_vm.wav", "", "\\d+")
         dtmf_digits = '';
         session:execute("playback", "silence_stream://200");
         session:streamFile("tone_stream://L=1;%(500, 0, 640)");
@@ -278,34 +237,18 @@ zip = session:playAndGetDigits(5, 5, 5, 3000, "#", audio_dir .. "top_ten_zip.wav
     if tonumber(message_length) > 3 then
         result = save_vm()
         if result then
-            save_vote(vote_dtmf_digits);
+            local sql = "UPDATE circle_raffle_numbers SET winning_customer_id = customer_id; call_epoch = call_epoch, call_uuid = call_uuid WHERE winning_number = :number_picked ";
+            local params = {
+                customer_id = customer_id,
+                call_epoch = os.time(),
+                call_uuid = uuid
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params)
         end
     end
-
     session:hangup();
 
 end
-
---[[
-DROP TABLE circle_customer CASCADE;
-DROP TABLE circle_tt_votes CASCADE;
-
-CREATE TABLE circle_customer(
-customer_id SERIAL PRIMARY KEY,
-caller_id_number VARCHAR(15) UNIQUE NOT NULL,
-caller_id_name VARCHAR(255)
-);
-
-CREATE TABLE circle_tt_votes(
-customer_id INTEGER NOT NULL,
-vote SMALLINT NOT NULL,
-CONSTRAINT fk_customer_id
-FOREIGN KEY(customer_id)
-REFERENCES circle_customer(customer_id)
-);
-
-Also needed is to import the prompt files into audio_dir
-and into en/us/ferber
-modify /etc/freeswitch/languages/en.xml to use ferber
-
-]]

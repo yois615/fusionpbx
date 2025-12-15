@@ -42,7 +42,7 @@
 		$apps[$x]['db'][$y]['table']['name'] = 'circle_raffle_numbers';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'winnning_number';
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'winning_number';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "primary";
 		$z++;
