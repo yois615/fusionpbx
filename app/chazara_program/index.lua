@@ -90,6 +90,13 @@ local function chumash_by_parsha(epoch)
     local parsha_end_chapter = tbl_parsha_end[1];
     local parsha_end_verse = tbl_parsha_end[2];
 
+    -- If there is more than one leyning, the parsha_end_verse will end with a ;
+    -- "torah":"Genesis 41:1-44:17; Numbers 28:9-15, 7:42-47","haftarah":"Zechariah 2:14-4:7 | Shabbat Rosh Chodesh Chanukah"
+    -- It needs to be stripped out
+    if string.sub(parsha_end_verse, -1) == ";" then
+        parsha_end_verse = string.sub(parsha_end_verse, 1, -2);
+    end
+
     -- Match parallel class to teacher_uuid
     local sql = [[SELECT chazara_teacher_uuid, pin FROM v_chazara_teachers
                 WHERE domain_uuid = :domain_uuid
