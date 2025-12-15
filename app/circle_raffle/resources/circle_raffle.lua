@@ -8,7 +8,7 @@
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
 require "resources.functions.config";
 require "resources.functions.mkdir";
-audio_dir = "/usr/share/freeswitch/sounds/the_circle/top_ten_hotline/"
+audio_dir = "/usr/share/freeswitch/sounds/the_circle/raffle/"
 debug.sql = true;
 json = freeswitch.JSON();
 
@@ -198,9 +198,8 @@ if (debug["sql"]) then
     freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
 end
 dbh:query(sql, params, function(row)
-    if row.count == 0 then
+    if row.count == "0" then
         session:streamFile(audio_dir .. "you_lost.wav");
-        session:hangup();
         local sql = "INSERT INTO circle_raffle_cdr (customer_id, call_epoch) VALUES (:customer_id, :call_epoch); ";
         local params = {
             customer_id = customer_id,
@@ -210,15 +209,14 @@ dbh:query(sql, params, function(row)
             freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
         end
         dbh:query(sql, params)
+        session:hangup();
     end
 end)
 
--- WE HAVE A WINNER!
-
-session:streamFile(audio_dir .. "you_won.wav");
-
     -- record vM    
     if (session:ready()) then
+        -- WE HAVE A WINNER!
+        session:streamFile(audio_dir .. "you_won.wav");
         session:setInputCallback("on_dtmf", "");
         dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", audio_dir .. "raffle_winner_vm.wav", "", "\\d+")
         dtmf_digits = '';
