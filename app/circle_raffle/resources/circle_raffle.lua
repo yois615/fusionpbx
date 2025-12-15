@@ -127,7 +127,7 @@ max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
 story_incomplete = 1;
-voicemail_id = 375;
+voicemail_id = "375";
 
 -- get session variables
 caller_id_name = session:getVariable("caller_id_name");
@@ -153,6 +153,30 @@ dbh:query(sql, params, function(row)
     customer_id = tonumber(row.customer_id);
 end)
 
+if customer_id == nil or string.len(customer_id) == 0 then
+    local sql =
+        "INSERT INTO circle_raffle_customer (caller_id_number, caller_id_name) VALUES (:caller_id_number, :caller_id_name); ";
+    local params = {
+        caller_id_number = caller_id_number,
+        caller_id_name = caller_id_name
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params)
+    -- Now retreive the new ID
+    local sql = "select customer_id from circle_raffle_customer WHERE caller_id_number = :caller_id_number; ";
+    local params = {
+        caller_id_number = caller_id_number
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        customer_id = tonumber(row.customer_id);
+    end)
+end
+
 if (session:ready()) then
     -- answer the call
     session:answer();
@@ -164,10 +188,12 @@ end
 if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
     session:streamFile(audio_dir .. "bad_caller_id.wav");
     session:hangup();
+    return;
 end
 
 -- Check how many times they called
-local sql = "select count(call_uuid) from circle_raffle_cdr WHERE customer_id = :customer_id and call_epoch > :os_time; ";
+local sql =
+    "select count(call_epoch) from circle_raffle_cdr WHERE customer_id = :customer_id and call_epoch > :os_time; ";
 local params = {
     customer_id = customer_id,
     os_time = os.time() - 86400
@@ -176,77 +202,104 @@ if (debug["sql"]) then
     freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
 end
 dbh:query(sql, params, function(row)
-    if row.count > 3 then
+    if tonumber(row.count) > 2 then
         session:streamFile(audio_dir .. "try_again_tomorrow.wav");
         session:hangup();
+        return;
     end
 end)
 
 if (session:ready()) then
     -- Play greeting without interruption
 
+    -- Type in your number
+    number_picked = session:playAndGetDigits(5, 5, 2, 3000, "#", audio_dir .. "raffle_greeting.wav", "", "");
 
--- Type in your number
-number_picked = session:playAndGetDigits(5, 5, 2, 3000, "#", audio_dir .. "raffle_greeting.wav", "", "");
+    if string.len(number_picked) < 5 then
+        session:streamFile(audio_dir .. "try_again_tomorrow.wav");
+        session:hangup();
+        return;
+    end
 
--- Is that number available?
-local sql = "select count(winning_number) from circle_raffle_numbers WHERE winning_number = :number_picked and call_epoch IS NULL or call_epoch = '' ";
-local params = {
-    number_picked = number_picked
-};
-if (debug["sql"]) then
-    freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+    -- Is that number available?
+    local sql =
+        "select count(winning_number) from circle_raffle_numbers WHERE winning_number = :number_picked and call_epoch IS NULL ";
+    local params = {
+        number_picked = number_picked
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        if tonumber(row.count) == 0 then
+            session:streamFile(audio_dir .. "you_lost.wav");
+            local sql = "INSERT INTO circle_raffle_cdr (customer_id, call_epoch) VALUES (:customer_id, :call_epoch); ";
+            local params = {
+                customer_id = customer_id,
+                call_epoch = os.time()
+            };
+            if (debug["sql"]) then
+                freeswitch.consoleLog("notice",
+                    "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+            end
+            dbh:query(sql, params)
+            session:hangup();
+        elseif tonumber(row.count) == 1 then
+            caller_won = true;
+        end
+    end)
 end
-dbh:query(sql, params, function(row)
-    if row.count == "0" then
-        session:streamFile(audio_dir .. "you_lost.wav");
-        local sql = "INSERT INTO circle_raffle_cdr (customer_id, call_epoch) VALUES (:customer_id, :call_epoch); ";
-        local params = {
-            customer_id = customer_id,
-            call_epoch = os.time()
-        };
+
+    -- record vM    
+    if (session:ready() and caller_won) then
+        -- WE HAVE A WINNER!  Are you first place?
+        local sql =
+        "select count(winning_number) from circle_raffle_numbers WHERE call_epoch IS NOT NULL ";
         if (debug["sql"]) then
             freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
         end
-        dbh:query(sql, params)
-        session:hangup();
-    end
-end)
-
-    -- record vM    
-    if (session:ready()) then
-        -- WE HAVE A WINNER!
-        session:streamFile(audio_dir .. "you_won.wav");
+        dbh:query(sql, nil, function(row)
+            if tonumber(row.count) == 0 then
+                first_place = true
+            end
+        end);
+        
+        if first_place then
+            session:streamFile(audio_dir .. "you_won_1.wav");
+        else
+            session:streamFile(audio_dir .. "you_won_2.wav");
+        end
         session:setInputCallback("on_dtmf", "");
         dtmf_digits = session:playAndGetDigits(0, 1, 1, 500, "#", audio_dir .. "raffle_winner_vm.wav", "", "\\d+")
         dtmf_digits = '';
         session:execute("playback", "silence_stream://200");
         session:streamFile("tone_stream://L=1;%(500, 0, 640)");
         start_epoch = os.time();
-        --make sure the voicemail_dir exists
-	    mkdir(voicemail_dir .. "/" .. voicemail_id);
+        -- make sure the voicemail_dir exists
+        mkdir(voicemail_dir .. "/" .. voicemail_id);
         result = session:recordFile(voicemail_dir .. "/" .. voicemail_id .. "/msg_" .. uuid .. ".wav", max_len_seconds,
             500, 4);
         message_length = (os.time() - start_epoch);
         session:unsetInputCallback();
 
-    end
-
-    if tonumber(message_length) > 3 then
-        result = save_vm()
-        if result then
-            local sql = "UPDATE circle_raffle_numbers SET winning_customer_id = customer_id; call_epoch = call_epoch, call_uuid = call_uuid WHERE winning_number = :number_picked ";
-            local params = {
-                customer_id = customer_id,
-                call_epoch = os.time(),
-                call_uuid = uuid
-            };
-            if (debug["sql"]) then
-                freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+        if tonumber(message_length) > 3 then
+            result = save_vm()
+            if result then
+                local sql =
+                    "UPDATE circle_raffle_numbers SET winning_customer_id = :customer_id, call_epoch = :call_epoch, call_uuid = :call_uuid WHERE winning_number = :number_picked ";
+                local params = {
+                    customer_id = customer_id,
+                    call_epoch = os.time(),
+                    call_uuid = uuid,
+                    number_picked = number_picked
+                };
+                if (debug["sql"]) then
+                    freeswitch.consoleLog("notice",
+                        "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
+                end
+                dbh:query(sql, params)
             end
-            dbh:query(sql, params)
         end
-    end
-    session:hangup();
+        session:hangup();
 
-end
+    end

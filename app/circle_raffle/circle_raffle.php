@@ -201,20 +201,16 @@
 	//if (is_array($winning_number_results) && @sizeof($winning_number_results) != 0) {
 		$x = 0;
 		foreach ($winning_number_results as $row) {		
-			$array = explode(' ', $row['call_epoch']);
-			if ($array[0].' '.$array[1].' '.$array[2] == date('j M Y')) { //today
-				$created_date = escape($array[3].' '.$array[4]); //only show time
-			}
-			else {
-				$created_date = escape($array[0].' '.$array[1].' '.$array[2])." <span class='hide-xs' title=\"".escape($array[3].' '.$array[4])."\">".escape($array[3].' '.$array[4])."</span>";
-			}
-
 			echo "<tr class='list-row'>\n";
 			echo "<td class='vtable' align='left'>\n";
 			echo "	<input class='formfld' type='text' name=\"circle_raffle_numbers[".$x."][winning_number]\" maxlength='5' value=\"".escape($row['winning_number'])."\" readonly>\n";
 			echo "</td>\n";
-			//Show input winning number, Winner caller ID name, number, winning epoch, and voicemail action play button.  Also need a plus button to add a row.
-			echo "	<td>".$created_date."</td>\n";
+			
+			if ($row['call_epoch'] > 0) {
+				echo "	<td>".date('m-d-Y H:i:s', $row['call_epoch'])."</td>\n";
+			} else {
+				echo "<td></td>";
+			}
             echo "	<td>".escape($row['caller_id_number'])."</td>\n";
 			echo "	<td>".escape($row['caller_id_name'])."</td>\n";
 			echo "	<td class='button center no-link no-wrap'>";
