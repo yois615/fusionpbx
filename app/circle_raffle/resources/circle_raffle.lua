@@ -11,6 +11,7 @@ require "resources.functions.mkdir";
 audio_dir = "/usr/share/freeswitch/sounds/the_circle/raffle/"
 debug.sql = true;
 json = freeswitch.JSON();
+api = freeswitch.API();
 
 -- connect to the database
 local Database = require "resources.functions.database";
@@ -216,7 +217,17 @@ if (session:ready()) then
     number_picked = session:playAndGetDigits(5, 5, 2, 3000, "#", audio_dir .. "raffle_greeting.wav", "", "");
 
     if string.len(number_picked) < 5 then
-        session:streamFile(audio_dir .. "try_again_tomorrow.wav");
+        session:streamFile(audio_dir .. "no_numbers.wav");
+        session:hangup();
+        return;
+    end
+
+    --Check if someone is on the phone using that number, block access to that number
+    api:execute("hash", "insert_ifempty/circle_raffle/" .. number_picked .. "/" .. uuid);
+    hash_uuid = api:execute("hash", "select/circle_raffle/" .. number_picked);
+    if hash_uuid ~= uuid then
+        -- Someone is on the phone dealing with this picked number
+        session:streamFile("ivr/ivr-please_try_again.wav");
         session:hangup();
         return;
     end
@@ -231,8 +242,8 @@ if (session:ready()) then
         freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
     end
     dbh:query(sql, params, function(row)
-        session:say(number_picked, "en", "number", "iterated");
         if tonumber(row.count) == 0 then
+            session:say(number_picked, "en", "number", "iterated");
             session:streamFile(audio_dir .. "you_lost.wav");
             local sql = "INSERT INTO circle_raffle_cdr (customer_id, call_epoch) VALUES (:customer_id, :call_epoch); ";
             local params = {
@@ -244,7 +255,9 @@ if (session:ready()) then
                     "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
             end
             dbh:query(sql, params)
+            api:execute("hash", "delete/circle_raffle/" .. number_picked);
             session:hangup();
+            return;
         elseif tonumber(row.count) == 1 then
             caller_won = true;
         end
@@ -302,5 +315,7 @@ end
             end
         end
         session:hangup();
+        api:execute("hash", "delete/circle_raffle/" .. number_picked);
 
     end
+api:execute("hash", "delete/circle_raffle/" .. number_picked);
