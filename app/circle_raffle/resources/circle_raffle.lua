@@ -231,6 +231,7 @@ if (session:ready()) then
         freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
     end
     dbh:query(sql, params, function(row)
+        session:say(number_picked, "en", "number", "iterated");
         if tonumber(row.count) == 0 then
             session:streamFile(audio_dir .. "you_lost.wav");
             local sql = "INSERT INTO circle_raffle_cdr (customer_id, call_epoch) VALUES (:customer_id, :call_epoch); ";
