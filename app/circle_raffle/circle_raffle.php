@@ -165,7 +165,7 @@
 
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
-	echo "	<div class='heading'><b>Circle Raffle(".count($raffle_numbers).")</b></div>\n";
+	echo "	<div class='heading'><b>Circle Raffle(".count($winning_number_results).")</b></div>\n";
 	echo "</div>\n";
 
 
