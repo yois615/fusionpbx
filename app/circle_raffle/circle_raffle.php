@@ -201,8 +201,7 @@
 	 <?php
 	echo "</tr>\n";
 
-	//if (is_array($winning_number_results) && @sizeof($winning_number_results) != 0) {
-		$x = 0;
+	if (is_array($winning_number_results) && @sizeof($winning_number_results) != 0) {
 		foreach ($winning_number_results as $row) {		
 			echo "<tr class='list-row'>\n";
 			echo "<td class='vtable' align='left'>\n";
@@ -224,9 +223,10 @@
 			}
 			echo "	</td>\n";
 			echo "</tr>\n";
-			$x++;
 		}
-		for ($x = $x; $x < 21; $x++) {
+		unset($winning_number_results);
+	} else {
+		for ($x = 0; $x < 21; $x++) {
 			// Add more blank rows
 			echo "<tr class='list-row'>\n";
 			echo "<td class='vtable' align='left'>\n";
@@ -234,8 +234,7 @@
 			echo "</td>\n";
 			echo "</tr>\n";
 		}
-		unset($winning_number_results);
-	//}
+	}
 
 	echo "</table>\n";
 	echo "<br />\n";
