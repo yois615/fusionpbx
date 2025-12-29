@@ -33,8 +33,10 @@
 		public $template_dir;
 		public $device_address;
 		public $device_template;
+		public $file;
 		private $settings;
 		private $database;
+		private $file_type;
 
 		public function __construct($params = []) {
 
@@ -240,6 +242,17 @@
 					$uuid = $row['contact_uuid'];
 					$phone_label = strtolower($row['phone_label'] ?? '');
 					$contact_category = strtolower($row['contact_category'] ?? '');
+					$contact_organization = $row['contact_organization'] ?? '';
+					$contact_name_given = $row['contact_name_given'] ?? '';
+					$contact_name_family = $row['contact_name_family'] ?? '';
+
+					//prepare the values for file type xml
+					if ($this->file_type == 'xml') {
+						$contact_organization = xml::sanitize($contact_organization);
+						$contact_name_given = xml::sanitize($contact_name_given);
+						$contact_name_family = xml::sanitize($contact_name_family);
+						$phone_label = xml::sanitize($phone_label);
+					}
 
 					$contact = array();
 					$contacts[] = &$contact;
@@ -287,6 +300,9 @@
 				$template_dir = $this->template_dir;
 				$device_address = $this->device_address;
 				$file = $this->file;
+
+			//get the file type
+				$this->file_type = strtolower(pathinfo($this->file ?? '', PATHINFO_EXTENSION));
 
 			//set the device address to lower case to be consistent with the database
 				$device_address = strtolower($device_address);
@@ -891,6 +907,23 @@
 				//get the extensions and add them to the contacts array
 					if (is_uuid($device_uuid) && is_uuid($domain_uuid) && $this->settings->get('provision','contact_extensions',false)) {
 
+						// get the contact array filter by
+						$contact_extensions_filter_by = $this->settings->get('provision', 'contact_extensions_filter_by', array());
+
+						// filter by call summary
+						if (in_array('call_group', $contact_extensions_filter_by)) {
+							// get the extensions call group using the device line 1
+							$sql = "select call_group ";
+							$sql .= "from v_extensions ";
+							$sql .= "where domain_uuid = :domain_uuid ";
+							$sql .= "and extension = :extension ";
+							$parameters['domain_uuid'] = $domain_uuid;
+							$parameters['extension'] = $lines[1]['user_id'];
+							$call_groups = $this->database->select($sql, $parameters, 'row');
+							$call_group = $call_groups['call_group'];
+							unset($sql, $parameters);
+						}
+
 						//get contacts from the database
 							$sql = "select extension_uuid as contact_uuid, directory_first_name, directory_last_name, ";
 							$sql .= "effective_caller_id_name, effective_caller_id_number, ";
@@ -898,6 +931,10 @@
 							$sql .= "from v_extensions ";
 							$sql .= "where domain_uuid = :domain_uuid ";
 							$sql .= "and enabled = 'true' ";
+							if (in_array('call_group', $contact_extensions_filter_by)) {
+								$sql .= "and call_group = :call_group ";
+								$parameters['call_group'] = $call_group;
+							}
 							$sql .= "and directory_visible = 'true' ";
 							$sql .= "order by directory_first_name, effective_caller_id_name asc ";
 							$parameters['domain_uuid'] = $domain_uuid;
@@ -922,6 +959,13 @@
 										else {
 											$phone_extension = $row['number_alias'];
 										}
+
+									//prepare the values for file type xml
+										if ($this->file_type == 'xml') {
+											$contact_name_given = xml::sanitize($contact_name_given);
+											$contact_name_family = xml::sanitize($contact_name_family);
+										}
+
 									//save the contact array values
 										$contacts[$uuid]['category'] = 'extensions';
 										$contacts[$uuid]['contact_uuid'] = $row['contact_uuid'];
