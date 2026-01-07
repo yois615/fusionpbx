@@ -332,7 +332,7 @@
 		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
 		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
 	} elseif (strlen($call_center_agent_uuid) > 0) {
-		$sql .= "c.cc_queue_answered_epoch as c.start_epoch, \n";
+		$sql .= "c.cc_queue_answered_epoch as start_epoch, \n";
 		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'DD Mon YYYY') as start_date_formatted, \n";
 		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'HH12:MI:SS am') as start_time_formatted, \n";
 		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) * 1000 as billmsec, \n";
