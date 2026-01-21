@@ -61,6 +61,16 @@ local header_token = " append_headers 'X-API-Key: "..api_key.."' ";
         if call_direction == "inbound" then
             suspect_number = session:getVariable("caller_id_number");
         end
+        -- Ensure we don't block 911 or other service codes but allow 7 digit dialing
+        if string.len(suspect_number) < 7 then
+            -- Is this a short code or MDC?
+            if string.sub(suspect_number, 1, 1) == "*" or string.sub(suspect_number, 1, 1) == "#" then
+                -- Do nothing
+            else
+                -- We don't want to check against this number
+                return
+            end  
+        end
         post_body.number = suspect_number
         post_body.lists = {}
         for _, list in ipairs(lists) do
