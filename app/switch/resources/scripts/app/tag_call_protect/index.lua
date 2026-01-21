@@ -43,7 +43,15 @@ local settings = Settings.new(dbh, domain_name, domain_uuid);
 
 local api_key = settings:get("tag_call_protect", "api_key", "text");
 local callblocker_url = settings:get("tag_call_protect", "url", "text");
-local lists = split(session:getVariable("tag_call_protect_lists"), ",", true);
+local str_lists = session:getVariable("tag_call_protect_lists")
+if str_lists == nil or string.len(str_lists) == 0 then
+    str_lists = "standard";
+end
+local str_customer = session:getVariable("tag_call_protect_customer");
+if str_customer == nil or string.len(str_customer) == 0 then
+    str_customer = "Unknown"
+end
+local lists = split(str_lists, ",", true);
 local header_token = " append_headers 'X-API-Key: "..api_key.."' ";
 
     -- Need to determine call direction
@@ -58,7 +66,7 @@ local header_token = " append_headers 'X-API-Key: "..api_key.."' ";
         for _, list in ipairs(lists) do
             table.insert(post_body.lists, list);
         end
-        post_body.requester = "Corporate IT";
+        post_body.requester = str_customer;
 
         hook_url = callblocker_url .. header_token.."content-type 'application/json' post ";
 
