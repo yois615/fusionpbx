@@ -13,6 +13,8 @@ local domain_name = session:getVariable("domain_name");
 local call_direction = session:getVariable("call_direction");
 local recordings_dir = session:getVariable("recordings_dir");
 
+session:setVariable("curl_timeout", "4")
+
 local debug_api = true;
 
 local function escape (str)
