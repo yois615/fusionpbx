@@ -71,8 +71,15 @@ local function chumash_by_parsha(epoch)
     end
     local hebcal_response = json:decode(content);
     content = nil
+    local tbl_cur_parsha = {}
     -- "torah":"Genesis 6:9-11:32"
-    local tbl_cur_parsha = split(hebcal_response['items'][1]['leyning']['torah'], ' ');
+    for item_list_no = 1, #hebcal_response['items'], 1 do
+        -- We need to sift through other holiday information
+        if hebcal_response['items'][item_list_no]['category'] == "parashat" then
+            tbl_cur_parsha = split(hebcal_response['items'][item_list_no]['leyning']['torah'], ' ');
+            break
+        end
+    end
     -- Figure out sefer
     local parallel_class_id = "";
     if tbl_cur_parsha[1] == "Genesis" then parallel_class_id = 1; end;
