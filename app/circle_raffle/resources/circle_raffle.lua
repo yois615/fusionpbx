@@ -124,7 +124,7 @@ end
 -- set the defaults
 digit_max_length = 3;
 timeout_pin = 5000;
-max_tries = 3;
+max_tries = 20;
 digit_timeout = 5000;
 max_len_seconds = 15;
 story_incomplete = 1;
@@ -203,7 +203,7 @@ if (debug["sql"]) then
     freeswitch.consoleLog("notice", "[circle_raffle] SQL: " .. sql .. "; params: " .. json:encode(params) .. "\n");
 end
 dbh:query(sql, params, function(row)
-    if tonumber(row.count) > 2 then
+    if tonumber(row.count) >= max_tries then
         session:streamFile(audio_dir .. "try_again_tomorrow.wav");
         session:hangup();
         return;
