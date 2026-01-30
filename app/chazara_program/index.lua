@@ -931,6 +931,23 @@ if teacher_auth ~= true then
                         api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
                     end
 
+                    -- Continue play to next recording
+                    -- Things to evaluate
+                    if session:ready() then
+                        if daf_mode == "false" and chumash_mode == "false" then
+                            -- Increment the recording ID by 1 and check if it exists
+
+                        elseif daf_mode == "true" then
+                            -- Check daf_end line and current rebbi - increment end line by one, check if recording exists
+                                -- if not, icrement amud and/or daf, reset line to 1, and check again
+                        elseif chumash_mode == "true" then
+                            -- If we're playing by parsha, go to the next number in the list (don't know yet how)
+                            -- If by perek/pasuk, then increment last pasuk by one and test
+                                -- if not, increment perek by 1 and pasuk back to 1 and test
+                        end
+                    end
+
+                    -- Clear these until we stop playback
                     recording_filename = {};
                     chazara_recording_uuid = {};
                     chazara_daf_teacher_uuid = {};
