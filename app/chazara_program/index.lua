@@ -100,7 +100,7 @@ local function chumash_by_parsha(epoch)
     -- If there is more than one leyning, the parsha_end_verse will end with a ;
     -- "torah":"Genesis 41:1-44:17; Numbers 28:9-15, 7:42-47","haftarah":"Zechariah 2:14-4:7 | Shabbat Rosh Chodesh Chanukah"
     -- It needs to be stripped out
-    if string.sub(parsha_end_verse, -1) == ";" then
+    if string.sub(parsha_end_verse, -1) == ";" or string.sub(parsha_end_verse, -1) == "," then
         parsha_end_verse = string.sub(parsha_end_verse, 1, -2);
     end
 
@@ -158,7 +158,7 @@ local function chumash_by_parsha(epoch)
         -- Loop
         local exit = false;
         while session:ready() and exit == false do
-            local parsha_play_file = session:playAndGetDigits(1, string.len(tostring(#tbl_parsha_recording_files)), 3, 5000, "", prmpt_file, "", "");
+            local parsha_play_file = session:playAndGetDigits(1, string.len(tostring(#tbl_parsha_recording_files)), 3, 3000, "", prmpt_file, "", "");
             if tonumber(parsha_play_file) == nil then
                 exit = true;
             elseif tonumber(parsha_play_file) < 1 or tonumber(parsha_play_file) > file_count then
