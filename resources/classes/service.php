@@ -490,10 +490,6 @@ abstract class service {
 		return $help_options;
 	}
 
-	public static function show_timestamp() {
-		self::$show_timestamp_log = true;
-	}
-
 	/**
 	 * Called when the display_help_message is run in the base class for extra command line parameter explanation
 	 */
