@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -30,10 +30,7 @@
 	require_once "xml_cdr_statistics_inc.php";
 
 //check permissions
-	if (permission_exists('xml_cdr_statistics')) {
-		//access granted
-	}
-	else {
+	if (!permission_exists('xml_cdr_statistics')) {
 		echo "access denied";
 		exit;
 	}
@@ -143,6 +140,14 @@
 		$search_url .= '&call_center_abandoned='.urlencode($_GET['call_center_abandoned']);
 	}
 
+//set the chart time format
+	if ($settings->get('domain', 'time_format') == '24h') {
+		$chart_time_format = 'H:mm';
+	}
+	else {
+		$chart_time_format = 'h a';
+	}
+
 //show the content
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-call-statistics']."</b></div>\n";
@@ -246,6 +251,11 @@
 				scales: {
 					x: {
 						type: "time",
+						time: {
+							displayFormats: {
+								hour: '<?php echo $chart_time_format; ?>',
+							}
+						},
 					},
 					y: {
 						min: 0

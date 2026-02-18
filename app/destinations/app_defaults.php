@@ -50,7 +50,7 @@ if ($domains_processed == 1) {
 		}
 		unset($extensions, $row, $array);
 
-	//update destination_context if type is inbound and context is empty then use public
+	//update destination_context if the type is inbound and context is empty, then use public
 		$sql = "select count(destination_uuid) as count from v_destinations ";
 		$sql .= "where destination_context is null ";
 		$sql .= "and destination_type = 'inbound' ";
@@ -101,8 +101,6 @@ if ($domains_processed == 1) {
 						$p->add('destination_edit', 'temp');
 
 						//create the database object and save the data
-						$database->app_name = 'destinations';
-						$database->app_uuid = '5ec89622-b19c-3559-64f0-afde802ab139';
 						$database->save($array, false);
 						unset($array);
 
@@ -127,8 +125,6 @@ if ($domains_processed == 1) {
 				$p->add('destination_edit', 'temp');
 
 				//create the database object and save the data
-				$database->app_name = 'destinations';
-				$database->app_uuid = '5ec89622-b19c-3559-64f0-afde802ab139';
 				$database->save($array, false);
 				unset($array);
 
@@ -150,31 +146,33 @@ if ($domains_processed == 1) {
 			//loop through the array
 			foreach ($destinations as $row) {
 				$i = 0;
-				foreach (json_decode($row['destination_actions'], true) as $action) {
-					//build the array of destinations
-					if ($i == 0 ) {
-						$destination_action = $action['destination_app'] . ' ' . $action['destination_data'];
-						if ($destination_action !== $row['destination_app'] . ' ' . $row['destination_data']) {
-							$array['destinations'][$z]['destination_uuid'] = $row['destination_uuid'];
-							$array['destinations'][$z]['destination_number'] = $row['destination_number'];
-							$array['destinations'][$z]['destination_app'] = $action['destination_app'];
-							$array['destinations'][$z]['destination_data'] = $action['destination_data'];
-							$z++;
+				if (!empty(json_decode($row['destination_actions'], true))) {
+					foreach (json_decode($row['destination_actions'], true) as $action) {
+						//build the array of destinations
+						if ($i == 0 ) {
+							$destination_action = $action['destination_app'] . ' ' . $action['destination_data'];
+							if ($destination_action !== $row['destination_app'] . ' ' . $row['destination_data']) {
+								$array['destinations'][$z]['destination_uuid'] = $row['destination_uuid'];
+								$array['destinations'][$z]['destination_number'] = $row['destination_number'];
+								$array['destinations'][$z]['destination_app'] = $action['destination_app'];
+								$array['destinations'][$z]['destination_data'] = $action['destination_data'];
+								$z++;
+							}
 						}
-					}
-					if ($i == 1) {
-						$destination_action = $action['destination_app'] . ' ' . $action['destination_data'];
-						if ($destination_action !== $row['destination_alternate_app'] . ' ' . $row['destination_alternate_data']) {
-							$array['destinations'][$z]['destination_uuid'] = $row['destination_uuid'];
-							$array['destinations'][$z]['destination_number'] = $row['destination_number'];
-							$array['destinations'][$z]['destination_alternate_app'] = $action['destination_app'];
-							$array['destinations'][$z]['destination_alternate_data'] = $action['destination_data'];
-							$z++;
+						if ($i == 1) {
+							$destination_action = $action['destination_app'] . ' ' . $action['destination_data'];
+							if ($destination_action !== $row['destination_alternate_app'] . ' ' . $row['destination_alternate_data']) {
+								$array['destinations'][$z]['destination_uuid'] = $row['destination_uuid'];
+								$array['destinations'][$z]['destination_number'] = $row['destination_number'];
+								$array['destinations'][$z]['destination_alternate_app'] = $action['destination_app'];
+								$array['destinations'][$z]['destination_alternate_data'] = $action['destination_data'];
+								$z++;
+							}
 						}
-					}
 
-					//increment the id
-					$i++;
+						//increment the id
+						$i++;
+					}
 				}
 
 				//process a chunk of the array
@@ -187,8 +185,6 @@ if ($domains_processed == 1) {
 						$p->add('destination_edit', 'temp');
 
 						//create the database object and save the data
-						$database->app_name = 'destinations';
-						$database->app_uuid = '5ec89622-b19c-3559-64f0-afde802ab139';
 						//$database->save($array, false);
 						unset($array);
 
@@ -213,8 +209,6 @@ if ($domains_processed == 1) {
 				$p->add('destination_edit', 'temp');
 
 				//create the database object and save the data
-				$database->app_name = 'destinations';
-				$database->app_uuid = '5ec89622-b19c-3559-64f0-afde802ab139';
 				$database->save($array, false);
 				unset($array);
 

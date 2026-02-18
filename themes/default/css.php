@@ -23,7 +23,6 @@ $menu_main_background_color = $settings->get('theme', 'menu_main_background_colo
 $menu_main_shadow_color = !empty($settings->get('theme', 'menu_main_shadow_color', '')) ? '0 0 5px '.$settings->get('theme', 'menu_main_shadow_color') : 'none';
 $menu_main_border_color = $settings->get('theme', 'menu_main_border_color', 'transparent');
 $menu_main_border_size = $settings->get('theme', 'menu_main_border_size', 0);
-$menu_position = $settings->get('theme', 'menu_position', 'top');
 $menu_style = $settings->get('theme', 'menu_style', 'fixed');
 switch ($menu_style) {
 	case 'inline': $menu_main_border_radius_default = '4px'; break;
@@ -446,9 +445,9 @@ if ($background_images_enabled) {
 	}
 
 	if ($image_source == 'folder') {
-		if (file_exists($_SERVER["DOCUMENT_ROOT"].$source_path)) {
+		if (file_exists(dirname(__DIR__, 2).$source_path)) {
 			//retrieve a random background image
-			$dir_list = opendir($_SERVER["DOCUMENT_ROOT"].$source_path);
+			$dir_list = opendir(dirname(__DIR__, 2).$source_path);
 			$v_background_array = array();
 			$x = 0;
 			while (false !== ($file = readdir($dir_list))) {
@@ -655,6 +654,15 @@ else { //default: white
 		-khtml-border-radius: <?=$menu_main_border_radius?>;
 		border-radius: <?=$menu_main_border_radius?>;
 		padding: 0;
+		z-index: 1030;
+		<?php if ($menu_style == 'fixed') { ?>
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		<?php } else { ?>
+		position: relative;
+		<?php } ?>
 		}
 
 	/* main menu logo */
@@ -720,6 +728,8 @@ else { //default: white
 		-webkit-box-shadow: <?=$menu_sub_shadow_color?>;
 		-moz-box-shadow: <?=$menu_sub_shadow_color?>;
 		box-shadow: <?=$menu_sub_shadow_color?>;
+		z-index: 1040;
+		position: absolute;
 		<?php $br = format_border_radius($menu_sub_border_radius, '0 0 4px 4px'); ?>
 		-moz-border-radius: <?php echo $br['tl']['n'].$br['tl']['u']; ?> <?php echo $br['tr']['n'].$br['tr']['u']; ?> <?php echo $br['br']['n'].$br['br']['u']; ?> <?php echo $br['bl']['n'].$br['bl']['u']; ?>;
 		-webkit-border-radius: <?php echo $br['tl']['n'].$br['tl']['u']; ?> <?php echo $br['tr']['n'].$br['tr']['u']; ?> <?php echo $br['br']['n'].$br['br']['u']; ?> <?php echo $br['bl']['n'].$br['bl']['u']; ?>;
@@ -1096,6 +1106,7 @@ else { //default: white
 		div#body_header {
 			position: relative;
 			z-index: 1;
+			isolation: isolate;
 			padding: 17px 10px 13px 10px;
 			height: 60px;
 			background-color: <?=$body_header_background_color?>;
@@ -1698,12 +1709,7 @@ else { //default: white
 		switch ($menu_style) {
 			case 'inline': $body_top_style = "margin-top: -8px;"; break;
 			case 'static': $body_top_style = "margin-top: -5px;"; break;
-			case 'fixed':
-				switch ($menu_position) {
-					case 'bottom': $body_top_style = "margin-top: 30px;"; break;
-					case 'top':
-					default: $body_top_style = "margin-top: 65px;"; break;
-				}
+			case 'fixed': $body_top_style = "margin-top: 65px;"; break;
 		}
 	?>
 
@@ -1730,7 +1736,7 @@ else { //default: white
 		else {
 			?>padding: 5px 10px 10px 10px;<?php
 		}
-		echo $body_top_style;
+		echo $body_top_style ?? '';
 		?>
 		text-align: left;
 		color: <?=$body_text_color?>;
@@ -1741,6 +1747,9 @@ else { //default: white
 	/* default body padding */
 	.container-fluid {
 		width: <?=$body_width?>;
+		<?php if ($menu_style == 'fixed') { ?>
+		padding-top: 49px;
+		<?php } ?>
 		}
 
 	/* maximize viewport usage on xs displays */
@@ -2332,7 +2341,7 @@ else { //default: white
 		<?php unset($br); ?>
 		}
 
-	.switch > input {
+	.switch > select {
 		display: none;
 		}
 
@@ -2402,14 +2411,14 @@ else { //default: white
 		transition: all 0.25s ease;
 		}
 
-	input:checked + .slider { /* when enabled */
+	select:has(option[value="true"]:checked) + .slider { /* when enabled */
 		background: <?=$input_toggle_switch_background_color_true?>;
 		}
 
-	input:focus + .slider { /* when focused, required for switch movement */
+	select:focus + .slider { /* when focused, required for switch movement */
 		}
 
-	input:checked + .slider:before { /* distance switch moves horizontally */
+	select:has(option[value="true"]:checked) + .slider:before { /* distance switch moves horizontally */
 		<?php if ($input_toggle_switch_handle_symbol === 'true') { ?>
 			text-align: center;
 			<?php if ($input_toggle_style == 'switch_square') { ?>
@@ -2552,6 +2561,7 @@ else { //default: white
 		border-bottom: 1px solid <?=$form_table_field_border_color?>;
 		padding: <?=$form_table_field_padding?>;
 		text-align: left;
+		text-wrap: wrap;
 		vertical-align: middle;
 		color: <?=$form_table_field_text_color?>;
 		font-family: <?=$form_table_field_text_font?>;
@@ -2957,7 +2967,8 @@ else { //default: white
 		?>
 		}
 
-		div.card:has(.datetimepicker) {
+		div.card:has(.datetimepicker),
+		div.card:has(.datetimesecpicker) {
 			overflow-x: visible;
 		}
 
@@ -2996,11 +3007,13 @@ else { //default: white
 	div.widget div.hud_box:first-of-type {
 		<?php
 		echo "background: ".($dashboard_background_color[0] ?? '#ffffff').";\n";
-		if ($dashboard_background_gradient_style == 'mirror') {
-			echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_background_color[1]." 0%, ".$dashboard_background_color[0]." 30%, ".$dashboard_background_color[0]." 70%, ".$dashboard_background_color[1]." 100%);\n";
-		}
-		else { //simple
-			echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_background_color[0]." 0%, ".$dashboard_background_color[1]." 100%);\n";
+		if (!empty($dashboard_background_color) && is_array($dashboard_background_color) && sizeof($dashboard_background_color) > 1) {
+			if (!empty($dashboard_background_gradient_style) && $dashboard_background_gradient_style == 'mirror') {
+				echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_background_color[1]." 0%, ".$dashboard_background_color[0]." 30%, ".$dashboard_background_color[0]." 70%, ".$dashboard_background_color[1]." 100%);\n";
+			}
+			else { //simple
+				echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_background_color[0]." 0%, ".$dashboard_background_color[1]." 100%);\n";
+			}
 		}
 
 		if (!empty($dashboard_shadow_color)) {
@@ -3138,15 +3151,17 @@ else { //default: white
 
 	@media(min-width: 1200px) {
 		div.hud_details {
-			height: 350px;
+			height: 345.5px;
 			display: block;
 			<?php
 			echo "background: ".($dashboard_detail_background_color[0] ?? '#ffffff').";\n";
-			if ($dashboard_background_gradient_style == 'mirror') {
-				echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_detail_background_color[1]." 0%, ".$dashboard_detail_background_color[0]." 30%, ".$dashboard_detail_background_color[0]." 70%, ".$dashboard_detail_background_color[1]." 100%);\n";
-			}
-			else { //simple
-				echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_detail_background_color[0]." 0%, ".$dashboard_detail_background_color[1]." 100%);\n";
+			if (!empty($dashboard_detail_background_color) && is_array($dashboard_detail_background_color) && sizeof($dashboard_detail_background_color) > 1) {
+				if ($dashboard_background_gradient_style == 'mirror') {
+					echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_detail_background_color[1]." 0%, ".$dashboard_detail_background_color[0]." 30%, ".$dashboard_detail_background_color[0]." 70%, ".$dashboard_detail_background_color[1]." 100%);\n";
+				}
+				else { //simple
+					echo "background-image: linear-gradient(".(empty($dashboard_background_gradient_angle) ? '0deg' : $dashboard_background_gradient_angle.'deg').", ".$dashboard_detail_background_color[0]." 0%, ".$dashboard_detail_background_color[1]." 100%);\n";
+				}
 			}
 			?>
 			}
@@ -3194,10 +3209,10 @@ else { //default: white
 		display: block;
 		clear: both;
 		background: <?=$dashboard_footer_background_color?>;
-		padding: 4px 0;
+		padding: 6px 0;
 		text-align: center;
 		width: 100%;
-		height: 25px;
+		height: 26.5px;
 		font-size: 13px;
 		line-height: 5px;
 		color: <?=$dashboard_footer_dots_color?>;
@@ -3208,6 +3223,30 @@ else { //default: white
 		color: <?=$dashboard_footer_dots_color_hover?>;
 		background: <?=$dashboard_footer_background_color_hover?>;
 		cursor: pointer;
+		}
+
+/* DASHBOARD EDIT **********************************************************************/
+
+	.chart_type_button {
+		padding: 8px 16px;
+		border: 1px solid rgba(0,0,0,0.1);
+		border-radius: 5px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		}
+
+	.chart_type_button:has(input:checked) {
+		background-color: rgba(142,172,249,0.15);
+		border-color: #8EACF9;
+		}
+
+	.chart_type_button:hover {
+		background-color: rgba(0,0,0,0.03);
+		}
+
+	.chart_type_button i {
+		font-size: 15pt;
 		}
 
 /* PLUGINS ********************************************************************/
@@ -3410,6 +3449,7 @@ else { //default: white
 
 	div.action_bar {
 		z-index: 5;
+		isolation: isolate;
 		<?php
 		switch ($menu_style) {
 			case 'side':

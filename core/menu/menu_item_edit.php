@@ -29,10 +29,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('menu_add') || permission_exists('menu_edit')) {
-		//access granted
-	}
-	else {
+	if (!(permission_exists('menu_add') || permission_exists('menu_edit'))) {
 		echo "access denied";
 		return;
 	}
@@ -40,9 +37,6 @@
 //add multi-lingual support
 	$language = new text;
 	$text = $language->get();
-
-//connect to the database
-	$database = new database;
 
 //define the variables
 	$menu_uuid = null;
@@ -86,8 +80,6 @@
 
 		//delete the group from the menu item
 			$array['menu_item_groups'][0]['menu_item_group_uuid'] = $menu_item_group_uuid;
-			$database->app_name = 'menu';
-			$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
 			$database->delete($array);
 			unset($array);
 
@@ -199,8 +191,6 @@
 					}
 					$array['menu_items'][0]['menu_item_add_user'] = $_SESSION["username"];
 					$array['menu_items'][0]['menu_item_add_date'] = 'now()';
-					$database->app_name = 'menu';
-					$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
 					$database->save($array);
 					unset($array);
 				}
@@ -225,8 +215,6 @@
 					}
 					$array['menu_items'][0]['menu_item_add_user'] = $_SESSION["username"];
 					$array['menu_items'][0]['menu_item_add_date'] = 'now()';
-					$database->app_name = 'menu';
-					$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
 					$database->save($array);
 					unset($array);
 				}
@@ -253,8 +241,6 @@
 							$array['menu_item_groups'][0]['menu_item_uuid'] = $menu_item_uuid;
 							$array['menu_item_groups'][0]['group_name'] = $group_name;
 							$array['menu_item_groups'][0]['group_uuid'] = $group_uuid;
-							$database->app_name = 'menu';
-							$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
 							$database->save($array);
 							unset($array);
 						}
@@ -274,8 +260,6 @@
 						$array['menu_languages'][0]['menu_item_uuid'] = $menu_item_uuid;
 						$array['menu_languages'][0]['menu_language'] = $menu_language;
 						$array['menu_languages'][0]['menu_item_title'] = $menu_item_title;
-						$database->app_name = 'menu';
-						$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
 						$database->save($array);
 						unset($array);
 					}
@@ -439,8 +423,8 @@
 	echo "	<tr>";
 	echo "		<td class='vncell'>".$text['label-icon']."</td>";
 	echo "		<td class='vtable' style='vertical-align: bottom;'>";
-	if (file_exists($_SERVER["PROJECT_ROOT"].'/resources/fontawesome/fa_icons.php')) {
-		include $_SERVER["PROJECT_ROOT"].'/resources/fontawesome/fa_icons.php';
+	if (file_exists(dirname(__DIR__, 2).'/resources/fontawesome/fa_icons.php')) {
+		include dirname(__DIR__, 2).'/resources/fontawesome/fa_icons.php';
 	}
 	if (!empty($font_awesome_icons) && is_array($font_awesome_icons)) {
 		echo "<table cellpadding='0' cellspacing='0' border='0'>\n";
@@ -514,8 +498,8 @@
 	if (!empty($menu_item_groups) && sizeof($menu_item_groups) != 0) {
 		echo "<table cellpadding='0' cellspacing='0' border='0'>\n";
 		if (permission_exists('menu_item_group_delete')) {
-			echo "<input type='hidden' id='action' name='action' value=''>\n";
-			echo "<input type='hidden' id='menu_item_group_uuid' name='menu_item_group_uuid' value=''>\n";
+			echo "	<input type='hidden' id='action' name='action' value=''>\n";
+			echo "	<input type='hidden' id='menu_item_group_uuid' name='menu_item_group_uuid' value=''>\n";
 		}
 		$x = 0;
 		foreach($menu_item_groups as $field) {

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2025
+	Portions created by the Initial Developer are Copyright (C) 2008-2026
 	the Initial Developer. All Rights Reserved.
 
 */
@@ -27,10 +27,7 @@
 
 //check permissions
 	require_once "resources/check_auth.php";
-	if (permission_exists('device_add') || permission_exists('device_edit')) {
-		//access granted
-	}
-	else {
+	if (!(permission_exists('device_add') || permission_exists('device_edit'))) {
 		echo "access denied";
 		exit;
 	}
@@ -48,10 +45,7 @@
 	$domain_uuid = $_SESSION['domain_uuid'] ?? '';
 	$domain_name = $_SESSION['domain_name'] ?? '';
 
-//initialize the database object
-	$database = database::new();
-
-//initialize the settigns object
+//initialize the settings object
 	$settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
 
 //action add or update
@@ -61,21 +55,20 @@
 	}
 	else {
 		$action = "add";
+		$device_uuid = uuid();
 	}
 
 //get the total device count from the database, check the limit, if defined
-	if ($action == 'add') {
-		if (!empty($settings->get('limit', 'devices', ''))) {
-			$sql = "select count(*) from v_devices where domain_uuid = :domain_uuid ";
-			$parameters['domain_uuid'] = $domain_uuid;
-			$total_devices = $database->select($sql, $parameters, 'column');
-			if ($total_devices >= $settings->get('limit', 'devices', '')) {
-				message::add($text['message-maximum_devices'].' '.$settings->get('limit', 'devices', ''), 'negative');
-				header('Location: devices.php');
-				exit;
-			}
-			unset($sql, $parameters, $total_devices);
+	if ($action == 'add' && $settings->get('limit', 'devices', '') != '') {
+		$sql = "select count(*) from v_devices where domain_uuid = :domain_uuid ";
+		$parameters['domain_uuid'] = $domain_uuid;
+		$total_devices = $database->select($sql, $parameters, 'column');
+		if ($total_devices >= $settings->get('limit', 'devices', '')) {
+			message::add($text['message-maximum_devices'].' '.$settings->get('limit', 'devices', ''), 'negative');
+			header('Location: devices.php');
+			exit;
 		}
+		unset($sql, $parameters, $total_devices);
 	}
 
 //get http post variables and set them to php variables
@@ -129,7 +122,7 @@
 			$device_uuid_alternate = $_POST["device_uuid_alternate"] ?? null;
 			$device_model = $_POST["device_model"] ?? null;
 			$device_firmware_version = $_POST["device_firmware_version"] ?? null;
-			$device_enabled = $_POST["device_enabled"] ?? 'false';
+			$device_enabled = $_POST["device_enabled"];
 			$device_template = $_POST["device_template"];
 			$device_description = $_POST["device_description"];
 		//lines
@@ -288,7 +281,6 @@
 					}
 					if (permission_exists('device_enable')) {
 						$array['devices'][0]['device_enabled'] = $device_enabled;
-						$array['devices'][0]['device_enabled_date'] = 'now()';
 					}
 					if (permission_exists('device_template')) {
 						$array['devices'][0]['device_template'] = $device_template;
@@ -354,7 +346,7 @@
 								if (permission_exists('device_line_shared')) {
 									$array['devices'][0]['device_lines'][$y]['shared_line'] = $row["shared_line"];
 								}
-								$array['devices'][0]['device_lines'][$y]['enabled'] = $row["enabled"];
+								$array['devices'][0]['device_lines'][$y]['enabled'] = $row["enabled"] ?? false;
 								if (permission_exists('device_line_port')) {
 									$array['devices'][0]['device_lines'][$y]['sip_port'] = $row["sip_port"];
 								}
@@ -440,16 +432,15 @@
 								$array['devices'][0]['device_settings'][$y]['device_setting_subcategory'] = $row["device_setting_subcategory"] ?? null;
 								$array['devices'][0]['device_settings'][$y]['device_setting_name'] = $row["device_setting_name"] ?? null;
 								$array['devices'][0]['device_settings'][$y]['device_setting_value'] = $row["device_setting_value"] ?? null;
-								$array['devices'][0]['device_settings'][$y]['device_setting_enabled'] = $row["device_setting_enabled"];
+								$array['devices'][0]['device_settings'][$y]['device_setting_enabled'] = $row["device_setting_enabled"] ?? false;
 								$array['devices'][0]['device_settings'][$y]['device_setting_description'] = $row["device_setting_description"];
 								$y++;
 							}
 						}
 					}
 
+
 				//save the device
-					$database->app_name = 'devices';
-					$database->app_uuid = '4efa1a1a-32e7-bf83-534b-6c8299958a8e';
 					$database->save($array);
 
 				//remove checked lines
@@ -542,15 +533,16 @@
 		unset($sql, $parameters, $row);
 	}
 
+//set the default values
+	$device_address = $device_address ?? '';
+	$device_enabled = $device_enabled ?? true;
+
 //get device lines
 	$sql = "select * ";
 	$sql .= "from v_domains ";
 	$sql .= "order by domain_name asc ";
 	$domains = $database->select($sql, null, 'all');
 	unset($sql, $parameters);
-
-//set the defaults
-	if (empty($device_enabled)) { $device_enabled = 'true'; }
 
 //use the device address to get the vendor
 	if (empty($device_vendor)) {
@@ -589,6 +581,8 @@
 	unset($sql, $parameters);
 
 //set the new line defaults
+	$device_lines[$x]['device_uuid'] = '';
+	$device_lines[$x]['domain_name'] = '';
 	$device_lines[$x]['line_number'] = '';
 	$device_lines[$x]['server_address'] = '';
 	$device_lines[$x]['outbound_proxy_primary'] = $settings->get('provision', 'outbound_proxy_primary', null);
@@ -601,7 +595,7 @@
 	$device_lines[$x]['auth_id'] = '';
 	$device_lines[$x]['password'] = '';
 	$device_lines[$x]['shared_line'] = '';
-	$device_lines[$x]['enabled'] = '';
+	$device_lines[$x]['enabled'] = true;
 	$device_lines[$x]['sip_port'] = $settings->get('provision', 'line_sip_port', '5060');
 	$device_lines[$x]['sip_transport'] = $settings->get('provision', 'line_sip_transport', 'tcp');
 	$device_lines[$x]['register_expires'] = $settings->get('provision', 'line_register_expires', '120');
@@ -689,7 +683,7 @@
 	for ($x = 0; $x < $rows; $x++) {
 		$device_settings[$id]['device_setting_name'] = '';
 		$device_settings[$id]['device_setting_value'] = '';
-		$device_settings[$id]['device_setting_enabled'] = '';
+		$device_settings[$id]['device_setting_enabled'] = true;
 		$device_settings[$id]['device_setting_description'] = '';
 		$id++;
 	}
@@ -698,7 +692,7 @@
 //get the users
 	$sql = "select * from v_users ";
 	$sql .= "where domain_uuid = :domain_uuid ";
-	$sql .= "and user_enabled = 'true' ";
+	$sql .= "and user_enabled = true ";
 	$sql .= "order by username asc ";
 	$parameters['domain_uuid'] = $domain_uuid;
 	$users = $database->select($sql, $parameters, 'all');
@@ -928,8 +922,17 @@
 		//build content for linphone
 		if ($device_template == "linphone/default") {
 			$auth_string = '';
-			if ($settings->get('provision', 'http_auth_enabled', true) && !empty($settings->get('provision', 'http_auth_username', '')) && !empty($settings->get('provision', 'http_auth_password', ''))) {
-				$auth_string = $settings->get('provision', 'http_auth_username', '').':'.$settings->get('provision', 'http_auth_password', '').'@';
+			
+			$http_auth_password = $settings->get('provision', 'http_auth_password', '');
+			
+			if (is_array($http_auth_password)) {
+				$http_auth_password = $http_auth_password[0];
+			}
+			
+			$http_auth_username = $settings->get('provision', 'http_auth_username', '');
+			
+			if ($settings->get('provision', 'http_auth_enabled', true) && !empty($http_auth_username) && !empty($http_auth_password)) {
+				$auth_string = $http_auth_username.':'.$http_auth_password.'@';
 			}
 			$content = "https://".$auth_string.$provision_domain_name.'/app/provision/index.php?address='.$device_address;
 		}
@@ -1287,7 +1290,6 @@
 
 		$x = 0;
 		foreach ($device_lines as $row) {
-
 			//set the defaults
 				if (!permission_exists('device_line_server_address')) {
 					if (empty($row['server_address'])) { $row['server_address'] = $domain_name; }
@@ -1457,10 +1459,17 @@
 				}
 
 				echo "			<td align='left'>\n";
-				echo "				<select class='formfld' name='device_lines[".$x."][enabled]'>\n";
-				echo "					<option value='true' ".(($row['enabled'] == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
-				echo "					<option value='false' ".(($row['enabled'] == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-				echo "				</select>\n";
+				if ($input_toggle_style_switch) {
+					echo "	<span class='switch'>\n";
+				}
+				echo "	<select class='formfld' id='user_setting_enabled' name='device_lines[".$x."][enabled]'>\n";
+				echo "		<option value='true' ".($row['enabled'] == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+				echo "		<option value='false' ".($row['enabled'] == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+				echo "	</select>\n";
+				if ($input_toggle_style_switch) {
+					echo "		<span class='slider'></span>\n";
+					echo "	</span>\n";
+				}
 				echo "			</td>\n";
 
 				if (!empty($device_lines) && is_array($device_lines) && @sizeof($device_lines) > 1 && permission_exists('device_line_delete') && !empty($row['device_line_uuid']) && is_uuid($row['device_line_uuid'])) {
@@ -1813,10 +1822,17 @@
 				echo "</td>\n";
 
 				echo "<td align='left'>\n";
-				echo "  <select class='formfld' name='device_settings[".$x."][device_setting_enabled]' style='width: 90px;'>\n";
-				echo "  	<option value='true'>".$text['label-true']."</option>\n";
-				echo "  	<option value='false' ".(!empty($row['device_setting_enabled']) && $row['device_setting_enabled'] == "false" ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-				echo "  </select>\n";
+				if ($input_toggle_style_switch) {
+					echo "	<span class='switch'>\n";
+				}
+				echo "	<select class='formfld' id='device_setting_enabled' name='device_settings[".$x."][device_setting_enabled]'>\n";
+				echo "		<option value='true' ".($row['device_setting_enabled'] == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+				echo "		<option value='false' ".($row['device_setting_enabled'] == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+				echo "	</select>\n";
+				if ($input_toggle_style_switch) {
+					echo "		<span class='slider'></span>\n";
+					echo "	</span>\n";
+				}
 				echo "</td>\n";
 
 				echo "<td align='left'>\n";
@@ -2017,17 +2033,16 @@
 		echo "	".$text['label-device_enabled']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		if (substr($settings->get('theme', 'input_toggle_style', ''), 0, 6) == 'switch') {
-			echo "	<label class='switch'>\n";
-			echo "		<input type='checkbox' id='device_enabled' name='device_enabled' value='true' ".($device_enabled == 'true' ? "checked='checked'" : null).">\n";
-			echo "		<span class='slider'></span>\n";
-			echo "	</label>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
 		}
-		else {
-			echo "	<select class='formfld' id='device_enabled' name='device_enabled'>\n";
-			echo "		<option value='true' ".($device_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-			echo "		<option value='false' ".($device_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-			echo "	</select>\n";
+		echo "	<select class='formfld' id='device_enabled' name='device_enabled'>\n";
+		echo "		<option value='true' ".($device_enabled == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "		<option value='false' ".($device_enabled == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "	</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
 		}
 		echo "<br />\n";
 		echo $text['description-device_enabled']."\n";

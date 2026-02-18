@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2025
+	Portions created by the Initial Developer are Copyright (C) 2008-2026
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -29,17 +29,18 @@
 	require_once dirname(__DIR__, 2) . "/resources/require.php";
 	require_once "resources/check_auth.php";
 
+//check permissions
+	if (!(permission_exists('user_view') || !permission_exists('user_add') || permission_exists('user_edit'))) {
+		echo "access denied";
+		exit;
+	}
+
 //add multi-lingual support
 	$language = new text;
 	$text = $language->get();
 
-//create a single database object
-	$database = new database;
-	$database->app_name = 'users';
-	$database->app_uuid = '112124b3-95c2-5352-7e9d-d14c0b88f207';
-
 //get user uuid
-	if (!empty($_REQUEST["id"]) && ((is_uuid($_REQUEST["id"]) && permission_exists('user_edit')) || (is_uuid($_REQUEST["id"]) && $_REQUEST["id"] == $_SESSION['user_uuid']))) {
+	if (permission_exists('user_edit') && !empty($_REQUEST["id"]) && is_uuid($_REQUEST["id"])) {
 		$user_uuid = $_REQUEST["id"];
 		$action = 'edit';
 	}
@@ -47,14 +48,9 @@
 		$user_uuid = uuid();
 		$action = 'add';
 	}
-	else {
-		// load users own account
-		header("Location: user_edit.php?id=".urlencode($_SESSION['user_uuid']));
-		exit;
-	}
 
 //get total user count from the database, check limit, if defined
-	if (permission_exists('user_add') && $action == 'add' && !empty($_SESSION['limit']['users']['numeric'])) {
+	if (permission_exists('user_add') && $action == 'add' && $settings->get('limit', 'users') != '') {
 		$sql = "select count(*) ";
 		$sql .= "from v_users ";
 		$sql .= "where domain_uuid = :domain_uuid ";
@@ -62,8 +58,8 @@
 		$num_rows = $database->select($sql, $parameters, 'column');
 		unset($sql, $parameters);
 
-		if ($num_rows >= $_SESSION['limit']['users']['numeric']) {
-			message::add($text['message-maximum_users'].' '.$_SESSION['limit']['users']['numeric'], 'negative');
+		if ($num_rows >= $settings->get('limit', 'users')) {
+			message::add($text['message-maximum_users'].' '.$settings->get('limit', 'users'), 'negative');
 			header('Location: users.php');
 			exit;
 		}
@@ -107,11 +103,11 @@
 
 //retrieve password requirements
 	if (permission_exists('user_password')) {
-		$required['length'] = $_SESSION['users']['password_length']['numeric'];
-		$required['number'] = filter_var($_SESSION['users']['password_number']['boolean'] ?? false, FILTER_VALIDATE_BOOL);
-		$required['lowercase'] = filter_var($_SESSION['users']['password_lowercase']['boolean'] ?? false, FILTER_VALIDATE_BOOL);
-		$required['uppercase'] = filter_var($_SESSION['users']['password_uppercase']['boolean'] ?? false, FILTER_VALIDATE_BOOL);
-		$required['special'] = filter_var($_SESSION['users']['password_special']['boolean'] ?? false, FILTER_VALIDATE_BOOL);
+		$required['length'] = $settings->get('users', 'password_length', 12);
+		$required['number'] = $settings->get('users', 'password_number', false);
+		$required['lowercase'] = $settings->get('users', 'password_lowercase', false);
+		$required['uppercase'] = $settings->get('users', 'password_uppercase', false);
+		$required['special'] = $settings->get('users', 'password_special', false);
 	}
 
 //prepare the data
@@ -141,7 +137,7 @@
 			}
 			$group_uuid_name = $_POST["group_uuid_name"];
 			$user_type = $_POST["user_type"];
-			$user_enabled = $_POST["user_enabled"] ?? 'false';
+			$user_enabled = $_POST["user_enabled"];
 			if (permission_exists('api_key')) {
 				$api_key = $_POST["api_key"];
 			}
@@ -182,10 +178,10 @@
 			}
 
 			//require a username format: any, email, no_email
-			if (!empty($_SESSION['users']['username_format']['text']) && $_SESSION['users']['username_format']['text'] != 'any') {
+			if (!empty($settings->get('users', 'username_format')) && $settings->get('users', 'username_format') != 'any') {
 				if (
-					($_SESSION['users']['username_format']['text'] == 'email' && !valid_email($username)) ||
-					($_SESSION['users']['username_format']['text'] == 'no_email' && valid_email($username))
+					($settings->get('users', 'username_format') == 'email' && !valid_email($username)) ||
+					($settings->get('users', 'username_format') == 'no_email' && valid_email($username))
 					) {
 					message::add($text['message-username_format_invalid'], 'negative', 7500);
 				}
@@ -196,7 +192,7 @@
 				(permission_exists('user_add') && $action == 'add' && !empty($username))) {
 
 				$sql = "select count(*) from v_users ";
-				if (isset($_SESSION["users"]["unique"]["text"]) && $_SESSION["users"]["unique"]["text"] == "global") {
+				if (!empty($settings->get('users', 'unique')) && $settings->get('users', 'unique') == "global") {
 					$sql .= "where username = :username ";
 				}
 				else {
@@ -574,8 +570,15 @@
 			$p->delete("user_edit", "temp");
 			$p->delete('user_group_add', 'temp');
 
+		//clear the menu
+			unset($_SESSION["menu"]);
+
+		//get settings based on the user
+			$settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid, 'user_uuid' => $user_uuid]);
+			settings::clear_cache();
+
 		//if call center installed
-			if ($action == 'edit' && permission_exists('user_edit') && file_exists($_SERVER["PROJECT_ROOT"]."/app/call_centers/app_config.php")) {
+			if ($action == 'edit' && permission_exists('user_edit') && file_exists(dirname(__DIR__, 2)."/app/call_centers/app_config.php")) {
 				//get the call center agent uuid
 					$sql = "select call_center_agent_uuid from v_call_center_agents ";
 					$sql .= "where domain_uuid = :domain_uuid ";
@@ -622,7 +625,7 @@
 		//populate the form with values from db
 			if ($action == 'edit') {
 				$sql = "select domain_uuid, user_uuid, username, user_email, api_key, user_totp_secret, ";
-				$sql .= "user_type, user_enabled, contact_uuid, cast(user_enabled as text), user_status ";
+				$sql .= "user_type, contact_uuid, user_enabled, user_status ";
 				$sql .= "from v_users ";
 				$sql .= "where user_uuid = :user_uuid ";
 				if (!permission_exists('user_all')) {
@@ -655,7 +658,7 @@
 				//get user settings
 				$sql = "select * from v_user_settings ";
 				$sql .= "where user_uuid = :user_uuid ";
-				$sql .= "and user_setting_enabled = 'true' ";
+				$sql .= "and user_setting_enabled = true ";
 				$parameters['user_uuid'] = $user_uuid;
 				$result = $database->select($sql, $parameters, 'all');
 				if (is_array($result)) {
@@ -677,8 +680,10 @@
 	}
 
 //set the defaults
-	if (empty($user_enabled)) { $user_enabled = "true"; }
 	if (empty($user_totp_secret)) { $user_totp_secret = ""; }
+	$user_status = $user_status ?? '';
+	$user_type = $user_type ?? 'default';
+	$user_enabled = $user_enabled ?? true;
 
 //create token
 	$object = new token;
@@ -744,7 +749,9 @@
 	if (permission_exists('user_setting_view')) {
 		echo button::create(['type'=>'button','label'=>$text['button-settings'],'icon'=>$settings->get('theme', 'button_icon_settings'),'id'=>'btn_settings','style'=>'','link'=>PROJECT_PATH.'/core/user_settings/user_settings.php?id='.urlencode($user_uuid)]);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
+	if (permission_exists('user_add') || permission_exists('user_edit')) {
+		echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
+	}
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -839,7 +846,7 @@
 	if (is_array($_SESSION['app']['languages']) && sizeof($_SESSION['app']['languages']) != 0) {
 		foreach ($_SESSION['app']['languages'] as $code) {
 			$selected = (isset($user_language) && $code == $user_language) || (isset($user_settings['domain']['language']['code']) && $code == $user_settings['domain']['language']['code']) ? "selected='selected'" : null;
-			echo "	<option value='".$code."' ".$selected.">".escape($language_codes[$code] ?? null)." [".escape($code ?? null)."]</option>\n";
+			echo "	<option value='".$code."' ".$selected.">".escape($language_codes[$code] ?? $language_codes[explode('-', $code)[0]] ?? null)." [".escape($code ?? null)."]</option>\n";
 		}
 	}
 	echo "		</select>\n";
@@ -1218,17 +1225,16 @@
 	echo "	".$text['label-enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-		echo "	<label class='switch'>\n";
-		echo "		<input type='checkbox' id='user_enabled' name='user_enabled' value='true' ".($user_enabled == 'true' ? "checked='checked'" : null).">\n";
-		echo "		<span class='slider'></span>\n";
-		echo "	</label>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "	<select class='formfld' id='user_enabled' name='user_enabled'>\n";
-		echo "		<option value='true' ".($user_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-		echo "		<option value='false' ".($user_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-		echo "	</select>\n";
+	echo "	<select class='formfld' id='user_enabled' name='user_enabled'>\n";
+	echo "		<option value='true' ".($user_enabled == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($user_enabled == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
 	echo "<br />\n";
 	echo $text['description-enabled']."\n";

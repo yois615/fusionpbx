@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2026
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -30,10 +30,7 @@
 	require_once "resources/paging.php";
 
 //check permissions
-	if (permission_exists('call_broadcast_view')) {
-		//access granted
-	}
-	else {
+	if (!permission_exists('call_broadcast_view')) {
 		echo "access denied";
 		exit;
 	}
@@ -52,7 +49,7 @@
 //get posted data
 	if (!empty($_POST['call_broadcasts'])) {
 		$action = $_POST['action'];
-		$search = $_POST['search'];
+		$search = $_POST['search'] ?? '';
 		$call_broadcasts = $_POST['call_broadcasts'];
 	}
 
@@ -73,7 +70,7 @@
 				break;
 		}
 
-		header('Location: call_broadcast.php'.($search != '' ? '?search='.urlencode($search) : null));
+		header('Location: call_broadcast.php'.($search != '' ? '?search='.urlencode($search) : ''));
 		exit;
 	}
 
@@ -103,12 +100,11 @@
 		$sql .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
-	$database = new database;
 	$num_rows = $database->select($sql, $parameters ?? null, 'column');
 
 //prepare the paging
 	$param = '';
-	$rows_per_page = (!empty($_SESSION['domain']['paging']['numeric'])) ? $_SESSION['domain']['paging']['numeric'] : 50;
+	$rows_per_page = $settings->get('domain', 'paging', 50);
 	if (!empty($search)) {
 		$param .= "&search=".urlencode($search);
 	}
@@ -126,7 +122,8 @@
 	$sql .= "broadcast_description, broadcast_start_time, broadcast_timeout, ";
 	$sql .= "broadcast_concurrent_limit, recording_uuid, broadcast_caller_id_name, ";
 	$sql .= "broadcast_caller_id_number, broadcast_destination_type, broadcast_phone_numbers, ";
-	$sql .= "broadcast_avmd, broadcast_destination_data, broadcast_accountcode, broadcast_toll_allow ";
+	$sql .= "broadcast_avmd, broadcast_destination_data, broadcast_accountcode, broadcast_toll_allow, ";
+	$sql .= "update_date, insert_date ";
 	$sql .= "from v_call_broadcasts ";
 	$sql .= "where true ";
 	if ($show != "all" || !permission_exists('call_broadcast_all')) {
@@ -145,7 +142,6 @@
 	}
 	$sql .= order_by($order_by, $order, 'broadcast_name', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
-	$database = new database;
 	$result = $database->select($sql, $parameters ?? null, 'all');
 	unset($sql, $parameters);
 
@@ -260,11 +256,17 @@
 			echo "	</td>\n";
 			echo "	<td>".escape($row['broadcast_concurrent_limit'])."</td>\n";
 			//determine start date and time
-			$broadcast_start_reference = !empty($row['update_date']) ?: !empty($row['insert_date']);
+			$broadcast_start_time = '';
+			$broadcast_start_reference = !empty($row['update_date']) ? $row['update_date'] : $row['insert_date'];
 			if ($row['broadcast_start_time'] && $broadcast_start_reference) {
-				$broadcast_start_time = date('Y-m-d H:i', strtotime($broadcast_start_reference) + $row['broadcast_start_time']);
+				if ($settings->get('domain', 'time_format') == '24h') {
+					$broadcast_start_time = date('Y-m-d H:i', strtotime($broadcast_start_reference) + $row['broadcast_start_time']);
+				}
+				else {
+					$broadcast_start_time = date('Y-m-d h:i A', strtotime($broadcast_start_reference) + $row['broadcast_start_time']);
+				}
 			}
-			echo "	<td>".escape($broadcast_start_time ?? '')."</td>\n";
+			echo "	<td>".escape($broadcast_start_time)."</td>\n";
 			echo "	<td class='description overflow hide-xs'>".escape($row['broadcast_description'])."</td>\n";
 			if (permission_exists('call_broadcast_edit') && $list_row_edit_button) {
 				echo "	<td class='action-button'>";

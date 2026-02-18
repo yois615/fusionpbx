@@ -53,7 +53,7 @@
 	if (!is_numeric($extension)) {
 		$extension = null;
 	}
-	
+
 //validate the uuid
 	if (!is_uuid($uuid)) {
 		$uuid = null;
@@ -149,7 +149,6 @@
 			$sql .= "where domain_uuid = '$domain_uuid' ";
 			$sql .= "and username = '".$username."' ";
 			$parameters['user_status'] = trim($user_status, "'");
-			$database = new database;
 			$database->execute($sql, $parameters);
 			unset($sql, $parameters);
 		}

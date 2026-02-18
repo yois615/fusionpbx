@@ -120,7 +120,7 @@
 			}
 
 		//validate the username and password
-			$auth = new authentication;
+			$auth = new authentication(['settings' => $settings]);
 			$result = $auth->validate();
 
 		//if not authorized
@@ -167,7 +167,7 @@
 					header("Location: ".$settings->get('login', 'destination', ''));
 					exit;
 				}
-				elseif (file_exists($_SERVER["PROJECT_ROOT"]."/core/dashboard/app_config.php")) {
+				elseif (file_exists(dirname(__DIR__, 1)."/core/dashboard/app_config.php")) {
 					header("Location: ".PROJECT_PATH."/core/dashboard/");
 					exit;
 				}
