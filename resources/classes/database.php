@@ -2925,6 +2925,8 @@ class database {
 																	}
 																	$temp_array[$k] = $v;
 																}
+															}
+														}
 
 														// add to the old and new arrays
 														$old_array[$key][] = $child_results;
