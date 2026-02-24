@@ -2,7 +2,7 @@
 
 -- See if the outbound caller_id is in the destinations table, if so set to A
 
-	outbound_caller_id_number = string.sub(session:getVariable("outbound_caller_id_number", -10));
+	outbound_caller_id_number = string.sub(session:getVariable("outbound_caller_id_number"), -10);
 
 --includes
 	local cache = require "resources.functions.cache"
@@ -33,17 +33,17 @@
 		--select data from the database
 		local sql = "SELECT COUNT(destination_number) ";
 		sql = sql .. "FROM v_destinations ";
-		sql = sql .. "WHERE destination_number LIKE %:destination_number ";
+		sql = sql .. "WHERE destination_number LIKE :destination_number ";
         sql = sql .. "AND destination_type = 'inbound' ";
-		sql = sql .. "AND destination_enabled = true ";
-		local params = {destination_number = outbound_caller_id_number};
+		sql = sql .. "AND destination_enabled = 'true' ";
+		local params = {destination_number = "%" .. outbound_caller_id_number};
 		if (debug["sql"]) then
 			freeswitch.consoleLog("notice", "SQL:" .. sql .. "; destination_number: " .. destination_number .. "\n");
 		end
 		dbh:query(sql, params, function(row)
 
         --set the cache
-            if (row.count > 0) then
+            if (tonumber(row.count) > 0) then
                 value = "true"
                 ok, err = cache.set(key, value, 86400);
             else
