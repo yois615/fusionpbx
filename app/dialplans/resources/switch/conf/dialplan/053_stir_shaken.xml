@@ -1,0 +1,9 @@
+<extension name="stir_shaken_inbound" context="public" continue="true" app_uuid="5e838e13-30b1-4dc1-89be-2e68132d6511" global="true" enabled="false" order="53">
+	<condition field="destination_number" expression=".*">
+		<action application="sofia_stir_shaken_vs" data="" inline="true"/>
+	</condition>
+	<condition field="${sip_verstat_detailed}" expression="Passed-([ABC])$">
+		<action application="set" data="sip_h_P-Shaken-Attestation=$1" inline="true"/>
+		<anti-action application="set" data="sip_h_P-Shaken-Attestation=" inline="true"/>
+	</condition>
+</extension>

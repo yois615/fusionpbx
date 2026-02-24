@@ -1,0 +1,5 @@
+<extension name="stir_shaken_outbound" number="" context="${domain_name}" continue="true" app_uuid="e8ce9bd4-c769-46ee-a14e-e89119577ee7" enabled="false" order="90">
+	<condition field="${call_direction}" expression="^(outbound)$" >
+		<action application="lua" data="app.lua stir_shaken"/>
+	</condition>
+</extension>
