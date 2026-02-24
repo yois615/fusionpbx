@@ -50,7 +50,7 @@
                 value = "false";
                 ok, err = cache.set(key, value, 600);
             end
-        )
+        end);
     end
 
     if value == "true" then
@@ -58,14 +58,20 @@
         return;
     end
 
-    -- We're not in the destination table, maybe it's a call forward, reuse the identity header
-    identity_header = session:getVariable(sip_h_X_Identity)
+    -- We're not in the destination table, maybe it's a call forward, check and resign
+    -- ATIS-1000085 says this method is wrong by as of 2-2026 most libraries don't support the spec
     
-    if (identity_header ~= nil) and string.len(identity_header) > 25 then
-        --TODO Validate the header to ensure its not expired or forged
-        session:execute("export", "sip_h_X-Identity="..identity_header);
+    -- We're willing to sign if it's up to 10 minutes, in case the call is transferred
+    session:setVariable("sip_stir_shaken_vs_max_age", "600")
+
+    session:execute("sofia_stir_shaken_vs", "")
+    verstat_data = session:getVariable("sip_verstat_detailed")
+    attest = string.match(verstat_data, 'TN-Validation-Passed-([ABC])');
+    
+    if attest ~= nil then
+        session:execute("export", "sip_stir_shaken_attest=" .. attest);
         return
     end
 
-    --If we're here, we sign that you're coming from our system but we don't know why you're using that number
+    --If we're here, you either don't have a header, or you're forged.
     session:execute("export", "sip_stir_shaken_attest=B");
