@@ -58,15 +58,11 @@
         return;
     end
 
-    -- We're not in the destination table, maybe it's a call forward, check and resign
+    -- We're not in the destination table, maybe it's a call forward, get the original Identity
     -- ATIS-1000085 says this method is wrong by as of 2-2026 most libraries don't support the spec
     
-    -- We're willing to sign if it's up to 10 minutes, in case the call is transferred
-    session:setVariable("sip_stir_shaken_vs_max_age", "600")
-
-    session:execute("sofia_stir_shaken_vs", "")
-    verstat_data = session:getVariable("sip_verstat_detailed")
-    attest = string.match(verstat_data, 'TN-Validation-Passed-([ABC])');
+    attest = session:getVariable("sip_h_P-Shaken-Attestation");
+    session:execute("export", "sip_h_Diversion=")
     
     if attest ~= nil then
         session:execute("export", "sip_stir_shaken_attest=" .. attest);
@@ -74,4 +70,4 @@
     end
 
     --If we're here, you either don't have a header, or you're forged.
-    session:execute("export", "sip_stir_shaken_attest=B");
+    session:execute("export", "sip_stir_shaken_attest=C");
