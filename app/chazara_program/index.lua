@@ -99,6 +99,17 @@ function save_bookmark(teacher_uuid, filename)
     end
 end
 
+function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, offset)
+    local start_epoch = os.time();
+    -- Play file
+    session:setInputCallback("cpb_dtmf_input", "");
+    session:streamFile(recordings_dir .. teacher_uuid .. "/" .. filename, offset);
+    session:unsetInputCallback();
+
+    insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start_epoch)
+    save_bookmark(teacher_uuid, filename)
+end
+
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
     local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
@@ -200,19 +211,13 @@ local function chumash_by_parsha(epoch)
         local exit = false;
         while session:ready() and exit == false do
             local parsha_play_file = session:playAndGetDigits(1, string.len(tostring(#tbl_parsha_recording_files)), 3, 3000, "", prmpt_file, "", "");
-            if tonumber(parsha_play_file) == nil then
+            parsha_play_file = tonumber(parsha_play_file)
+            if parsha_play_file == nil then
                 exit = true;
-            elseif tonumber(parsha_play_file) < 1 or tonumber(parsha_play_file) > file_count then
+            elseif parsha_play_file < 1 or parsha_play_file > file_count then
                 session:streamFile(recordings_dir .. "invalid.wav");
             else
-                local start_epoch = os.time();
-                -- Play file
-                session:setInputCallback("cpb_dtmf_input", "");
-                session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]);
-                session:unsetInputCallback();
-
-                insert_cdr_record(tbl_parsha_recording_uuid[tonumber(parsha_play_file)], chazara_teacher_uuid, nil, start_epoch)
-                save_bookmark(chazara_teacher_uuid, tbl_parsha_recording_files[tonumber(parsha_play_file)])
+                play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid(parsha_play_file), nil);
             end
         end
     end
@@ -337,14 +342,7 @@ end
                 chazara_daf_teacher_uuid = row["chazara_daf_teacher_uuid"];
             end);
 
-            local start_epoch = os.time();
-            -- Play file
-            session:setInputCallback("cpb_dtmf_input", "");
-            session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename, split_last_file[2]);
-            session:unsetInputCallback();
-
-            insert_cdr_record(split_last_file[1], chazara_teacher_uuid, nil, start_epoch);
-            save_bookmark(chazara_teacher_uuid, recording_filename);
+            play_file(chazara_teacher_uuid, recording_filename, split_last_file[1], nil, split_last_file[2])
 
             recording_filename = {};
             chazara_recording_uuid = {};
@@ -795,14 +793,7 @@ if teacher_auth ~= true then
 
         -- Need to parse table
             if #recording_filename == 1 then
-                local start_epoch = os.time();
-                -- Play file
-                session:setInputCallback("cpb_dtmf_input", "");
-                session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1]);
-                session:unsetInputCallback();
-
-                insert_cdr_record(chazara_recording_uuid[1], chazara_teacher_uuid, chazara_daf_teacher_uuid[1], start_epoch);
-                save_bookmark(chazara_teacher_uuid, recording_filename[1]);
+                play_file(chazara_teacher_uuid, recording_filename[1], chazara_recording_uuid[1], chazara_daf_teacher_uuid[1])
 
                 recording_filename = {};
                 chazara_recording_uuid = {};
@@ -842,14 +833,7 @@ if teacher_auth ~= true then
 
                 local select_recording = tonumber(session:playAndGetDigits(1,1,1,3000, "#", fs_rebbe, "", "\\d+"))
                 if select_recording ~= nil and select_recording > 0 and select_recording <= #chazara_daf_teacher_uuid then
-                        local start_epoch = os.time();
-                    -- Play file
-                    session:setInputCallback("cpb_dtmf_input", "");
-                    session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording]);
-                    session:unsetInputCallback();
-
-                    insert_cdr_record(chazara_recording_uuid[select_recording], chazara_teacher_uuid, chazara_daf_teacher_uuid[select_recording], start_epoch)
-                    save_bookmark(chazara_teacher_uuid, recording_filename[select_recording]);
+                    play_file(chazara_teacher_uuid, recording_filename[select_recording], chazara_recording_uuid[select_recording], chazara_daf_teacher_uuid[select_recording]);
 
                     -- Continue play to next recording
                     -- Things to evaluate
