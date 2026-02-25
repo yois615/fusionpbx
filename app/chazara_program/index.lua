@@ -110,6 +110,59 @@ function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, off
     save_bookmark(teacher_uuid, filename)
 end
 
+function check_for_next_recording(recording_uuid)
+    local fields, conditions, order
+    local result = nil
+
+    if (daf_mode == "true") then
+        fields = "daf_number, daf_amud, daf_end_line"
+        conditions = [[
+            (vcr.daf_number = (SELECT daf_number FROM cur) AND vcr.daf_amud = (SELECT daf_amud FROM cur) AND vcr.daf_start_line = (SELECT daf_end_line FROM cur) + 1)
+            OR (vcr.daf_number = (SELECT daf_number FROM cur) AND (SELECT daf_amud FROM cur) = 'a' AND vcr.daf_amud = 'b')
+            OR vcr.daf_number = (SELECT daf_number FROM cur) + 1
+        ]]
+        order = "vcr.daf_number, vcr.daf_amud, vcr.daf_start_line"
+    elseif (chumash_mode == "true") then
+        fields = "chumash_end_chapter, chumash_end_verse"
+        conditions = [[
+            (vcr.chumash_start_chapter = (SELECT chumash_end_chapter FROM cur) AND vcr.chumash_start_verse = (SELECT chumash_end_verse FROM cur) + 1)
+            OR (vcr.chumash_start_chapter = (SELECT chumash_end_chapter FROM cur) + 1 AND vcr.chumash_start_verse = 1)
+        ]]
+        order = "vcr.chumash_start_chapter, vcr.chumash_start_verse"
+    else
+        fields = "recording_id"
+        conditions = "vcr.recording_id = (SELECT recording_id FROM cur) + 1"
+        order = "vcr.recording_id"
+    end
+
+    local sql = [[
+        WITH cur AS (
+            SELECT chazara_teacher_uuid, chazara_daf_teacher_uuid, ]] .. fields .. [[
+            FROM v_chazara_recordings
+            WHERE chazara_recording_uuid = :recording_uuid
+        )
+        SELECT chazara_recording_uuid, recording_filename FROM v_chazara_recordings vcr
+        WHERE vcr.chazara_teacher_uuid = (SELECT chazara_teacher_uuid FROM cur)
+        AND vcr.chazara_daf_teacher_uuid = (SELECT chazara_daf_teacher_uuid FROM cur)
+        AND (]] .. conditions .. [[)
+        ORDER BY ]] .. order .. [[
+        LIMIT 1
+    ]]
+
+    dbh:query(sql, {recording_uuid = recording_uuid}, function(row)
+        result = {recording_uuid = row['chazara_recording_uuid'], recording_filename = row['recording_filename']}
+    end);
+
+    if (result ~= nil) then
+        local confirm = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "play_next.wav", "", "[12]");
+        if (confirm == "1") then
+            return result
+        end
+    end
+
+    return nil
+end
+
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
     local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
@@ -218,6 +271,7 @@ local function chumash_by_parsha(epoch)
                 session:streamFile(recordings_dir .. "invalid.wav");
             else
                 play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid(parsha_play_file), nil);
+                -- TODO play next file
             end
         end
     end
@@ -342,7 +396,13 @@ end
                 chazara_daf_teacher_uuid = row["chazara_daf_teacher_uuid"];
             end);
 
-            play_file(chazara_teacher_uuid, recording_filename, split_last_file[1], nil, split_last_file[2])
+            local next = {recording_uuid = split_last_file[1], recording_filename = recording_filename};
+            play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, split_last_file[2])
+
+            while (next ~= nil)
+                next = check_for_next_recording(next["recording_uuid"])
+                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil)
+            end
 
             recording_filename = {};
             chazara_recording_uuid = {};
@@ -793,7 +853,11 @@ if teacher_auth ~= true then
 
         -- Need to parse table
             if #recording_filename == 1 then
-                play_file(chazara_teacher_uuid, recording_filename[1], chazara_recording_uuid[1], chazara_daf_teacher_uuid[1])
+                local next = {recording_uuid = chazara_recording_uuid[1], recording_filename = recording_filename[1]}
+                while (next ~= nil)
+                    play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1])
+                    next = check_for_next_recording(next["recording_uuid"])
+                end
 
                 recording_filename = {};
                 chazara_recording_uuid = {};
@@ -833,7 +897,11 @@ if teacher_auth ~= true then
 
                 local select_recording = tonumber(session:playAndGetDigits(1,1,1,3000, "#", fs_rebbe, "", "\\d+"))
                 if select_recording ~= nil and select_recording > 0 and select_recording <= #chazara_daf_teacher_uuid then
-                    play_file(chazara_teacher_uuid, recording_filename[select_recording], chazara_recording_uuid[select_recording], chazara_daf_teacher_uuid[select_recording]);
+                    local next = {recording_uuid = chazara_recording_uuid[select_recording], recording_filename = recording_filename[select_recording]}
+                    while (next ~= nil)
+                        play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording])
+                        next = check_for_next_recording(next["recording_uuid"])
+                    end
 
                     -- Continue play to next recording
                     -- Things to evaluate
