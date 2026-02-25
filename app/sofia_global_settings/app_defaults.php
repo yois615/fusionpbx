@@ -43,6 +43,30 @@ if ($domains_processed == 1) {
 		$global_settings[$x]['global_setting_value'] = '8';
 		$global_settings[$x]['global_setting_enabled'] = 'true';
 		$global_settings[$x]['global_setting_description'] = '';
+		$x++;
+		$global_settings[$x]['sofia_global_setting_uuid'] = '9049f08e-095c-4d85-94f1-3f6c03d80e1f';
+		$global_settings[$x]['global_setting_name'] = 'stir-shaken-as-key';
+		$global_settings[$x]['global_setting_value'] = '';
+		$global_settings[$x]['global_setting_enabled'] = 'false';
+		$global_settings[$x]['global_setting_description'] = '';
+		$x++;
+		$global_settings[$x]['sofia_global_setting_uuid'] = 'e539c80e-bf90-4c9e-8cfc-c79fed2e1da8';
+		$global_settings[$x]['global_setting_name'] = 'stir-shaken-as-url';
+		$global_settings[$x]['global_setting_value'] = '';
+		$global_settings[$x]['global_setting_enabled'] = 'false';
+		$global_settings[$x]['global_setting_description'] = '';
+		$x++;
+		$global_settings[$x]['sofia_global_setting_uuid'] = 'eff60888-decb-40a0-9946-1cd286605acc';
+		$global_settings[$x]['global_setting_name'] = 'stir-shaken-vs-ca-dir';
+		$global_settings[$x]['global_setting_value'] = '';
+		$global_settings[$x]['global_setting_enabled'] = 'false';
+		$global_settings[$x]['global_setting_description'] = '';
+		$x++;
+		$global_settings[$x]['sofia_global_setting_uuid'] = '19adbe48-551b-4cef-991d-df235340de68';
+		$global_settings[$x]['global_setting_name'] = 'stir-shaken-vs-cert-path-check';
+		$global_settings[$x]['global_setting_value'] = 'true';
+		$global_settings[$x]['global_setting_enabled'] = 'false';
+		$global_settings[$x]['global_setting_description'] = '';
 
 	//build an array of missing global settings
 		$x = 0;
