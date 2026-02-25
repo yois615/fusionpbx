@@ -58,6 +58,29 @@ function file_exists(name)
    if f~=nil then io.close(f) return true else return false end
 end
 
+function insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start_epoch)
+    local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+    sql = sql .. "duration, caller_id_number, caller_id_name) "
+    sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+
+    if (daf_teacher_uuid == nil or not is_uuid(daf_teacher_uuid))
+        daf_teacher_uuid = dbh.NULL
+    end
+
+    local params = {
+        chazara_recording_uuid = recording_uuid,
+        domain_uuid = domain_uuid,
+        chazara_teacher_uuid = teacher_uuid,
+        chazara_daf_teacher_uuid = daf_teacher_uuid,
+        uuid = uuid,
+        start_epoch = start_epoch,
+        caller_id_number = caller_id_number,
+        caller_id_name = caller_id_name,
+        duration = os.time() - start_epoch
+    }
+    dbh:query(sql, params);
+end
+
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
     local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
@@ -169,21 +192,8 @@ local function chumash_by_parsha(epoch)
                 session:setInputCallback("cpb_dtmf_input", "");
                 session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]);
                 session:unsetInputCallback();
-                -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
-                sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-                local params = {
-                    chazara_recording_uuid = tbl_parsha_recording_uuid[tonumber(parsha_play_file)],
-                    domain_uuid = domain_uuid,
-                    chazara_teacher_uuid = chazara_teacher_uuid,
-                    uuid = uuid,
-                    start_epoch = start_epoch,
-                    caller_id_number = caller_id_number,
-                    caller_id_name = caller_id_name,
-                    duration = os.time() - start_epoch
-                }
-                dbh:query(sql, params);
+
+                insert_cdr_record(tbl_parsha_recording_uuid[tonumber(parsha_play_file)], chazara_teacher_uuid, nil, start_epoch)
 
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
@@ -329,21 +339,8 @@ end
             session:setInputCallback("cpb_dtmf_input", "");
             session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename, split_last_file[2]);
             session:unsetInputCallback();
-            -- Insert record into CDR
-            local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
-            sql = sql .. "duration, caller_id_number, caller_id_name) "
-            sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-            local params = {
-                chazara_recording_uuid = split_last_file[1],
-                domain_uuid = domain_uuid,
-                chazara_teacher_uuid = chazara_teacher_uuid,
-                uuid = uuid,
-                start_epoch = start_epoch,
-                caller_id_number = caller_id_number,
-                caller_id_name = caller_id_name,
-                duration = os.time() - start_epoch
-            }
-            dbh:query(sql, params);
+
+            insert_cdr_record(split_last_file[1], chazara_teacher_uuid, nil, start_epoch);
 
             -- Insert into hash for later playback
             local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
@@ -815,28 +812,8 @@ if teacher_auth ~= true then
                 session:setInputCallback("cpb_dtmf_input", "");
                 session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1]);
                 session:unsetInputCallback();
-                -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
-                sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-                local params = {
-                    chazara_recording_uuid = chazara_recording_uuid[1],
-                    domain_uuid = domain_uuid,
-                    chazara_teacher_uuid = chazara_teacher_uuid,
-                    uuid = uuid,
-                    start_epoch = start_epoch,
-                    caller_id_number = caller_id_number,
-                    caller_id_name = caller_id_name,
-                    duration = os.time() - start_epoch
-                }
-                
-                if chazara_daf_teacher_uuid[1] ~= nil and is_uuid(chazara_daf_teacher_uuid[1]) then
-                    params['chazara_daf_teacher_uuid'] = chazara_daf_teacher_uuid[1];
-                else
-                    params['chazara_daf_teacher_uuid'] = dbh.NULL;
-                end
 
-                dbh:query(sql, params);
+                insert_cdr_record(chazara_recording_uuid[1], chazara_teacher_uuid, chazara_daf_teacher_uuid[1], start_epoch);
 
                 -- Insert into hash for later playback
                 local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
@@ -897,23 +874,8 @@ if teacher_auth ~= true then
                     session:setInputCallback("cpb_dtmf_input", "");
                     session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording]);
                     session:unsetInputCallback();
-                    -- Insert record into CDR
-                    local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
-                    sql = sql .. "duration, caller_id_number, caller_id_name) "
-                    sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-                    local params = {
-                        chazara_recording_uuid = chazara_recording_uuid[select_recording],
-                        chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[select_recording],
-                        domain_uuid = domain_uuid,
-                        chazara_teacher_uuid = chazara_teacher_uuid,
-                        uuid = uuid,
-                        start_epoch = start_epoch,
-                        caller_id_number = caller_id_number,
-                        caller_id_name = caller_id_name,
-                        duration = os.time() - start_epoch
-                    }
 
-                    dbh:query(sql, params);
+                    insert_cdr_record(chazara_recording_uuid[select_recording], chazara_teacher_uuid, chazara_daf_teacher_uuid[select_recording], start_epoch)
 
                     -- Insert into hash for later playback
                     local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
