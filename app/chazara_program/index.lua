@@ -58,6 +58,112 @@ function file_exists(name)
    if f~=nil then io.close(f) return true else return false end
 end
 
+function insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start_epoch)
+    local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
+    sql = sql .. "duration, caller_id_number, caller_id_name) "
+    sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
+
+    if (daf_teacher_uuid == nil or not is_uuid(daf_teacher_uuid))
+        daf_teacher_uuid = dbh.NULL
+    end
+
+    local params = {
+        chazara_recording_uuid = recording_uuid,
+        domain_uuid = domain_uuid,
+        chazara_teacher_uuid = teacher_uuid,
+        chazara_daf_teacher_uuid = daf_teacher_uuid,
+        uuid = uuid,
+        start_epoch = start_epoch,
+        caller_id_number = caller_id_number,
+        caller_id_name = caller_id_name,
+        duration = os.time() - start_epoch
+    }
+    dbh:query(sql, params);
+end
+
+function save_bookmark(teacher_uuid, filename)
+    -- Insert into hash for later playback
+    local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
+    if file_exists(recordings_dir .. teacher_uuid .. "/" .. filename) then
+        local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. teacher_uuid .. "/" .. filename)
+        local output = soxi_handle:read('*a')
+        file_total_samples = tonumber(output);
+        soxi_handle:close()
+    end
+    if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
+        and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
+        freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
+        session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. filename .. ":" .. playback_last_offset_pos);
+    else
+        api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+    end
+end
+
+function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, offset)
+    local start_epoch = os.time();
+    -- Play file
+    session:setInputCallback("cpb_dtmf_input", "");
+    session:streamFile(recordings_dir .. teacher_uuid .. "/" .. filename, offset);
+    session:unsetInputCallback();
+
+    insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start_epoch)
+    save_bookmark(teacher_uuid, filename)
+end
+
+function check_for_next_recording(recording_uuid)
+    local fields, conditions, order
+    local result = nil
+
+    if (daf_mode == "true") then
+        fields = "daf_number, daf_amud, daf_end_line"
+        conditions = [[
+            (vcr.daf_number = (SELECT daf_number FROM cur) AND vcr.daf_amud = (SELECT daf_amud FROM cur) AND vcr.daf_start_line = (SELECT daf_end_line FROM cur) + 1)
+            OR (vcr.daf_number = (SELECT daf_number FROM cur) AND (SELECT daf_amud FROM cur) = 'a' AND vcr.daf_amud = 'b')
+            OR vcr.daf_number = (SELECT daf_number FROM cur) + 1
+        ]]
+        order = "vcr.daf_number, vcr.daf_amud, vcr.daf_start_line"
+    elseif (chumash_mode == "true") then
+        fields = "chumash_end_chapter, chumash_end_verse"
+        conditions = [[
+            (vcr.chumash_start_chapter = (SELECT chumash_end_chapter FROM cur) AND vcr.chumash_start_verse = (SELECT chumash_end_verse FROM cur) + 1)
+            OR (vcr.chumash_start_chapter = (SELECT chumash_end_chapter FROM cur) + 1 AND vcr.chumash_start_verse = 1)
+        ]]
+        order = "vcr.chumash_start_chapter, vcr.chumash_start_verse"
+    else
+        fields = "recording_id"
+        conditions = "vcr.recording_id = (SELECT recording_id FROM cur) + 1"
+        order = "vcr.recording_id"
+    end
+
+    local sql = [[
+        WITH cur AS (
+            SELECT chazara_teacher_uuid, chazara_daf_teacher_uuid, ]] .. fields .. [[
+            FROM v_chazara_recordings
+            WHERE chazara_recording_uuid = :recording_uuid
+        )
+        SELECT chazara_recording_uuid, recording_filename FROM v_chazara_recordings vcr
+        WHERE domain_uuid = :domain_uuid
+        AND vcr.chazara_teacher_uuid = (SELECT chazara_teacher_uuid FROM cur)
+        AND vcr.chazara_daf_teacher_uuid = (SELECT chazara_daf_teacher_uuid FROM cur)
+        AND (]] .. conditions .. [[)
+        ORDER BY ]] .. order .. [[
+        LIMIT 1
+    ]]
+
+    dbh:query(sql, {recording_uuid = recording_uuid}, function(row)
+        result = {recording_uuid = row['chazara_recording_uuid'], recording_filename = row['recording_filename']}
+    end);
+
+    if (result ~= nil) then
+        local confirm = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "play_next.wav", "", "[12]");
+        if (confirm == "1") then
+            return result
+        end
+    end
+
+    return nil
+end
+
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
     local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
@@ -159,47 +265,14 @@ local function chumash_by_parsha(epoch)
         local exit = false;
         while session:ready() and exit == false do
             local parsha_play_file = session:playAndGetDigits(1, string.len(tostring(#tbl_parsha_recording_files)), 3, 3000, "", prmpt_file, "", "");
-            if tonumber(parsha_play_file) == nil then
+            parsha_play_file = tonumber(parsha_play_file)
+            if parsha_play_file == nil then
                 exit = true;
-            elseif tonumber(parsha_play_file) < 1 or tonumber(parsha_play_file) > file_count then
+            elseif parsha_play_file < 1 or parsha_play_file > file_count then
                 session:streamFile(recordings_dir .. "invalid.wav");
             else
-                local start_epoch = os.time();
-                -- Play file
-                session:setInputCallback("cpb_dtmf_input", "");
-                session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]);
-                session:unsetInputCallback();
-                -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
-                sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-                local params = {
-                    chazara_recording_uuid = tbl_parsha_recording_uuid[tonumber(parsha_play_file)],
-                    domain_uuid = domain_uuid,
-                    chazara_teacher_uuid = chazara_teacher_uuid,
-                    uuid = uuid,
-                    start_epoch = start_epoch,
-                    caller_id_number = caller_id_number,
-                    caller_id_name = caller_id_name,
-                    duration = os.time() - start_epoch
-                }
-                dbh:query(sql, params);
-
-                -- Insert into hash for later playback
-                local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)]) then
-                    local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. tbl_parsha_recording_files[tonumber(parsha_play_file)])
-                    local output = soxi_handle:read('*a')
-                    file_total_samples = tonumber(output);
-                    soxi_handle:close()
-                end
-                if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
-                    and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
-                    freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. tbl_parsha_recording_uuid[tonumber(parsha_play_file)] .. ":" .. playback_last_offset_pos);
-                else
-                    api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
-                end
+                play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid(parsha_play_file), nil);
+                -- TODO play next file
             end
         end
     end
@@ -324,41 +397,12 @@ end
                 chazara_daf_teacher_uuid = row["chazara_daf_teacher_uuid"];
             end);
 
-            local start_epoch = os.time();
-            -- Play file
-            session:setInputCallback("cpb_dtmf_input", "");
-            session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename, split_last_file[2]);
-            session:unsetInputCallback();
-            -- Insert record into CDR
-            local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, call_uuid, start_epoch, "; 
-            sql = sql .. "duration, caller_id_number, caller_id_name) "
-            sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-            local params = {
-                chazara_recording_uuid = split_last_file[1],
-                domain_uuid = domain_uuid,
-                chazara_teacher_uuid = chazara_teacher_uuid,
-                uuid = uuid,
-                start_epoch = start_epoch,
-                caller_id_number = caller_id_number,
-                caller_id_name = caller_id_name,
-                duration = os.time() - start_epoch
-            }
-            dbh:query(sql, params);
+            local next = {recording_uuid = split_last_file[1], recording_filename = recording_filename};
+            play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, split_last_file[2])
 
-            -- Insert into hash for later playback
-            local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-            if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename) then
-                local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename)
-                local output = soxi_handle:read('*a')
-                file_total_samples = tonumber(output);
-                soxi_handle:close()
-            end
-            if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
-                and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
-                freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. split_last_file[1] .. ":" .. playback_last_offset_pos);
-            else
-                api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+            while (next ~= nil)
+                next = check_for_next_recording(next["recording_uuid"])
+                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil)
             end
 
             recording_filename = {};
@@ -682,21 +726,27 @@ if teacher_auth ~= true then
         else
         -- Find recording
         if daf_mode == "true" then
-            local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
+            local sql = [[
+                WITH cte AS (
+                    SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid,
+                        ROW_NUMBER() over (PARTITION BY chazara_daf_teacher_uuid ORDER BY daf_number DESC, daf_amud DESC, daf_start_line DESC) AS row 
                     FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
-                    AND daf_number = :daf
-                    AND daf_amud = :amud
-		            AND daf_start_line <= :recording_id
-                    AND daf_end_line >= :recording_id
-                    ORDER BY daf_start_line desc, chazara_teacher_uuid asc]];
+                    AND (
+                        (daf_number = :daf AND daf_amud = :amud AND daf_start_line <= :start_line AND daf_end_line >= :start_line)
+                        OR (daf_number = :daf AND :amud = 'b' AND daf_amud = 'a')
+                        OR (:amud = 'a' AND daf_number = :daf - 1 AND daf_amud = 'b')
+                    )
+                )
+                SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid FROM cte WHERE row = 1;
+            ]]
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_teacher_uuid = chazara_teacher_uuid,
                 daf = daf,
                 amud = amud,
-		        recording_id = recording_id
+		        start_line = recording_id
             };
             if (debug["sql"]) then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
@@ -713,50 +763,6 @@ if teacher_auth ~= true then
                     end
                 end
             end);
-
-            -- If there's not recording found, maybe it's from the end of the previous amud
-            if #recording_filename < 1 then
-                local tmp_daf = daf
-                local tmp_amud = "a"
-                if amud == "a" then
-                    tmp_amud = "b"
-                    tmp_daf = tonumber(daf) - 1
-                end 
-                local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
-                    FROM v_chazara_recordings WHERE (COALESCE(chazara_daf_teacher_uuid, 'aad5fc46-ebbb-4a10-b667-3e6a5d51104f'),
-                    daf_start_line) IN
-                        (SELECT COALESCE(chazara_daf_teacher_uuid, 'aad5fc46-ebbb-4a10-b667-3e6a5d51104f'), 
-                        MAX(daf_start_line) FROM v_chazara_recordings WHERE domain_uuid = :domain_uuid
-                        AND chazara_teacher_uuid = :chazara_teacher_uuid
-                        AND daf_number = :daf
-                        AND daf_amud = :amud
-                        GROUP BY chazara_daf_teacher_uuid)
-                    AND domain_uuid = :domain_uuid
-                    AND chazara_teacher_uuid = :chazara_teacher_uuid
-                    AND daf_number = :daf
-                    AND daf_amud = :amud
-]];
-                local params = {
-                    domain_uuid = domain_uuid,
-                    chazara_teacher_uuid = chazara_teacher_uuid,
-                    daf = tmp_daf,
-                    amud = tmp_amud,
-                };
-                if (debug["sql"]) then
-                    freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
-                end
-                dbh:query(sql, params, function(row)
-                    if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
-                        table.insert(recording_filename, row["recording_filename"]);
-                        table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
-                        if row["chazara_daf_teacher_uuid"] ~= nil and is_uuid(row["chazara_daf_teacher_uuid"]) then
-                            table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"])
-                        else
-                            table.insert(chazara_daf_teacher_uuid, "aad5fc46-ebbb-4a10-b667-3e6a5d51104f");
-                        end
-                    end
-                end);   
-            end
         elseif chumash_mode == "true" then
             -- This probably needs to be fixed because if we have 52:1-53:5, 53:6-54:2, and 54:3-8, we'll have a prob
             local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
@@ -810,48 +816,10 @@ if teacher_auth ~= true then
 
         -- Need to parse table
             if #recording_filename == 1 then
-                local start_epoch = os.time();
-                -- Play file
-                session:setInputCallback("cpb_dtmf_input", "");
-                session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1]);
-                session:unsetInputCallback();
-                -- Insert record into CDR
-                local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
-                sql = sql .. "duration, caller_id_number, caller_id_name) "
-                sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-                local params = {
-                    chazara_recording_uuid = chazara_recording_uuid[1],
-                    domain_uuid = domain_uuid,
-                    chazara_teacher_uuid = chazara_teacher_uuid,
-                    uuid = uuid,
-                    start_epoch = start_epoch,
-                    caller_id_number = caller_id_number,
-                    caller_id_name = caller_id_name,
-                    duration = os.time() - start_epoch
-                }
-                
-                if chazara_daf_teacher_uuid[1] ~= nil and is_uuid(chazara_daf_teacher_uuid[1]) then
-                    params['chazara_daf_teacher_uuid'] = chazara_daf_teacher_uuid[1];
-                else
-                    params['chazara_daf_teacher_uuid'] = dbh.NULL;
-                end
-
-                dbh:query(sql, params);
-
-                -- Insert into hash for later playback
-                local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1]) then
-                    local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[1])
-                    local output = soxi_handle:read('*a')
-                    file_total_samples = tonumber(output);
-                    soxi_handle:close()
-                end
-                if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
-                    and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
-                    freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                    session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[1] .. ":" .. playback_last_offset_pos);
-                else
-                    api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+                local next = {recording_uuid = chazara_recording_uuid[1], recording_filename = recording_filename[1]}
+                while (next ~= nil)
+                    play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1])
+                    next = check_for_next_recording(next["recording_uuid"])
                 end
 
                 recording_filename = {};
@@ -892,43 +860,10 @@ if teacher_auth ~= true then
 
                 local select_recording = tonumber(session:playAndGetDigits(1,1,1,3000, "#", fs_rebbe, "", "\\d+"))
                 if select_recording ~= nil and select_recording > 0 and select_recording <= #chazara_daf_teacher_uuid then
-                        local start_epoch = os.time();
-                    -- Play file
-                    session:setInputCallback("cpb_dtmf_input", "");
-                    session:streamFile(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording]);
-                    session:unsetInputCallback();
-                    -- Insert record into CDR
-                    local sql = "INSERT INTO v_chazara_cdrs (chazara_recording_uuid, domain_uuid, chazara_teacher_uuid, chazara_daf_teacher_uuid, call_uuid, start_epoch, "; 
-                    sql = sql .. "duration, caller_id_number, caller_id_name) "
-                    sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
-                    local params = {
-                        chazara_recording_uuid = chazara_recording_uuid[select_recording],
-                        chazara_daf_teacher_uuid = chazara_daf_teacher_uuid[select_recording],
-                        domain_uuid = domain_uuid,
-                        chazara_teacher_uuid = chazara_teacher_uuid,
-                        uuid = uuid,
-                        start_epoch = start_epoch,
-                        caller_id_number = caller_id_number,
-                        caller_id_name = caller_id_name,
-                        duration = os.time() - start_epoch
-                    }
-
-                    dbh:query(sql, params);
-
-                    -- Insert into hash for later playback
-                    local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
-                    if file_exists(recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording]) then
-                        local soxi_handle = io.popen('soxi -s ' .. recordings_dir .. chazara_teacher_uuid .. "/" .. recording_filename[select_recording])
-                        local output = soxi_handle:read('*a')
-                        file_total_samples = tonumber(output);
-                        soxi_handle:close()
-                    end
-                    if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
-                        and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
-                        freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-                        session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. chazara_recording_uuid[select_recording] .. ":" .. playback_last_offset_pos);
-                    else
-                        api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
+                    local next = {recording_uuid = chazara_recording_uuid[select_recording], recording_filename = recording_filename[select_recording]}
+                    while (next ~= nil)
+                        play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording])
+                        next = check_for_next_recording(next["recording_uuid"])
                     end
 
                     -- Continue play to next recording
