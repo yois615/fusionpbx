@@ -414,7 +414,7 @@ end
             while (session:ready() and next ~= nil) do
                 local finished = play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, offset)
                 offset = 0
-                if (!finished) then break; end;
+                if (finished == false) then break; end;
                 next = check_for_next_recording(next["recording_uuid"])
             end
 
@@ -832,7 +832,7 @@ if teacher_auth ~= true then
                 local next = {recording_uuid = chazara_recording_uuid[1], recording_filename = recording_filename[1]}
                 while (session:ready() and next ~= nil) do
                     local finished = play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1], 0)
-                    if (!finished) then break; end;
+                    if (finished == false) then break; end;
                     next = check_for_next_recording(next["recording_uuid"])
                 end
 
@@ -877,7 +877,7 @@ if teacher_auth ~= true then
                     local next = {recording_uuid = chazara_recording_uuid[select_recording], recording_filename = recording_filename[select_recording]}
                     while (session:ready() and next ~= nil) do
                         local finished = play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording], 0)
-                        if (!finished) then break; end;
+                        if (finished == false) then break; end;
                         next = check_for_next_recording(next["recording_uuid"])
                     end
                 end
