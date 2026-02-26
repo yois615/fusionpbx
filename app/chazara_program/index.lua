@@ -734,7 +734,7 @@ if teacher_auth ~= true then
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
                     AND (
-                        (daf_number = :daf AND daf_amud = :amud AND daf_start_line <= :start_line)
+                        (daf_number = :daf AND daf_amud = :amud AND daf_start_line <= :start_line AND daf_end_line >= :start_line)
                         OR (daf_number = :daf AND :amud = 'b' AND daf_amud = 'a')
                         OR (:amud = 'a' AND daf_number = :daf - 1 AND daf_amud = 'b')
                     )
