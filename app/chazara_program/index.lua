@@ -142,7 +142,8 @@ function check_for_next_recording(recording_uuid)
             WHERE chazara_recording_uuid = :recording_uuid
         )
         SELECT chazara_recording_uuid, recording_filename FROM v_chazara_recordings vcr
-        WHERE vcr.chazara_teacher_uuid = (SELECT chazara_teacher_uuid FROM cur)
+        WHERE domain_uuid = :domain_uuid
+        AND vcr.chazara_teacher_uuid = (SELECT chazara_teacher_uuid FROM cur)
         AND vcr.chazara_daf_teacher_uuid = (SELECT chazara_daf_teacher_uuid FROM cur)
         AND (]] .. conditions .. [[)
         ORDER BY ]] .. order .. [[
@@ -725,21 +726,27 @@ if teacher_auth ~= true then
         else
         -- Find recording
         if daf_mode == "true" then
-            local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
+            local sql = [[
+                WITH cte AS (
+                    SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid,
+                        ROW_NUMBER() over (PARTITION BY chazara_daf_teacher_uuid ORDER BY daf_number DESC, daf_amud DESC, daf_start_line DESC) AS row 
                     FROM v_chazara_recordings
                     WHERE domain_uuid = :domain_uuid
                     AND chazara_teacher_uuid = :chazara_teacher_uuid
-                    AND daf_number = :daf
-                    AND daf_amud = :amud
-		            AND daf_start_line <= :recording_id
-                    AND daf_end_line >= :recording_id
-                    ORDER BY daf_start_line desc, chazara_teacher_uuid asc]];
+                    AND (
+                        (daf_number = :daf AND daf_amud = :amud AND daf_start_line <= :start_line)
+                        OR (daf_number = :daf AND :amud = 'b' AND daf_amud = 'a')
+                        OR (:amud = 'a' AND daf_number = :daf - 1 AND daf_amud = 'b')
+                    )
+                )
+                SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid FROM cte WHERE row = 1;
+            ]]
             local params = {
                 domain_uuid = domain_uuid,
                 chazara_teacher_uuid = chazara_teacher_uuid,
                 daf = daf,
                 amud = amud,
-		        recording_id = recording_id
+		        start_line = recording_id
             };
             if (debug["sql"]) then
                 freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
@@ -756,50 +763,6 @@ if teacher_auth ~= true then
                     end
                 end
             end);
-
-            -- If there's not recording found, maybe it's from the end of the previous amud
-            if #recording_filename < 1 then
-                local tmp_daf = daf
-                local tmp_amud = "a"
-                if amud == "a" then
-                    tmp_amud = "b"
-                    tmp_daf = tonumber(daf) - 1
-                end 
-                local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
-                    FROM v_chazara_recordings WHERE (COALESCE(chazara_daf_teacher_uuid, 'aad5fc46-ebbb-4a10-b667-3e6a5d51104f'),
-                    daf_start_line) IN
-                        (SELECT COALESCE(chazara_daf_teacher_uuid, 'aad5fc46-ebbb-4a10-b667-3e6a5d51104f'), 
-                        MAX(daf_start_line) FROM v_chazara_recordings WHERE domain_uuid = :domain_uuid
-                        AND chazara_teacher_uuid = :chazara_teacher_uuid
-                        AND daf_number = :daf
-                        AND daf_amud = :amud
-                        GROUP BY chazara_daf_teacher_uuid)
-                    AND domain_uuid = :domain_uuid
-                    AND chazara_teacher_uuid = :chazara_teacher_uuid
-                    AND daf_number = :daf
-                    AND daf_amud = :amud
-]];
-                local params = {
-                    domain_uuid = domain_uuid,
-                    chazara_teacher_uuid = chazara_teacher_uuid,
-                    daf = tmp_daf,
-                    amud = tmp_amud,
-                };
-                if (debug["sql"]) then
-                    freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
-                end
-                dbh:query(sql, params, function(row)
-                    if row["recording_filename"] ~= nil and string.len(row["recording_filename"]) > 0 then
-                        table.insert(recording_filename, row["recording_filename"]);
-                        table.insert(chazara_recording_uuid, row["chazara_recording_uuid"]);
-                        if row["chazara_daf_teacher_uuid"] ~= nil and is_uuid(row["chazara_daf_teacher_uuid"]) then
-                            table.insert(chazara_daf_teacher_uuid, row["chazara_daf_teacher_uuid"])
-                        else
-                            table.insert(chazara_daf_teacher_uuid, "aad5fc46-ebbb-4a10-b667-3e6a5d51104f");
-                        end
-                    end
-                end);   
-            end
         elseif chumash_mode == "true" then
             -- This probably needs to be fixed because if we have 52:1-53:5, 53:6-54:2, and 54:3-8, we'll have a prob
             local sql = [[SELECT recording_filename, chazara_recording_uuid, chazara_daf_teacher_uuid
