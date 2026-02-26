@@ -868,8 +868,8 @@ if teacher_auth ~= true then
                     if i < #chazara_daf_teacher_uuid then fs_rebbe = fs_rebbe .. "!silence_stream://500!"; end;
                 end          
 
-                local select_recording = tonumber(session:playAndGetDigits(1,1,1,3000, "#", fs_rebbe, "", "\\d+"))
-                if select_recording ~= nil and select_recording > 0 and select_recording <= #chazara_daf_teacher_uuid then
+                local select_recording = tonumber(session:playAndGetDigits(1,1,3,3000, "#", fs_rebbe, recordings_dir .. "invalid.wav", "[1-" .. #chazara_daf_teacher_uuid .. "\\*]"))
+                if select_recording ~= nil and select_recording ~= "*" then
                     local next = {recording_uuid = chazara_recording_uuid[select_recording], recording_filename = recording_filename[select_recording]}
                     while (next ~= nil) do
                         play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording], 0)
@@ -891,15 +891,12 @@ if teacher_auth ~= true then
                                 -- if not, increment perek by 1 and pasuk back to 1 and test
                         end
                     end
-
-                    -- Clear these until we stop playback
-                    recording_filename = {};
-                    chazara_recording_uuid = {};
-                    chazara_daf_teacher_uuid = {};
-                    file_total_samples = nil;
-                else
-                    session:streamFile(recordings_dir .. "invalid.wav");
                 end
+                -- Clear these until we stop playback
+                recording_filename = {};
+                chazara_recording_uuid = {};
+                chazara_daf_teacher_uuid = {};
+                file_total_samples = nil;
             else
                 -- Does not exist
                 session:streamFile(recordings_dir .. "recording_not_available.wav");
