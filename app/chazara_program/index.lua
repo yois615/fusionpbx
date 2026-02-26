@@ -94,9 +94,11 @@ function save_bookmark(teacher_uuid, filename, recording_uuid)
         and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
         freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
         session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. recording_uuid .. ":" .. playback_last_offset_pos);
+        return false
     else
         api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
     end
+    return true
 end
 
 function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, offset)
@@ -107,7 +109,7 @@ function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, off
     session:unsetInputCallback();
 
     insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start_epoch)
-    save_bookmark(teacher_uuid, filename, recording_uuid)
+    return save_bookmark(teacher_uuid, filename, recording_uuid)
 end
 
 function check_for_next_recording(recording_uuid)
@@ -409,9 +411,10 @@ end
             local next = {recording_uuid = split_last_file[1], recording_filename = recording_filename};
             local offset = split_last_file[2]
 
-            while (next ~= nil) do
-                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, offset)
+            while (session:ready() and next ~= nil) do
+                local finished = play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, offset)
                 offset = 0
+                if (!finished) then break; end;
                 next = check_for_next_recording(next["recording_uuid"])
             end
 
@@ -827,8 +830,9 @@ if teacher_auth ~= true then
         -- Need to parse table
             if #recording_filename == 1 then
                 local next = {recording_uuid = chazara_recording_uuid[1], recording_filename = recording_filename[1]}
-                while (next ~= nil) do
-                    play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1], 0)
+                while (session:ready() and next ~= nil) do
+                    local finished = play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1], 0)
+                    if (!finished) then break; end;
                     next = check_for_next_recording(next["recording_uuid"])
                 end
 
@@ -871,25 +875,10 @@ if teacher_auth ~= true then
                 local select_recording = tonumber(session:playAndGetDigits(1,1,3,3000, "#", fs_rebbe, recordings_dir .. "invalid.wav", "[1-" .. #chazara_daf_teacher_uuid .. "\\*]"))
                 if select_recording ~= nil and select_recording ~= "*" then
                     local next = {recording_uuid = chazara_recording_uuid[select_recording], recording_filename = recording_filename[select_recording]}
-                    while (next ~= nil) do
-                        play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording], 0)
+                    while (session:ready() and next ~= nil) do
+                        local finished = play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording], 0)
+                        if (!finished) then break; end;
                         next = check_for_next_recording(next["recording_uuid"])
-                    end
-
-                    -- Continue play to next recording
-                    -- Things to evaluate
-                    if session:ready() then
-                        if daf_mode == "false" and chumash_mode == "false" then
-                            -- Increment the recording ID by 1 and check if it exists
-
-                        elseif daf_mode == "true" then
-                            -- Check daf_end line and current rebbi - increment end line by one, check if recording exists
-                                -- if not, icrement amud and/or daf, reset line to 1, and check again
-                        elseif chumash_mode == "true" then
-                            -- If we're playing by parsha, go to the next number in the list (don't know yet how)
-                            -- If by perek/pasuk, then increment last pasuk by one and test
-                                -- if not, increment perek by 1 and pasuk back to 1 and test
-                        end
                     end
                 end
                 -- Clear these until we stop playback
@@ -931,7 +920,7 @@ if teacher_auth == true then
         local function verify_recording(recording_uuid, recording_filename)
             local incomplete = true;
             local timeout = 0;
-            while (incomplete and timeout < 3) do
+            while (session:ready() and incomplete and timeout < 3) do
 
                 dtmf_digits = "";
                 session:flushDigits();
