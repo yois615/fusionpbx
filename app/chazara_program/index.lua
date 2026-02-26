@@ -81,7 +81,7 @@ function insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start
     dbh:query(sql, params);
 end
 
-function save_bookmark(teacher_uuid, filename)
+function save_bookmark(teacher_uuid, filename, recording_uuid)
     -- Insert into hash for later playback
     local playback_last_offset_pos = session:getVariable("playback_last_offset_pos");
     if file_exists(recordings_dir .. teacher_uuid .. "/" .. filename) then
@@ -93,7 +93,7 @@ function save_bookmark(teacher_uuid, filename)
     if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
         and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
         freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
-        session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. filename .. ":" .. playback_last_offset_pos);
+        session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. recording_uuid .. ":" .. playback_last_offset_pos);
     else
         api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
     end
@@ -107,7 +107,7 @@ function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, off
     session:unsetInputCallback();
 
     insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start_epoch)
-    save_bookmark(teacher_uuid, filename)
+    save_bookmark(teacher_uuid, filename, recording_uuid)
 end
 
 function check_for_next_recording(recording_uuid)
@@ -142,23 +142,32 @@ function check_for_next_recording(recording_uuid)
             WHERE chazara_recording_uuid = :recording_uuid
         )
         SELECT chazara_recording_uuid, recording_filename FROM v_chazara_recordings vcr
-        WHERE domain_uuid = :domain_uuid
+        WHERE domain_uuid = (SELECT domain_uuid FROM cur)
         AND vcr.chazara_teacher_uuid = (SELECT chazara_teacher_uuid FROM cur)
-        AND vcr.chazara_daf_teacher_uuid = (SELECT chazara_daf_teacher_uuid FROM cur)
+        AND COALESCE(vcr.chazara_daf_teacher_uuid, '00000000-0000-0000-0000-000000000000') = COALESCE((SELECT chazara_daf_teacher_uuid FROM cur), '00000000-0000-0000-0000-000000000000')
         AND (]] .. conditions .. [[)
         ORDER BY ]] .. order .. [[
         LIMIT 1
     ]]
 
-    dbh:query(sql, {recording_uuid = recording_uuid}, function(row)
+    local params = {recording_uuid = recording_uuid}
+
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[chazara_program] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+
+    dbh:query(sql, params, function(row)
         result = {recording_uuid = row['chazara_recording_uuid'], recording_filename = row['recording_filename']}
     end);
 
     if (result ~= nil) then
+        freeswitch.consoleLog("notice", "[chazara_program] next: " .. json:encode(result) .. "\n");
         local confirm = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "play_next.wav", "", "[12]");
         if (confirm == "1") then
             return result
         end
+    else
+        freeswitch.consoleLog("notice", "[chazara_program] next: nil\n");
     end
 
     return nil
@@ -398,11 +407,12 @@ end
             end);
 
             local next = {recording_uuid = split_last_file[1], recording_filename = recording_filename};
-            play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, split_last_file[2])
+            local offset = split_last_file[2]
 
             while (next ~= nil) do
+                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, offset)
+                offset = 0
                 next = check_for_next_recording(next["recording_uuid"])
-                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, 0)
             end
 
             recording_filename = {};
