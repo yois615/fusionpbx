@@ -63,7 +63,7 @@ function insert_cdr_record(recording_uuid, teacher_uuid, daf_teacher_uuid, start
     sql = sql .. "duration, caller_id_number, caller_id_name) "
     sql = sql .. "values (:chazara_recording_uuid, :domain_uuid, :chazara_teacher_uuid, :chazara_daf_teacher_uuid, :uuid, :start_epoch, :duration, :caller_id_number, :caller_id_name)";
 
-    if (daf_teacher_uuid == nil or not is_uuid(daf_teacher_uuid))
+    if (daf_teacher_uuid == nil or not is_uuid(daf_teacher_uuid)) then
         daf_teacher_uuid = dbh.NULL
     end
 
@@ -271,7 +271,7 @@ local function chumash_by_parsha(epoch)
             elseif parsha_play_file < 1 or parsha_play_file > file_count then
                 session:streamFile(recordings_dir .. "invalid.wav");
             else
-                play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid(parsha_play_file), nil);
+                play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid(parsha_play_file), nil, 0);
                 -- TODO play next file
             end
         end
@@ -400,9 +400,9 @@ end
             local next = {recording_uuid = split_last_file[1], recording_filename = recording_filename};
             play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, split_last_file[2])
 
-            while (next ~= nil)
+            while (next ~= nil) do
                 next = check_for_next_recording(next["recording_uuid"])
-                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil)
+                play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], nil, 0)
             end
 
             recording_filename = {};
@@ -817,8 +817,8 @@ if teacher_auth ~= true then
         -- Need to parse table
             if #recording_filename == 1 then
                 local next = {recording_uuid = chazara_recording_uuid[1], recording_filename = recording_filename[1]}
-                while (next ~= nil)
-                    play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1])
+                while (next ~= nil) do
+                    play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[1], 0)
                     next = check_for_next_recording(next["recording_uuid"])
                 end
 
@@ -861,8 +861,8 @@ if teacher_auth ~= true then
                 local select_recording = tonumber(session:playAndGetDigits(1,1,1,3000, "#", fs_rebbe, "", "\\d+"))
                 if select_recording ~= nil and select_recording > 0 and select_recording <= #chazara_daf_teacher_uuid then
                     local next = {recording_uuid = chazara_recording_uuid[select_recording], recording_filename = recording_filename[select_recording]}
-                    while (next ~= nil)
-                        play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording])
+                    while (next ~= nil) do
+                        play_file(chazara_teacher_uuid, next["recording_filename"], next["recording_uuid"], chazara_daf_teacher_uuid[select_recording], 0)
                         next = check_for_next_recording(next["recording_uuid"])
                     end
 
