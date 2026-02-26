@@ -282,7 +282,7 @@ local function chumash_by_parsha(epoch)
             elseif parsha_play_file < 1 or parsha_play_file > file_count then
                 session:streamFile(recordings_dir .. "invalid.wav");
             else
-                play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid(parsha_play_file), nil, 0);
+                play_file(chazara_teacher_uuid, tbl_parsha_recording_files[parsha_play_file], tbl_parsha_recording_uuid[parsha_play_file], nil, 0);
                 -- TODO play next file
             end
         end
