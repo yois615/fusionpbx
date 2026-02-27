@@ -3,7 +3,7 @@
 		<action application="sofia_stir_shaken_vs" data="" inline="true"/>
 	</condition>
 	<condition field="${sip_verstat_detailed}" expression="Passed-([ABC])$">
-		<action application="set" data="sip_h_P-Shaken-Attestation=$1" inline="true"/>
-		<anti-action application="set" data="sip_h_P-Shaken-Attestation=" inline="true"/>
+		<action application="set" data="sip_h_P-Attestation-Indicator=$1" inline="true"/>
+		<anti-action application="set" data="sip_h_P-Attestation-Indicator=" inline="true"/>
 	</condition>
 </extension>

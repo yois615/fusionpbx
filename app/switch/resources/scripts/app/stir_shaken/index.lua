@@ -58,10 +58,11 @@
         return;
     end
 
-    -- We're not in the destination table, maybe it's a call forward, get the original Identity
-    -- ATIS-1000085 says this method is wrong by as of 2-2026 most libraries don't support the spec
+    -- We're not in the destination table, maybe it's a call forward
+    -- See how we verified earlier, we wiped this header on the way in so we're not blindly trusting anyone.
+    -- ATIS-1000085.v003 says this method is wrong but as of 3-2026 no OSS libraries support the spec
     
-    attest = session:getVariable("sip_h_P-Shaken-Attestation");
+    attest = session:getVariable("sip_h_P-Attestation-Indicator");
     session:execute("export", "sip_h_Diversion=")
     
     if attest ~= nil then
