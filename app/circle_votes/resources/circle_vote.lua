@@ -229,13 +229,13 @@ session:streamFile(audio_dir .. "top_ten_greeting.wav");
 -- collect age
 ::start_age::
 age = session:playAndGetDigits(1, 2, 5, 3000, "#", audio_dir .. "top_ten_age.wav", "", "");
-if tonumber(age) < 3 or tonumber(age) > 25 then
+if (tonumber(age) == nil or tonumber(age) < 3 or tonumber(age) > 25) and session:ready() then
 	goto start_age
 end
 -- Collect gender
 ::start_gender::
 gender = session:playAndGetDigits(1, 1, 5, 3000, "#", audio_dir .. "top_ten_gender.wav", "", "");
-if tonumber(gender) < 1 or tonumber(gender) > 2 then
+if (tonumber(gender) == nil or tonumber(gender) < 1 or tonumber(gender) > 2) and session:ready() then
 	goto start_gender
 end
 if gender == "1" then gender = "male"; end
@@ -243,6 +243,9 @@ if gender == "2" then gender = "female"; end
 
 -- Collect zip
 zip = session:playAndGetDigits(5, 5, 5, 3000, "#", audio_dir .. "top_ten_zip.wav", "", "");
+if not session:ready() then
+	return
+end
     -- play main menu and instructions
     ::start_vote::
     vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. "top_ten_main_vote.wav", "",
@@ -253,7 +256,7 @@ zip = session:playAndGetDigits(5, 5, 5, 3000, "#", audio_dir .. "top_ten_zip.wav
     if (tonumber(vote_dtmf_digits) == nil) then
         session:hangup();
     end
-
+if not session:ready() then return; end;
     if (session:ready() and tonumber(vote_dtmf_digits) < 1 or tonumber(vote_dtmf_digits) > 10) then
         goto start_vote
     end
