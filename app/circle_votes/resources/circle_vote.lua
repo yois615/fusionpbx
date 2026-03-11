@@ -223,6 +223,19 @@ if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
     session:hangup();
 end
 
+-- Limit to three entries per customer_id
+local sql = "select COUNT(*) from circle_tt_votes WHERE customer_id = :customer_id AND vote_id = :vote_id; ";
+local params = {
+    customer_id = customer_id,
+    vote_id = vote_id
+};
+dbh:query(sql, params, function(row)
+    if tonumber(row.count) ~= nil and tonumber(row.count) >= 3 then
+        session:streamFile(audio_dir .. "top_ten_max_tries.wav");
+        session:hangup()
+    end
+end)
+
 if (session:ready()) then
     -- Play greeting without interruption
 session:streamFile(audio_dir .. "top_ten_greeting.wav");
