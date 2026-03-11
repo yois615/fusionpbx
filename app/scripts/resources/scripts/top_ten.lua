@@ -7,9 +7,12 @@
 -- (c) 2022 The Voice of Lakewood, Circle Magazine
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
 require "resources.functions.config";
+require "resources.functions.mkdir";
 audio_dir = "/usr/share/freeswitch/sounds/the_circle/top_ten_hotline/"
 debug.sql = true;
 json = freeswitch.JSON();
+
+vote_id = argv[1];
 -- require "app.the_loop.applications.record_to_upload";
 
 -- connect to the database
@@ -122,11 +125,15 @@ end
 
 function save_vote(vote)
     if (customer_id == nil) then
-        local sql = "INSERT INTO circle_customer (caller_id_number, caller_id_name)";
-        sql = sql .. " values (:caller_id_number, :caller_id_name); ";
+        local sql = "INSERT INTO circle_customer (caller_id_number, caller_id_name, ";
+	sql = sql .. "age, gender, zip)";
+        sql = sql .. " values (:caller_id_number, :caller_id_name, :age, :gender, :zip)";
         local params = {
             caller_id_name = caller_id_name,
-            caller_id_number = caller_id_number
+            caller_id_number = caller_id_number,
+            age = age,
+            gender = gender,
+            zip = zip
         }
         if (debug["sql"]) then
             freeswitch.consoleLog("notice", "[loop_story] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
@@ -140,14 +147,29 @@ function save_vote(vote)
         dbh:query(sql, params, function(row)
             customer_id = row.customer_id;
         end);
+    else
+	--Update with new values
+	local sql = "UPDATE circle_customer SET zip = :zip ";
+        sql = sql .. "WHERE customer_id = :customer_id ";
+	local params = {
+		customer_id = customer_id,
+		zip = zip
+	}
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[loop_story] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+	dbh:query(sql, params);
     end
     -- save the vote
-    local sql = "INSERT INTO circle_tt_votes (customer_id, vote, call_uuid)"
-    sql = sql .. " values (:customer_id, :vote, :uuid)";
+    local sql = "INSERT INTO circle_tt_votes (customer_id, vote_id, vote, call_uuid, age, gender)"
+    sql = sql .. " values (:customer_id, :vote_id, :vote, :uuid, :age, :gender)";
     local params = {
         customer_id = customer_id,
+        vote_id = vote_id;
         vote = vote,
-        uuid = uuid
+        uuid = uuid,
+        age = age,
+        gender = gender
     }
     dbh:query(sql, params);
     -- Play confirmation
@@ -162,7 +184,7 @@ max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
 story_incomplete = 1;
-voicemail_id = "250";
+voicemail_id = vote_id;
 
 -- get session variables
 caller_id_name = session:getVariable("caller_id_name");
@@ -202,6 +224,28 @@ if (string.len(caller_id_number) < 10 or tonumber(caller_id_number) == nil) then
 end
 
 if (session:ready()) then
+    -- Play greeting without interruption
+session:streamFile(audio_dir .. "top_ten_greeting.wav");
+-- collect age
+::start_age::
+age = session:playAndGetDigits(1, 2, 5, 3000, "#", audio_dir .. "top_ten_age.wav", "", "");
+if (tonumber(age) == nil or tonumber(age) < 3 or tonumber(age) > 25) and session:ready() then
+	goto start_age
+end
+-- Collect gender
+::start_gender::
+gender = session:playAndGetDigits(1, 1, 5, 3000, "#", audio_dir .. "top_ten_gender.wav", "", "");
+if (tonumber(gender) == nil or tonumber(gender) < 1 or tonumber(gender) > 2) and session:ready() then
+	goto start_gender
+end
+if gender == "1" then gender = "male"; end
+if gender == "2" then gender = "female"; end
+
+-- Collect zip
+zip = session:playAndGetDigits(5, 5, 5, 3000, "#", audio_dir .. "top_ten_zip.wav", "", "");
+if not session:ready() then
+	return
+end
     -- play main menu and instructions
     ::start_vote::
     vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. "top_ten_main_vote.wav", "",
@@ -212,7 +256,7 @@ if (session:ready()) then
     if (tonumber(vote_dtmf_digits) == nil) then
         session:hangup();
     end
-
+if not session:ready() then return; end;
     if (session:ready() and tonumber(vote_dtmf_digits) < 1 or tonumber(vote_dtmf_digits) > 10) then
         goto start_vote
     end
@@ -225,6 +269,8 @@ if (session:ready()) then
         session:execute("playback", "silence_stream://200");
         session:streamFile("tone_stream://L=1;%(500, 0, 640)");
         start_epoch = os.time();
+        --make sure the voicemail_dir exists
+	    mkdir(voicemail_dir .. "/" .. voicemail_id);
         result = session:recordFile(voicemail_dir .. "/" .. voicemail_id .. "/msg_" .. uuid .. ".wav", max_len_seconds,
             500, 4);
         message_length = (os.time() - start_epoch);
