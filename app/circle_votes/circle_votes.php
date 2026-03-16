@@ -102,7 +102,7 @@ function download_send_headers($filename) {
 		$sql = "SELECT voicemail_uuid FROM v_voicemails ";
 		$sql .= "WHERE domain_uuid = :domain_uuid ";
 		$sql .= "AND voicemail_id = :voicemail_id ";
-		$parameters['domain_uuid'] = $_SESSION['domain_name'];
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 		$parameters['voicemail_id'] = $voicemail_id;
 		$database = new database;
 		$voicemail_uuid = $database->select($sql, $parameters, 'column');
@@ -121,7 +121,7 @@ function download_send_headers($filename) {
 		foreach (glob($file_path."/msg_*.*") as $file_name) {
 			@unlink($file_name); //remove all recordings
 		}
-		header('Location: circle_votes.php'.($search != '' ? '?search='.urlencode($search) : null));
+		header('Location: circle_votes.php?vote_id='.$vote_id.($search != '' ? '&search='.urlencode($search) : null));
 		exit;
 	}
 
