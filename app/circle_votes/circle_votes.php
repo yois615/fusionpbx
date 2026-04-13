@@ -179,6 +179,9 @@ function download_send_headers($filename) {
 	echo "	<div class='heading'><b>".$text['title-circle-vote']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
 
+	if (permission_exists('circle_votes_edit')) {
+		echo button::create(['type'=>'button','label'=>'Configure Question','link'=>'circle_votes_edit.php?vote_id='.$vote_id]);
+	}
 	echo button::create(['type'=>'button','label'=>'Pick random winner','link'=>'circle_vote_winner.php?vote_id='.$vote_id]);
 	echo button::create(['type'=>'button','label'=>$text['button-export'],'icon'=>$_SESSION['theme']['button_icon_export'],'link'=>'circle_votes.php?action=download&vote_id='.$vote_id]);
 	

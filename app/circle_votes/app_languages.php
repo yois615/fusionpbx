@@ -43,6 +43,8 @@
 		$text['title-circle-vote']['sv-se'] = '';
 		$text['title-circle-vote']['uk-ua'] = '';
 
+		$text['label-question_audio'] = "Question Audio";
+
 		$text['button-circle-vote-delete']['en-us'] = 'Delete all Votes';
 
 		$text['title_description-bridge']['en-us'] = 'Shows all votes since last delete.';

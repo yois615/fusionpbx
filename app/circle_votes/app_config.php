@@ -21,6 +21,10 @@
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = 'circle_votes_edit';
+		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
+		$y++;
 
 	//Votes
 		$y = 0;
@@ -67,6 +71,17 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'age';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+
+		$y++;
+		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_tt_vote_audio';
+		$apps[$x]['db'][$y]['table']['parent'] = '';
+		$z = 0;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote_id';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'question_audio';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
 

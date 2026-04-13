@@ -264,6 +264,24 @@ if not session:ready() then
 end
     -- play main menu and instructions
     ::start_vote::
+
+    --Get question_audio from DB
+    local sql = [[SELECT * FROM v_circle_tt_vote_audio
+					WHERE domain_uuid = :domain_uuid
+					AND vote_id = :vote_id]];
+    local params = {
+        domain_uuid = domain_uuid,
+        vote_id = vote_id
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[circle_tt_vote_audio] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        if row["question_audio"] ~= nil and string.len(question_audio) > 0 then
+            question_audio = row["question_audio"];
+        end
+    end);
+
     vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. question_audio, "",
         "");
     if (vote_dtmf_digits ~= nil and vote_dtmf_digits == "1") then
