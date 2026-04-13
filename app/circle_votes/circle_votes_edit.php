@@ -90,7 +90,7 @@
             $parameters['domain_uuid'] = $_SESSION['domain_uuid'];
             $parameters['vote_id'] = $vote_id;
             $database = new database;
-            $circle_tt_vote_audio_uuid = $database->select($sql, $parameters, 'all');
+            $circle_tt_vote_audio_uuid = $database->select($sql, $parameters, 'column');
             unset($sql, $parameters);
 
             if (!empty($circle_tt_vote_audio_uuid)) {
@@ -102,8 +102,8 @@
 
 		//grant temporary permissions
 			$p = new permissions;
-			$p->add('circle_tt_vote_audios_add', 'temp');
-			$p->add('circle_tt_vote_audios_edit', 'temp');
+			$p->add('circle_tt_vote_audio_add', 'temp');
+			$p->add('circle_tt_vote_audio_edit', 'temp');
 
 		//save to the data
 			$database = new database;
@@ -113,8 +113,8 @@
 			$message = $database->message;
 
 		//remove temporary permissions
-				$p->delete('circle_tt_vote_audios_add', 'temp');
-				$p->delete('circle_tt_vote_audios_edit', 'temp');
+				$p->delete('circle_tt_vote_audio_add', 'temp');
+				$p->delete('circle_tt_vote_audio_edit', 'temp');
 
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
