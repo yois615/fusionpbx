@@ -17,8 +17,7 @@ local recordings_dir = recordings_dir .. "/" .. domain_name
 vote_id = argv[1];
 -- require "app.the_loop.applications.record_to_upload";
 
--- Set question to ask as argument
-question_audio = recordings_dir .. argv[2] or audio_dir .. "top_ten_main_vote.wav";
+question_audio = audio_dir .. "top_ten_main_vote.wav";
 
 -- connect to the database
 local Database = require "resources.functions.database";
