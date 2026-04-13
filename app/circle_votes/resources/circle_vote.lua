@@ -12,6 +12,7 @@ audio_dir = "/usr/share/freeswitch/sounds/the_circle/top_ten_hotline/"
 debug.sql = true;
 json = freeswitch.JSON();
 domain_name = session:getVariable("domain_name");
+domain_uuid = session:getVariable("domain_uuid");
 local recordings_dir = recordings_dir .. "/" .. domain_name
 
 vote_id = argv[1];
