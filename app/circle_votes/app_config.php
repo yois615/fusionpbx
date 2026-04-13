@@ -75,14 +75,28 @@
 		$z++;
 
 		$y++;
-		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_tt_vote_audio';
+		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_tt_vote_audios';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'circle_tt_vote_audio_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'primary';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'vote_id';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'question_audio';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'domain_uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_domains';
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'domain_uuid';
 		$z++;
 
 ?>

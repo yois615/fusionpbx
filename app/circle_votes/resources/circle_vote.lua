@@ -266,7 +266,7 @@ end
     ::start_vote::
 
     --Get question_audio from DB
-    local sql = [[SELECT * FROM v_circle_tt_vote_audio
+    local sql = [[SELECT * FROM v_circle_tt_vote_audios
 					WHERE domain_uuid = :domain_uuid
 					AND vote_id = :vote_id]];
     local params = {

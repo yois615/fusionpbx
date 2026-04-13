@@ -84,16 +84,24 @@
 
 
 		//prepare the array
-			$array['circle_surveys'][0]['vote_id'] = $vote_id;
-			$array['circle_surveys'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
-			$array['circle_surveys'][0]['question_audio'] = $question_audio;
+            $sql = "select circle_tt_vote_audio_uuid from v_circle_tt_vote_audios ";
+            $sql .= "where domain_uuid = :domain_uuid ";
+            $sql .= "and vote_id = :vote_id ";
+            $parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+            $parameters['vote_id'] = $vote_id;
+            $database = new database;
+            $circle_tt_vote_audio_uuid = $database->select($sql, $parameters, 'all');
+            unset($sql, $parameters);
 
-
+            $array['circle_tt_vote_audios'][0]['circle_tt_vote_audio_uuid'] = $circle_tt_vote_audio_uuid;
+			$array['circle_tt_vote_audios'][0]['vote_id'] = $vote_id;
+			$array['circle_tt_vote_audios'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
+			$array['circle_tt_vote_audios'][0]['question_audio'] = $question_audio;
 
 		//grant temporary permissions
 			$p = new permissions;
-			$p->add('circle_tt_vote_audio_add', 'temp');
-			$p->add('circle_tt_vote_audio_edit', 'temp');
+			$p->add('circle_tt_vote_audios_add', 'temp');
+			$p->add('circle_tt_vote_audios_edit', 'temp');
 
 		//save to the data
 			$database = new database;
@@ -103,8 +111,8 @@
 			$message = $database->message;
 
 		//remove temporary permissions
-				$p->delete('circle_tt_vote_audio_add', 'temp');
-				$p->delete('circle_tt_vote_audio_edit', 'temp');
+				$p->delete('circle_tt_vote_audios_add', 'temp');
+				$p->delete('circle_tt_vote_audios_edit', 'temp');
 
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
@@ -112,16 +120,9 @@
 			}
 
 		//redirect the user
-			if (isset($action)) {
-				if ($action == "add") {
-					$_SESSION["message"] = $text['message-add'];
-				}
-				if ($action == "update") {
-					$_SESSION["message"] = $text['message-update'];
-				}
-				header('Location: circle_votes.php?vote_id='.$vote_id);
-				return;
-			}
+            $_SESSION["message"] = $text['message-update'];
+            header('Location: circle_votes.php?vote_id='.$vote_id);
+            return;
 	}
 
 
@@ -134,7 +135,7 @@
 $destination = new destinations;
 
 //pre-populate the form
-	$sql = "SELECT * FROM v_circle_tt_vote_audio ";
+	$sql = "SELECT * FROM v_circle_tt_vote_audios ";
 	$sql .= "where vote_id = :vote_id ";
 	$parameters['vote_id'] = $vote_id;
 	$database = new database;
@@ -192,7 +193,7 @@ $destination = new destinations;
 			foreach ($recordings as $row) {
 				$recording_name = $row["recording_name"];
 				$recording_filename = $row["recording_filename"];
-				if (strlen($greeting) > 0 && $greeting == $recording_filename) {
+				if (strlen($question_audio) > 0 && $question_audio == $recording_filename) {
 					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
 				}
 				else {
