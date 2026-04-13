@@ -93,7 +93,9 @@
             $circle_tt_vote_audio_uuid = $database->select($sql, $parameters, 'all');
             unset($sql, $parameters);
 
-            $array['circle_tt_vote_audios'][0]['circle_tt_vote_audio_uuid'] = $circle_tt_vote_audio_uuid;
+            if (!empty($circle_tt_vote_audio_uuid)) {
+                $array['circle_tt_vote_audios'][0]['circle_tt_vote_audio_uuid'] = $circle_tt_vote_audio_uuid;
+            }
 			$array['circle_tt_vote_audios'][0]['vote_id'] = $vote_id;
 			$array['circle_tt_vote_audios'][0]['domain_uuid'] = $_SESSION["domain_uuid"];
 			$array['circle_tt_vote_audios'][0]['question_audio'] = $question_audio;
