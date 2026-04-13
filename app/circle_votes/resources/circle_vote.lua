@@ -15,6 +15,9 @@ json = freeswitch.JSON();
 vote_id = argv[1];
 -- require "app.the_loop.applications.record_to_upload";
 
+-- Set question to ask as argument
+question_audio = argv[2] or "top_ten_main_vote.wav";
+
 -- connect to the database
 local Database = require "resources.functions.database";
 dbh = Database.new('system');
@@ -261,7 +264,7 @@ if not session:ready() then
 end
     -- play main menu and instructions
     ::start_vote::
-    vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. "top_ten_main_vote.wav", "",
+    vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. question_audio, "",
         "");
     if (vote_dtmf_digits ~= nil and vote_dtmf_digits == "1") then
         vote_dtmf_digits = vote_dtmf_digits .. session:getDigits(1, "#", 3000);
