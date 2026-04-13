@@ -11,12 +11,13 @@ require "resources.functions.mkdir";
 audio_dir = "/usr/share/freeswitch/sounds/the_circle/top_ten_hotline/"
 debug.sql = true;
 json = freeswitch.JSON();
+local recordings_dir = recordings_dir .. "/" .. domain_name
 
 vote_id = argv[1];
 -- require "app.the_loop.applications.record_to_upload";
 
 -- Set question to ask as argument
-question_audio = argv[2] or "top_ten_main_vote.wav";
+question_audio = recordings_dir .. argv[2] or audio_dir .. "top_ten_main_vote.wav";
 
 -- connect to the database
 local Database = require "resources.functions.database";
@@ -278,11 +279,11 @@ end
     end
     dbh:query(sql, params, function(row)
         if row["question_audio"] ~= nil and string.len(question_audio) > 0 then
-            question_audio = row["question_audio"];
+            question_audio = recordings_dir .. row["question_audio"];
         end
     end);
 
-    vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", audio_dir .. question_audio, "",
+    vote_dtmf_digits = session:playAndGetDigits(1, 1, 5, digit_timeout, "#", question_audio, "",
         "");
     if (vote_dtmf_digits ~= nil and vote_dtmf_digits == "1") then
         vote_dtmf_digits = vote_dtmf_digits .. session:getDigits(1, "#", 3000);
