@@ -587,8 +587,8 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "	<select class='formfld' name='ask_only_odd_even' id='ask_only_odd_even'>\n";
-	echo "    	<option value='true' ".(($ask_only_odd_even == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
 	echo "    	<option value='false' ".(($ask_only_odd_even == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
+	echo "    	<option value='true' ".(($ask_only_odd_even == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
 	echo "	</select>\n";
 	echo "<br />\n";
 	echo $text['description-ask_only_odd_even']."\n";
