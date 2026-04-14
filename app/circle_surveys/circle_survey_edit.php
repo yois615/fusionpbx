@@ -64,6 +64,7 @@
 		$name = $_POST["name"];
 		$survey_questions = $_POST["survey_questions"];
 		$survey_questions_delete = $_POST["survey_questions_delete"];
+		$ask_only_odd_even = $_POST["ask_only_odd_even"];
 	}
 
 //process the user data and save it to the database
@@ -164,6 +165,7 @@
 			$array['circle_surveys'][0]['reason_0_file'] = $reason_0_file;
 			$array['circle_surveys'][0]['ask_reason_below'] = $ask_reason_below;
 			$array['circle_surveys'][0]['exit_action'] = $exit_action;
+			$array['circle_surveys'][0]['ask_only_odd_even'] = $ask_only_odd_even;
 
 
 
@@ -262,6 +264,7 @@ $destination = new destinations;
 		$reason_0_file = $row['reason_0_file'];
 		$ask_reason_below = $row['ask_reason_below'];
 		$exit_action = $row['exit_action'];
+		$ask_only_odd_even = $row['ask_only_odd_even'];
 	}
 	unset($sql, $parameters, $row);
 
@@ -575,6 +578,20 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "<td>\n";
 	echo $text['description-reason_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-ask_only_odd_even']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "	<select class='formfld' name='ask_only_odd_even' id='ask_only_odd_even'>\n";
+	echo "    	<option value='true' ".(($ask_only_odd_even == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+	echo "    	<option value='false' ".(($ask_only_odd_even == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
+	echo "	</select>\n";
+	echo "<br />\n";
+	echo $text['description-ask_only_odd_even']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

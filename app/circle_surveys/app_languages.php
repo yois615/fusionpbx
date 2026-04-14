@@ -50,6 +50,9 @@
 
 		$text['label-exit_action']['en-us'] = "Exit Action";
 
+		$text['label-ask_only_odd_even']['en-us'] = "Ask only odd/even";
+		$text['description-ask_only_odd_even']['en-us'] = "If caller calls on odd second, ask only odd numbered questions, and on even second ask only even numbered questions";
+
 		$text['button-male']['en-us'] = "Male";
 
 		$text['button-female']['en-us'] = "Female";

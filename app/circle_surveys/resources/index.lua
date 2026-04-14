@@ -172,7 +172,13 @@ if session:ready() then
         reason_file = row["reason_file"];
         reason_0_file = row["reason_0_file"];
         ask_reason_below = row["ask_reason_below"];
+        ask_only_odd_even = row["ask_only_odd_even"];
     end);
+
+    if ask_only_odd_even ~= nil and ask_only_odd_even == "true" then
+        local seconds = os.time() 
+        even_second = seconds % 2 == 0
+    end
 
     -- Play greeting
     session:streamFile(recordings_dir .. greeting_file);
@@ -256,63 +262,69 @@ if session:ready() then
 end
 
 if session:ready() then
-    for i, question in ipairs(survey_questions) do
-        session:flushDigits();
-        local exit = false;
-        local reason = nil;
-        local tries = 0;
-        while (session:ready() and exit == false) do
-            if question['recording_suffix'] ~= nil and string.len(question['recording_suffix']) > 0 then
-                session:streamFile(recordings_dir .. question['recording']);
-                dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording_suffix"],
-                "", "");
-            else
-                dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"],
-                "", "");
+    for i, question in ipairs(survey_questions) do    
+        if ask_only_odd_even == "true" and even_second and i % 2 ~= 0 then
+            -- Question is odd but we ask only even
+        elseif ask_only_odd_even == "true" and not even_second and i % 2 == 0 then
+            -- Question is even but we ask only odd
+        else
+            session:flushDigits();
+            local exit = false;
+            local reason = nil;
+            local tries = 0;
+            while (session:ready() and exit == false) do
+                if question['recording_suffix'] ~= nil and string.len(question['recording_suffix']) > 0 then
+                    session:streamFile(recordings_dir .. question['recording']);
+                    dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording_suffix"],
+                    "", "");
+                else
+                    dtmf_digits = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. question["recording"],
+                    "", "");
+                end
+                if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= tonumber(question['highest_number']) then
+                    exit = true;
+                else
+                    tries = tries + 1;
+                    if tries == max_tries then session:hangup(); end;
+                end
             end
-            if tonumber(dtmf_digits) == nil or tonumber(dtmf_digits) <= tonumber(question['highest_number']) then
-                exit = true;
-            else
-                tries = tries + 1;
-                if tries == max_tries then session:hangup(); end;
-            end
-        end
 
-        if tonumber(dtmf_digits) ~= nil then
-            -- If they voted 0 then ask for a reason
-            if tonumber(dtmf_digits) == 0 and reason_0_file ~= nil and string.len(reason_0_file) > 0 then
-                session:flushDigits();
-                local exit = false;
-                local tries = 0;
-                while (session:ready() and exit == false) do
-                    reason = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. reason_0_file,
-                        "", "");
-                    if tonumber(reason) ~= nil and tonumber(reason) > 0 then
-                        exit = true;
-                    else
-                        tries = tries + 1;
-                        if tries == max_tries then session:hangup(); end;
+            if tonumber(dtmf_digits) ~= nil then
+                -- If they voted 0 then ask for a reason
+                if tonumber(dtmf_digits) == 0 and reason_0_file ~= nil and string.len(reason_0_file) > 0 then
+                    session:flushDigits();
+                    local exit = false;
+                    local tries = 0;
+                    while (session:ready() and exit == false) do
+                        reason = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. reason_0_file,
+                            "", "");
+                        if tonumber(reason) ~= nil and tonumber(reason) > 0 then
+                            exit = true;
+                        else
+                            tries = tries + 1;
+                            if tries == max_tries then session:hangup(); end;
+                        end
+                    end
+                elseif tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) and reason_file ~= nil and string.len(reason_file) ~= 0 then
+                    session:flushDigits();
+                    local exit = false;
+                    local tries = 0;
+                    while (session:ready() and exit == false) do
+                        reason = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. reason_file,
+                            "", "");
+                        if tonumber(reason) ~= nil and tonumber(reason) > 0 then
+                            exit = true;
+                        else
+                            tries = tries + 1;
+                            if tries == max_tries then session:hangup(); end;
+                        end
                     end
                 end
-            elseif tonumber(ask_reason_below) ~= nil and tonumber(dtmf_digits) <= tonumber(ask_reason_below) and reason_file ~= nil and string.len(reason_file) ~= 0 then
-                session:flushDigits();
-                local exit = false;
-                local tries = 0;
-                while (session:ready() and exit == false) do
-                    reason = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. reason_file,
-                        "", "");
-                    if tonumber(reason) ~= nil and tonumber(reason) > 0 then
-                        exit = true;
-                    else
-                        tries = tries + 1;
-                        if tries == max_tries then session:hangup(); end;
-                    end
+                if question_answered_file ~= nil and string.len(question_answered_file) > 0 then
+                    session:streamFile(recordings_dir .. question_answered_file);
                 end
+                save_vote(dtmf_digits, reason, i)
             end
-            if question_answered_file ~= nil and string.len(question_answered_file) > 0 then
-                session:streamFile(recordings_dir .. question_answered_file);
-            end
-            save_vote(dtmf_digits, reason, i)
         end
     end
 end

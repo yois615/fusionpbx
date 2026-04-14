@@ -186,6 +186,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'ask_reason_below';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'ask_only_odd_even';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 
 		$y++;
 		$apps[$x]['db'][$y]['table']['name'] = 'v_circle_survey_questions';
