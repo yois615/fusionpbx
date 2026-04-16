@@ -280,7 +280,7 @@ end
     end
     dbh:query(sql, params, function(row)
         if row["question_audio"] ~= nil and string.len(question_audio) > 0 then
-            question_audio = recordings_dir .. row["question_audio"];
+            question_audio = recordings_dir .. "/" .. row["question_audio"];
         end
     end);
 
