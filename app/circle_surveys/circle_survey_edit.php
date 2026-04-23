@@ -55,6 +55,7 @@
 		$age_file = $_POST["age_file"];
 		$gender_file = $_POST["gender_file"];
 		$zip_code_file = $_POST["zip_code_file"];
+		$greeting_suffix = $_POST["greeting_suffix"];
 		$question_answered_file = $_POST["question_answered_file"];
 		$reason_file = $_POST["reason_file"];
 		$reason_0_file = $_POST["reason_0_file"];
@@ -161,6 +162,7 @@
 			$array['circle_surveys'][0]['age_file'] = $age_file;
 			$array['circle_surveys'][0]['gender_file'] = $gender_file;
 			$array['circle_surveys'][0]['zip_code_file'] = $zip_code_file;
+			$array['cicrle_surveys'][0]['greeting_suffix'] = $greeting_suffix;
 			$array['circle_surveys'][0]['reason_file'] = $reason_file;
 			$array['circle_surveys'][0]['reason_0_file'] = $reason_0_file;
 			$array['circle_surveys'][0]['ask_reason_below'] = $ask_reason_below;
@@ -260,6 +262,7 @@ $destination = new destinations;
 		$age_file = $row['age_file'];
 		$gender_file = $row['gender_file'];
 		$zip_code_file = $row['zip_code_file'];
+		$greeting_suffix = $row['greeting_suffix'];
 		$reason_file = $row['reason_file'];
 		$reason_0_file = $row['reason_0_file'];
 		$ask_reason_below = $row['ask_reason_below'];
@@ -381,6 +384,35 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "<td>\n";
 	echo $text['description-greeting']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-greeting_suffix']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='greeting_suffix' id='greeting_suffix' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($greeting_suffix) > 0 && $greeting_suffix == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<td>\n";
+	echo $text['description-greeting_suffix']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

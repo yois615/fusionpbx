@@ -159,6 +159,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'greeting';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'greeting_suffix';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'exit_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;

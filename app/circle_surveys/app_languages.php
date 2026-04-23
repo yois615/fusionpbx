@@ -38,6 +38,8 @@
 
 		$text['label-zip_code_file']['en-us'] = "Zip Code question";
 
+		$text['label-greeting_suffix']['en-us'] = "Past Winners File";
+
 		$text['label-reason_file']['en-us'] = "Reason for vote question";
 
 		$text['label-reason_0_file']['en-us'] = "Reason for vote 0 question";

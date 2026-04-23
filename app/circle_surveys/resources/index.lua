@@ -166,6 +166,7 @@ if session:ready() then
         exit_file = row["exit_file"];
         age_file = row['age_file'];
         zip_code_file = row['zip_code_file'];
+        greeting_suffix = row['greeting_suffix'];
         gender_file = row['gender_file'];
         question_answered_file = row['question_answered_file'];
         exit_action = row["exit_action"];
@@ -183,6 +184,10 @@ if session:ready() then
     -- Play greeting
     session:streamFile(recordings_dir .. greeting_file);
 end
+
+        if session:ready() and greeting_suffix ~= nil and string.len(greeting_suffix) > 0 then
+            session:streamFile(recordings_dir .. greeting_suffix)
+        end
 
 -- Demographic data
         if session:ready() and age_file ~= nil and string.len(age_file) > 0 then
@@ -236,8 +241,6 @@ end
                 end
             end
         end
-
-
 
 -- loop through questions
 if session:ready() then
