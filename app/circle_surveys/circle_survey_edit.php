@@ -162,7 +162,7 @@
 			$array['circle_surveys'][0]['age_file'] = $age_file;
 			$array['circle_surveys'][0]['gender_file'] = $gender_file;
 			$array['circle_surveys'][0]['zip_code_file'] = $zip_code_file;
-			$array['cicrle_surveys'][0]['greeting_suffix'] = $greeting_suffix;
+			$array['circle_surveys'][0]['greeting_suffix'] = $greeting_suffix;
 			$array['circle_surveys'][0]['reason_file'] = $reason_file;
 			$array['circle_surveys'][0]['reason_0_file'] = $reason_0_file;
 			$array['circle_surveys'][0]['ask_reason_below'] = $ask_reason_below;
