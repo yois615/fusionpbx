@@ -171,7 +171,7 @@
 
 
 		//grant temporary permissions
-			$p = new permissions;
+			$p = permissions::new();
 			$p->add('survey_question_add', 'temp');
 			$p->add('survey_question_edit', 'temp');
 

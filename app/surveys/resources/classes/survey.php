@@ -287,7 +287,7 @@ if (!class_exists('survey')) {
 						//save the changes and set the message
 							if (is_array($array) && @sizeof($array) != 0) {
 
-								$p = new permissions;
+								$p = permissions::new();
 								$p->add('survey_question_add', 'temp');
 								$p->add('survey_add', 'temp');
 
@@ -358,7 +358,7 @@ if (!class_exists('survey')) {
 							if (is_array($array) && @sizeof($array) != 0) {
 
 								//grant temporary permissions
-									$p = new permissions;
+									$p = permissions::new();
 									$p->add('survey_question_delete', 'temp');
 
 								//execute delete
