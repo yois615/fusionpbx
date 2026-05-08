@@ -1,0 +1,159 @@
+<?php
+
+	//Bridges
+		$text['title-circle-votes']['en-us'] = 'Circle Votes';
+		$text['title-circle-votes']['en-gb'] = 'Circle Votes';
+		$text['title-circle-votes']['ar-eg'] = '';
+		$text['title-circle-votes']['de-at'] = '';
+		$text['title-circle-votes']['de-ch'] = '';
+		$text['title-circle-votes']['de-de'] = '';
+		$text['title-circle-votes']['es-cl'] = '';
+		$text['title-circle-votes']['es-mx'] = '';
+		$text['title-circle-votes']['fr-ca'] = 'Ponts';
+		$text['title-circle-votes']['fr-fr'] = 'Ponts';
+		$text['title-circle-votes']['he-il'] = '';
+		$text['title-circle-votes']['it-it'] = '';
+		$text['title-circle-votes']['nl-nl'] = 'Bruggen';
+		$text['title-circle-votes']['pl-pl'] = '';
+		$text['title-circle-votes']['pt-br'] = '';
+		$text['title-circle-votes']['pt-pt'] = '';
+		$text['title-circle-votes']['ro-ro'] = '';
+		$text['title-circle-votes']['ru-ru'] = '';
+		$text['title-circle-votes']['sv-se'] = '';
+		$text['title-circle-votes']['uk-ua'] = '';
+
+		$text['title-circle-vote']['en-us'] = 'Vote';
+		$text['title-circle-vote']['en-gb'] = 'Vote';
+		$text['title-circle-vote']['ar-eg'] = '';
+		$text['title-circle-vote']['de-at'] = '';
+		$text['title-circle-vote']['de-ch'] = '';
+		$text['title-circle-vote']['de-de'] = '';
+		$text['title-circle-vote']['es-cl'] = '';
+		$text['title-circle-vote']['es-mx'] = '';
+		$text['title-circle-vote']['fr-ca'] = 'Pont';
+		$text['title-circle-vote']['fr-fr'] = 'Pont';
+		$text['title-circle-vote']['he-il'] = '';
+		$text['title-circle-vote']['it-it'] = '';
+		$text['title-circle-vote']['nl-nl'] = 'Brug';
+		$text['title-circle-vote']['pl-pl'] = '';
+		$text['title-circle-vote']['pt-br'] = '';
+		$text['title-circle-vote']['pt-pt'] = '';
+		$text['title-circle-vote']['ro-ro'] = '';
+		$text['title-circle-vote']['ru-ru'] = '';
+		$text['title-circle-vote']['sv-se'] = '';
+		$text['title-circle-vote']['uk-ua'] = '';
+
+		$text['label-question_audio'] = "Question Audio";
+
+		$text['button-circle-vote-delete']['en-us'] = 'Delete all Votes';
+
+		$text['title_description-bridge']['en-us'] = 'Shows all votes since last delete.';
+		$text['title_description-bridge']['en-gb'] = 'Shows all votes since last delete.';
+		$text['title_description-bridge']['ar-eg'] = '';
+		$text['title_description-bridge']['de-at'] = '';
+		$text['title_description-bridge']['de-ch'] = '';
+		$text['title_description-bridge']['de-de'] = '';
+		$text['title_description-bridge']['es-cl'] = '';
+		$text['title_description-bridge']['es-mx'] = '';
+		$text['title_description-bridge']['fr-ca'] = 'Ajouter des déclarations de pont à la liste de sélection';
+		$text['title_description-bridge']['fr-fr'] = 'Ajouter des déclarations de pont à la liste de sélection';
+		$text['title_description-bridge']['he-il'] = '';
+		$text['title_description-bridge']['it-it'] = '';
+		$text['title_description-bridge']['nl-nl'] = 'Voeg brug opdrachten toe aan bestemmings lijst.';
+		$text['title_description-bridge']['pl-pl'] = '';
+		$text['title_description-bridge']['pt-br'] = '';
+		$text['title_description-bridge']['pt-pt'] = '';
+		$text['title_description-bridge']['ro-ro'] = '';
+		$text['title_description-bridge']['ru-ru'] = '';
+		$text['title_description-bridge']['sv-se'] = '';
+		$text['title_description-bridge']['uk-ua'] = '';
+
+		$text['label-bridge_name']['en-us'] = 'Name';
+		$text['label-bridge_name']['en-gb'] = 'Name';
+		$text['label-bridge_name']['ar-eg'] = '';
+		$text['label-bridge_name']['de-at'] = '';
+		$text['label-bridge_name']['de-ch'] = '';
+		$text['label-bridge_name']['de-de'] = '';
+		$text['label-bridge_name']['es-cl'] = '';
+		$text['label-bridge_name']['es-mx'] = '';
+		$text['label-bridge_name']['fr-ca'] = 'Nom';
+		$text['label-bridge_name']['fr-fr'] = 'Nom';
+		$text['label-bridge_name']['he-il'] = '';
+		$text['label-bridge_name']['it-it'] = '';
+		$text['label-bridge_name']['nl-nl'] = 'Naam';
+		$text['label-bridge_name']['pl-pl'] = '';
+		$text['label-bridge_name']['pt-br'] = '';
+		$text['label-bridge_name']['pt-pt'] = '';
+		$text['label-bridge_name']['ro-ro'] = '';
+		$text['label-bridge_name']['ru-ru'] = '';
+		$text['label-bridge_name']['sv-se'] = '';
+		$text['label-bridge_name']['uk-ua'] = '';
+
+		$text['description-bridge_name']['en-us'] = 'Enter the name.';
+		$text['description-bridge_name']['en-gb'] = 'Enter the name.';
+		$text['description-bridge_name']['ar-eg'] = '';
+		$text['description-bridge_name']['de-at'] = '';
+		$text['description-bridge_name']['de-ch'] = '';
+		$text['description-bridge_name']['de-de'] = '';
+		$text['description-bridge_name']['es-cl'] = '';
+		$text['description-bridge_name']['es-mx'] = '';
+		$text['description-bridge_name']['fr-ca'] = 'Entrez le nom';
+		$text['description-bridge_name']['fr-fr'] = 'Entrez le nom';
+		$text['description-bridge_name']['he-il'] = '';
+		$text['description-bridge_name']['it-it'] = '';
+		$text['description-bridge_name']['nl-nl'] = 'Voer naam in.';
+		$text['description-bridge_name']['pl-pl'] = '';
+		$text['description-bridge_name']['pt-br'] = '';
+		$text['description-bridge_name']['pt-pt'] = '';
+		$text['description-bridge_name']['ro-ro'] = '';
+		$text['description-bridge_name']['ru-ru'] = '';
+		$text['description-bridge_name']['sv-se'] = '';
+		$text['description-bridge_name']['uk-ua'] = '';
+
+		$text['label-bridge_destination']['en-us'] = 'Destination';
+		$text['label-bridge_destination']['en-gb'] = 'Destination';
+		$text['label-bridge_destination']['ar-eg'] = '';
+		$text['label-bridge_destination']['de-at'] = '';
+		$text['label-bridge_destination']['de-ch'] = '';
+		$text['label-bridge_destination']['de-de'] = '';
+		$text['label-bridge_destination']['es-cl'] = '';
+		$text['label-bridge_destination']['es-mx'] = '';
+		$text['label-bridge_destination']['fr-ca'] = 'Destination';
+		$text['label-bridge_destination']['fr-fr'] = 'Destination';
+		$text['label-bridge_destination']['he-il'] = '';
+		$text['label-bridge_destination']['it-it'] = '';
+		$text['label-bridge_destination']['nl-nl'] = 'Bestemming';
+		$text['label-bridge_destination']['pl-pl'] = '';
+		$text['label-bridge_destination']['pt-br'] = '';
+		$text['label-bridge_destination']['pt-pt'] = '';
+		$text['label-bridge_destination']['ro-ro'] = '';
+		$text['label-bridge_destination']['ru-ru'] = '';
+		$text['label-bridge_destination']['sv-se'] = '';
+		$text['label-bridge_destination']['uk-ua'] = '';
+
+		$text['description-bridge_destination']['en-us'] = 'Enter the destination.';
+		$text['description-bridge_destination']['en-gb'] = 'Enter the destination.';
+		$text['description-bridge_destination']['ar-eg'] = '';
+		$text['description-bridge_destination']['de-at'] = '';
+		$text['description-bridge_destination']['de-ch'] = '';
+		$text['description-bridge_destination']['de-de'] = '';
+		$text['description-bridge_destination']['es-cl'] = '';
+		$text['description-bridge_destination']['es-mx'] = '';
+		$text['description-bridge_destination']['fr-ca'] = 'Entrer la destination';
+		$text['description-bridge_destination']['fr-fr'] = 'Entrer la destination';
+		$text['description-bridge_destination']['he-il'] = '';
+		$text['description-bridge_destination']['it-it'] = '';
+		$text['description-bridge_destination']['nl-nl'] = 'Voer de bestemming in.';
+		$text['description-bridge_destination']['pl-pl'] = '';
+		$text['description-bridge_destination']['pt-br'] = '';
+		$text['description-bridge_destination']['pt-pt'] = '';
+		$text['description-bridge_destination']['ro-ro'] = '';
+		$text['description-bridge_destination']['ru-ru'] = '';
+		$text['description-bridge_destination']['sv-se'] = '';
+		$text['description-bridge_destination']['uk-ua'] = '';
+
+		$text['label-circle_votes_count']['en-us'] = 'Number of Votes';
+		$text['label-circle_votes_number']['en-us'] = 'Vote Choice';
+		
+
+?>

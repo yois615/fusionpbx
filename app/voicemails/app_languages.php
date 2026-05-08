@@ -379,6 +379,8 @@ $text['message-password_requirements']['zh-cn'] = "密码要求";
 $text['message-password_requirements']['ja-jp'] = "パスワード要件";
 $text['message-password_requirements']['ko-kr'] = "암호 요구 사항";
 
+$text['label-circle_vote']['en-us'] = "Top Ten Vote";
+
 $text['label-numberic_only']['en-us'] = "Only Numbers Allowed";
 $text['label-numberic_only']['en-gb'] = "Only Numbers Allowed";
 $text['label-numberic_only']['ar-eg'] = "فقط الأرقام المسموح بها";
