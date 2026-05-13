@@ -34,7 +34,15 @@ local recordings_dir = recordings_dir .. "/" .. domain_name .. "/";
 -- get session variables
 caller_id_name = session:getVariable("caller_id_name");
 caller_id_number = session:getVariable("caller_id_number");
+sip_to_user = session:getVariable("sip_to_user");
 uuid = session:getVariable("uuid");
+
+-- Figure out if we're from Israel so parshas get loaded properly
+if string.find(sip_to_user, "3765000") ~= nil then
+    israel_user = "&i=on";
+else
+    israel_user = "";
+end
 
 --load lazy settings library
 local Settings = require "resources.functions.lazy_settings";
@@ -177,7 +185,7 @@ end
 
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
-    local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
+    local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on" .. israel_user .. "&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
     local file = io.open(cache_file, "r")
     if file then
         content = file:read("*all")
