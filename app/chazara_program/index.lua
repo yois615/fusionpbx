@@ -205,6 +205,16 @@ local function chumash_by_parsha(epoch)
             break
         end
     end
+
+    if tbl_cur_parsha[1] == nil then
+	    local do_other_week = session:playAndGetDigits(1, 1, 3, 3000, "", recordings_dir .. "no_parsha_this_week.wav", "", "[12*]");
+        if tonumber(do_other_week) == nil then return; end;
+        if do_other_week == "1" then chumash_by_parsha(epoch + (3600 * 24 * 7)); end;
+        if do_other_week == "2" then chumash_by_parsha(epoch - (3600 * 24 * 7)); end;
+	    
+        return;
+    end
+
     -- Figure out sefer
     local parallel_class_id = "";
     if tbl_cur_parsha[1] == "Genesis" then parallel_class_id = 1; end;
