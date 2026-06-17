@@ -135,13 +135,32 @@ if survey_customer_uuid ~= nil then
         voted_already = row["count"];
     end);
     if tonumber(voted_already) ~= nil and tonumber(voted_already) > 0 then
-        -- You voted already
-        local f = io.open(recordings_dir .. "already-voted.wav", "r");
-        if f ~= nil then 
-            io.close(f)
-            session:streamFile(recordings_dir .. "already-voted.wav");
+        -- it depends, if there's retake_file then allow retake
+        if retake_file ~= nil and string.len(retake_file) > 0 then
+            local try_again = session:playAndGetDigits(1, 1, 1, 5000, "#", recordings_dir .. retake_file, "", "[12]");
+            if try_again == "1" then
+                local sql = [[DELETE FROM v_survey_votes
+                WHERE domain_uuid = :domain_uuid
+                AND survey_uuid = :survey_uuid 
+                AND survey_customer_uuid = :survey_customer_uuid]];
+                local params = {
+                    domain_uuid = domain_uuid,
+                    survey_customer_uuid = survey_customer_uuid,
+                    survey_uuid = survey_uuid
+                };
+                dbh:query(sql, params);
+            else
+                session:hangup();
+            end
+        else
+            -- You voted already
+            local f = io.open(recordings_dir .. "already-voted.wav", "r");
+            if f ~= nil then 
+                io.close(f)
+                session:streamFile(recordings_dir .. "already-voted.wav");
+            end
+            session:hangup();
         end
-        session:hangup();
     end
 end
 
@@ -164,6 +183,7 @@ if session:ready() then
         zip_code_file = row['zip_code_file'];
         greeting_suffix = row['greeting_suffix'];
         gender_file = row['gender_file'];
+        retake_file = row['retake_file'];
         question_answered_file = row['question_answered_file'];
         exit_action = row["exit_action"];
         reason_file = row["reason_file"];

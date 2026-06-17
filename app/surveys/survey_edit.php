@@ -53,6 +53,7 @@
 		$exit_file = $_POST["exit_file"];
 		$age_file = $_POST["age_file"];
 		$gender_file = $_POST["gender_file"];
+		$retake_file = $_POST["retake_file"];
 		$zip_code_file = $_POST["zip_code_file"];
 		$greeting_suffix = $_POST["greeting_suffix"];
 		$question_answered_file = $_POST["question_answered_file"];
@@ -160,6 +161,7 @@
 			$array['surveys'][0]['question_answered_file'] = $question_answered_file;
 			$array['surveys'][0]['age_file'] = $age_file;
 			$array['surveys'][0]['gender_file'] = $gender_file;
+			$array['surveys'][0]['retake_file'] = $retake_file;
 			$array['surveys'][0]['zip_code_file'] = $zip_code_file;
 			$array['surveys'][0]['greeting_suffix'] = $greeting_suffix;
 			$array['surveys'][0]['reason_file'] = $reason_file;
@@ -260,6 +262,7 @@ $destination = new destinations;
 		$question_answered_file = $row['question_answered_file'];
 		$age_file = $row['age_file'];
 		$gender_file = $row['gender_file'];
+		$retake_file = $row['retake_file'];
 		$zip_code_file = $row['zip_code_file'];
 		$greeting_suffix = $row['greeting_suffix'];
 		$reason_file = $row['reason_file'];
@@ -412,6 +415,35 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "</td>\n";
 	echo "<td>\n";
 	echo $text['description-greeting_suffix']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-retake_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='retake_file' id='retake_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($retake_file) > 0 && $retake_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<td>\n";
+	echo $text['description-retake_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

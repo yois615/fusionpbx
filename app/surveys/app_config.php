@@ -171,6 +171,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'gender_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'retake_file';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'zip_code_file';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$z++;
