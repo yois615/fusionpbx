@@ -116,7 +116,42 @@ dbh:query(sql, params, function(row)
     survey_customer_uuid = row["survey_customer_uuid"];
 end);
 
-if survey_customer_uuid ~= nil then
+-- Get survey config
+if session:ready() then
+    local sql = [[SELECT * FROM v_surveys
+					WHERE domain_uuid = :domain_uuid
+					AND survey_uuid = :survey_uuid]];
+    local params = {
+        domain_uuid = domain_uuid,
+        survey_uuid = survey_uuid
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice", "[survey] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        greeting_file = row["greeting"];
+        exit_file = row["exit_file"];
+        age_file = row['age_file'];
+        zip_code_file = row['zip_code_file'];
+        greeting_suffix = row['greeting_suffix'];
+        gender_file = row['gender_file'];
+        retake_file = row['retake_file'];
+        question_answered_file = row['question_answered_file'];
+        exit_action = row["exit_action"];
+        reason_file = row["reason_file"];
+        reason_0_file = row["reason_0_file"];
+        ask_reason_below = row["ask_reason_below"];
+        ask_only_odd_even = row["ask_only_odd_even"];
+    end);
+
+    if ask_only_odd_even ~= nil and ask_only_odd_even == "true" then
+        local seconds = os.time() 
+        even_second = seconds % 2 == 0
+    end
+
+end
+
+if session:ready() and survey_customer_uuid ~= nil then
     -- Did you vote already this week?
     local sql = [[SELECT count(vote) FROM v_survey_votes
             WHERE domain_uuid = :domain_uuid
@@ -164,39 +199,7 @@ if survey_customer_uuid ~= nil then
     end
 end
 
--- Get survey config
 if session:ready() then
-    local sql = [[SELECT * FROM v_surveys
-					WHERE domain_uuid = :domain_uuid
-					AND survey_uuid = :survey_uuid]];
-    local params = {
-        domain_uuid = domain_uuid,
-        survey_uuid = survey_uuid
-    };
-    if (debug["sql"]) then
-        freeswitch.consoleLog("notice", "[survey] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
-    end
-    dbh:query(sql, params, function(row)
-        greeting_file = row["greeting"];
-        exit_file = row["exit_file"];
-        age_file = row['age_file'];
-        zip_code_file = row['zip_code_file'];
-        greeting_suffix = row['greeting_suffix'];
-        gender_file = row['gender_file'];
-        retake_file = row['retake_file'];
-        question_answered_file = row['question_answered_file'];
-        exit_action = row["exit_action"];
-        reason_file = row["reason_file"];
-        reason_0_file = row["reason_0_file"];
-        ask_reason_below = row["ask_reason_below"];
-        ask_only_odd_even = row["ask_only_odd_even"];
-    end);
-
-    if ask_only_odd_even ~= nil and ask_only_odd_even == "true" then
-        local seconds = os.time() 
-        even_second = seconds % 2 == 0
-    end
-
     -- Play greeting
     session:streamFile(recordings_dir .. greeting_file);
 end
