@@ -137,7 +137,7 @@ if survey_customer_uuid ~= nil then
     if tonumber(voted_already) ~= nil and tonumber(voted_already) > 0 then
         -- it depends, if there's retake_file then allow retake
         if retake_file ~= nil and string.len(retake_file) > 0 then
-            local try_again = session:playAndGetDigits(1, 1, 1, 5000, "#", recordings_dir .. retake_file, "", "[12]");
+            local try_again = session:playAndGetDigits(1, 1, 3, 5000, "#", recordings_dir .. retake_file, "", "[12]");
             if try_again == "1" then
                 local sql = [[DELETE FROM v_survey_votes
                 WHERE domain_uuid = :domain_uuid
