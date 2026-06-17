@@ -36,7 +36,7 @@
 
 		$text['label-gender_file']['en-us'] = "Gender question";
 
-		$text['label-retake_file']['en-us'] = "Allow reate and ask this question";
+		$text['label-retake_file']['en-us'] = "Allow retake and ask this question";
 
 		$text['label-zip_code_file']['en-us'] = "Zip Code question";
 
