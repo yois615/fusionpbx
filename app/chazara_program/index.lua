@@ -98,8 +98,8 @@ function save_bookmark(teacher_uuid, filename, recording_uuid)
         file_total_samples = tonumber(output);
         soxi_handle:close()
     end
-    if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil 
-        and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
+    if tonumber(playback_last_offset_pos) ~= nil and tonumber(file_total_samples) ~= nil then
+        -- and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
         freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
         session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. recording_uuid .. ":" .. playback_last_offset_pos);
         return false
