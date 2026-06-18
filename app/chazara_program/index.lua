@@ -102,7 +102,8 @@ function save_bookmark(teacher_uuid, filename, recording_uuid)
         -- and tonumber(playback_last_offset_pos) < (tonumber(file_total_samples) * .9) then
         freeswitch.consoleLog("INFO", "Last playback position was " .. playback_last_offset_pos .. "\n");
         session:execute("hash", "insert/" .. domain_uuid .. "_bookmark/" .. caller_id_number .. "/" .. recording_uuid .. ":" .. playback_last_offset_pos);
-        return false
+        -- June 18 2026 - request to proceed to next regardless of shiur complete.  This was false
+        return true
     else
         api:execute("hash", "delete/" .. domain_uuid .. "_bookmark/" .. caller_id_number);
     end
