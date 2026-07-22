@@ -182,7 +182,7 @@
 		if (is_array($extensions) && @sizeof($extensions) != 0) {
 			foreach ($extensions as $row) {
 				$selected = (!empty($caller_extension_uuid) && $row['extension_uuid'] == $caller_extension_uuid) ? "selected" : null;
-				echo "			<option value='".escape($row['extension_uuid'])."' ".escape($selected).">".((is_numeric($row['extension'])) ? escape($row['extension']) : escape($row['number_alias'])." (".escape($row['extension']).")")."</option>";
+				echo "			<option value='".escape($row['extension_uuid'])."' $selected>".((is_numeric($row['extension'])) ? escape($row['extension']) : escape($row['number_alias'])." (".escape($row['extension']).")")."</option>";
 			}
 		}
 		unset($sql, $parameters, $extensions, $row, $selected);
@@ -329,28 +329,22 @@
 		echo "		</td>";
 		echo "	</tr>\n";
 
-		echo "	<tr>";
-		echo "		<td class='vncell'>".$text['label-queue_name']."</td>";
-		echo "		<td class='vtable'>";
-		echo "			<select class='formfld' name='call_center_queue_uuid' id='call_center_queue_uuid'>\n";
-		echo "				<option value=''></option>";
-		$sql = "select queue_name, call_center_queue_uuid from v_call_center_queues ";
-		$sql .= "where domain_uuid = :domain_uuid ";
-		$sql .= "order by queue_name asc";
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$database = new database;
-		$call_center_queues = $database->select($sql, $parameters, 'all');
-		unset($sql, $parameters);
-		if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
-			foreach ($call_center_queues as &$row) {
-				$selected = ($row['call_center_queue_uuid'] == $call_center_queue_uuid) ? "selected" : null;
-				echo "			<option value='".escape($row['call_center_queue_uuid'])."' ".escape($selected).">".(escape($row['queue_name']))."</option>";
+		if (permission_exists('xml_cdr_search_call_center_queues')) {
+			echo "	<tr>";
+			echo "		<td class='vncell'>".$text['label-call_center_queue']."</td>";
+			echo "		<td class='vtable'>";
+			echo "			<select class='formfld' name='call_center_queue_uuid' id='call_center_queue_uuid'>\n";
+			echo "				<option value=''></option>";
+			if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
+				foreach ($call_center_queues as $row) {
+					$selected = ($row['call_center_queue_uuid'] == $call_center_queue_uuid) ? "selected" : null;
+					echo "		<option value='".escape($row['call_center_queue_uuid'])."' $selected>".((is_numeric($row['queue_extension'])) ? escape($row['queue_extension']." (".$row['queue_name'].")") : escape($row['queue_extension'])." (".escape($row['queue_extension']).")")."</option>";
+				}
 			}
-		}
-		unset($sql, $parameters, $call_center_queues, $row, $selected);
-		echo "			</select>\n";
-		echo "		</td>";
-		echo "	</tr>";
+			echo "			</select>\n";
+			echo "		</td>";
+			echo "	</tr>";
+			}
 
 		echo "	<tr>";
 		echo "		<td class='vncell'>".$text['label-call_center_abandoned']."</td>";
@@ -399,7 +393,7 @@
 			if (is_array($ring_groups) && @sizeof($ring_groups) != 0) {
 				foreach ($ring_groups as $row) {
 					$selected = ($row['ring_group_uuid'] == $ring_group_uuid) ? "selected" : null;
-					echo "		<option value='".escape($row['ring_group_uuid'])."' ".escape($selected).">".((is_numeric($row['ring_group_extension'])) ? escape($row['ring_group_extension']." (".$row['ring_group_name'].")") : escape($row['ring_group_extension'])." (".escape($row['ring_group_extension']).")")."</option>";
+					echo "		<option value='".escape($row['ring_group_uuid'])."' $selected>".((is_numeric($row['ring_group_extension'])) ? escape($row['ring_group_extension']." (".$row['ring_group_name'].")") : escape($row['ring_group_extension'])." (".escape($row['ring_group_extension']).")")."</option>";
 				}
 			}
 			echo "			</select>\n";
