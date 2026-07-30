@@ -386,8 +386,17 @@ class call_center {
 					//delete the queue in the switch
 					if ($esl->is_connected()) {
 						foreach ($uuids as $uuid) {
-							$cmd      = "callcenter_config queue unload " . $call_center_queues[$uuid]['queue_extension'] . "@" . $this->domain_name;
-							$response = event_socket::api($cmd);
+							if (!$settings->get("call_center", "use_modern_call_center", null)) {
+								$cmd      = "callcenter_config queue unload " . $call_center_queues[$uuid]['queue_extension'] . "@" . $this->domain_name;
+								$response = event_socket::api($cmd);
+							} else {
+								$cmd = "sendevent CUSTOM\n";
+								$cmd .= "Event-Name: CUSTOM\n";
+								$cmd .= "Event-Subclass: callcenter::command\n";
+								$cmd .= "CC-Command: delete_queue\n";
+								$cmd .= "Queue: " . $uuid . "\n";
+								$response = event_socket::command($cmd);
+							}
 						}
 					}
 
@@ -489,7 +498,16 @@ class call_center {
 					//delete the agent in the switch
 					if ($esl->is_connected()) {
 						foreach ($uuids as $uuid) {
-							event_socket::async("callcenter_config agent del $uuid");
+							if (!$settings->get("call_center", "use_modern_call_center", null)) {
+								event_socket::async("callcenter_config agent del $uuid");
+							} else {
+								$cmd = "sendevent CUSTOM\n";
+								$cmd .= "Event-Name: CUSTOM\n";
+								$cmd .= "Event-Subclass: callcenter::command\n";
+								$cmd .= "CC-Command: delete_agent\n";
+								$cmd .= "Agent: " . $uuid . "\n";
+								$response = event_socket::command($cmd);
+							}
 						}
 					}
 
@@ -666,86 +684,141 @@ class call_center {
 				}
 				unset($records);
 			}
+		}
+	}
 
-			public function delete_callbacks($records) {
-				if (permission_exists('call_center_callback_delete')) {
-	
-					//add multi-lingual support
-						$language = new text;
-						$text = $language->get();
-	
-					//validate the token
-						$token = new token;
-						if (!$token->validate($_SERVER['PHP_SELF'])) {
-							message::add($text['message-invalid_token'],'negative');
-							header('Location: '.$this->list_page);
-							exit;
+	public function delete_callbacks($records) {
+		if (permission_exists('call_center_callback_delete')) {
+
+			//add multi-lingual support
+				$language = new text;
+				$text = $language->get();
+
+			//validate the token
+				$token = new token;
+				if (!$token->validate($_SERVER['PHP_SELF'])) {
+					message::add($text['message-invalid_token'],'negative');
+					header('Location: '.$this->list_page);
+					exit;
+				}
+
+				//assign private variables
+			$this->permission_prefix = 'call_center_callback_';
+			$this->list_page = 'call_center_callback.php';
+			$this->table = 'call_center_callback_profile';
+			$this->uuid_prefix = 'call_center_queue_callback_';
+
+			//delete multiple records
+				if (is_array($records) && @sizeof($records) != 0) {
+
+					//filter out unchecked, build where clause for below
+						foreach($records as $x => $record) {
+							if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+								$uuids[] = "'".$record['uuid']."'";
+							}
 						}
 
-						//assign private variables
-					$this->permission_prefix = 'call_center_callback_';
-					$this->list_page = 'call_center_callback.php';
-					$this->table = 'call_center_callback_profile';
-					$this->uuid_prefix = 'call_center_queue_callback_';
-	
-					//delete multiple records
-						if (is_array($records) && @sizeof($records) != 0) {
-	
-							//filter out unchecked, build where clause for below
-								foreach($records as $x => $record) {
-									if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
-										$uuids[] = "'".$record['uuid']."'";
-									}
+					//get necessary call block details
+						if (is_array($uuids) && @sizeof($uuids) != 0) {
+							$sql = "select call_center_callback_profile_uuid as uuid, profile_name from v_call_center_callback_profile ";
+							$sql .= "where domain_uuid = :domain_uuid ";
+							$sql .= "and call_center_callback_profile_uuid in (".implode(', ', $uuids).") ";
+							$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+							$database = new database;
+							$rows = $database->select($sql, $parameters, 'all');
+							if (is_array($rows) && @sizeof($rows) != 0) {
+								foreach ($rows as $row) {
+									$callback_profile_names[$row['uuid']] = $row['profile_name'];
 								}
-	
-							//get necessary call block details
-								if (is_array($uuids) && @sizeof($uuids) != 0) {
-									$sql = "select call_center_callback_profile_uuid as uuid, profile_name from v_call_center_callback_profile ";
-									$sql .= "where domain_uuid = :domain_uuid ";
-									$sql .= "and call_center_callback_profile_uuid in (".implode(', ', $uuids).") ";
-									$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-									$database = new database;
-									$rows = $database->select($sql, $parameters, 'all');
-									if (is_array($rows) && @sizeof($rows) != 0) {
-										foreach ($rows as $row) {
-											$callback_profile_names[$row['uuid']] = $row['profile_name'];
-										}
-									}
-									unset($sql, $parameters, $rows, $row);
-								}
-	
-							//build the delete array
-								$x = 0;
-								foreach ($callback_profile_names as $callback_profile_uuid => $callback_profile_name) {
-									$array[$this->table][$x]['call_center_callback_profile_uuid'] = $callback_profile_uuid;
-									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-									$x++;
-								}
-	
-							//delete the checked rows
-								if (is_array($array) && @sizeof($array) != 0) {
-
-									//grant temporary permissions
-										$p = permissions::new();
-										$p->add('call_center_callback_profile_delete', 'temp');
-	
-									//execute delete
-										$database = new database;
-										$database->app_name = $this->app_name;
-										$database->app_uuid = $this->app_uuid;
-										$database->delete($array);
-										unset($array);
-
-									//revoke temporary permissions
-										$p->delete('call_center_callback_profile_delete', 'temp');
-	
-									//set message
-										message::add($text['message-delete']);
-								}
-								unset($records);
+							}
+							unset($sql, $parameters, $rows, $row);
 						}
+
+					//build the delete array
+						$x = 0;
+						foreach ($callback_profile_names as $callback_profile_uuid => $callback_profile_name) {
+							$array[$this->table][$x]['call_center_callback_profile_uuid'] = $callback_profile_uuid;
+							$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+							$x++;
+						}
+
+					//delete the checked rows
+						if (is_array($array) && @sizeof($array) != 0) {
+
+							//grant temporary permissions
+								$p = permissions::new();
+								$p->add('call_center_callback_profile_delete', 'temp');
+
+							//execute delete
+								$database = new database;
+								$database->app_name = $this->app_name;
+								$database->app_uuid = $this->app_uuid;
+								$database->delete($array);
+								unset($array);
+
+							//revoke temporary permissions
+								$p->delete('call_center_callback_profile_delete', 'temp');
+
+							//set message
+								message::add($text['message-delete']);
+						}
+						unset($records);
+				}
+		}
+	}
+
+	/**
+	 * Deletes one or more ivr menu options.
+	 *
+	 * @param array $records An associative array containing the uuids and checked status of the records to delete.
+	 *
+	 * @return bool True if the operation was successful, false otherwise.
+	 */
+	public function delete_options($records) {
+		//assign private variables
+		$this->permission_prefix = 'call_center_menu_option_';
+		$this->table             = 'call_center_menu_options';
+		$this->uuid_prefix       = 'call_center_menu_option_';
+
+		//return if permission does not exist
+		if (!permission_exists($this->permission_prefix . 'delete')) {
+			return false;
+		}
+
+		//add multi-lingual support
+		$language = new text;
+		$text     = $language->get();
+
+		//validate the token
+		$token = new token;
+		if (!$token->validate($_SERVER['PHP_SELF'])) {
+			message::add($text['message-invalid_token'], 'negative');
+			header('Location: ' . $this->list_page);
+			exit;
+		}
+
+		//delete multiple records
+		if (!empty($records)) {
+			//filter out unchecked ivr menu options, build delete array
+			$x = 0;
+			foreach ($records as $record) {
+				if (!empty($record['checked']) && $record['checked'] == 'true' && !empty($record['uuid']) && is_uuid($record['uuid'])) {
+					$array[$this->table][$x][$this->uuid_prefix . 'uuid'] = $record['uuid'];
+					$array[$this->table][$x]['call_center_queue_uuid']             = $this->call_center_queue_uuid;
+					$x++;
 				}
 			}
+
+			//delete the checked rows
+			if (!empty($array)) {
+
+				//execute delete
+				$this->database->delete($array);
+				unset($array);
+			}
+			unset($records);
+		}
+	}
 
 
 } //class

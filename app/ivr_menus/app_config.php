@@ -43,6 +43,7 @@
 		$apps[$x]['destinations'][$y]['field']['destination'] = "ivr_menu_extension";
 		$apps[$x]['destinations'][$y]['field']['extension'] = "ivr_menu_extension";
 		$apps[$x]['destinations'][$y]['field']['context'] = "ivr_menu_context";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${name}";

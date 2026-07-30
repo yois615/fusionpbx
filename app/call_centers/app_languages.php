@@ -2156,7 +2156,7 @@ $text['description-queue_email_address']['zh-cn'] = "通知电子邮件地址。
 $text['description-queue_email_address']['ja-jp'] = "通知メールアドレス。";
 $text['description-queue_email_address']['ko-kr'] = "알림 이메일 주소.";
 
-$text['label-call_timeout']['en-us'] = "Call Timeout";
+$text['label-call_timeout']['en-us'] = "Ring Duration";
 $text['label-call_timeout']['en-gb'] = "Call Timeout";
 $text['label-call_timeout']['ar-eg'] = "مهلة الاتصال";
 $text['label-call_timeout']['de-at'] = "Zeitüberschreitung";
@@ -3510,7 +3510,7 @@ $text['description-caller_announce_frequency']['zh-cn'] = "我们应该多久播
 $text['description-caller_announce_frequency']['ja-jp'] = "アナウンス サウンドを再生する頻度。 秒数を入力してください";
 $text['description-caller_announce_frequency']['ko-kr'] = "아나운스 사운드를 얼마나 자주 재생해야 합니까? 초 단위로 숫자를 입력하세요";
 
-$text['description-call_timeout']['en-us'] = "Enter the call timeout.";
+$text['description-call_timeout']['en-us'] = "Seconds to ring the agent before determining No Answer status.";
 $text['description-call_timeout']['en-gb'] = "Enter the call timeout.";
 $text['description-call_timeout']['ar-eg'] = "أدخل مهلة المكالمة.";
 $text['description-call_timeout']['de-at'] = "Geben Sie den Wert für die Zeitüberschreitung an.";

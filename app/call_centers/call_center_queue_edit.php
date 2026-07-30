@@ -52,6 +52,7 @@
 	$queue_cc_exit_keys = '';
 	$queue_description = '';
 	$queue_timeout_action = '';
+	$queue_exit_action = '';
 
 //action add or update
 	if (!empty($_REQUEST["id"]) && is_uuid($_REQUEST["id"])) {
@@ -106,6 +107,7 @@
 			$queue_name = $_POST["queue_name"];
 			$queue_extension = $_POST["queue_extension"];
 			$queue_greeting = $_POST["queue_greeting"];
+			$queue_audio = $_POST["queue_audio"];
 			$queue_language = $_POST["queue_language"];
 			$queue_strategy = $_POST["queue_strategy"];
 			$call_center_tiers = $_POST["call_center_tiers"];
@@ -123,6 +125,7 @@
 			$queue_tier_rule_wait_multiply_level = $_POST["queue_tier_rule_wait_multiply_level"];
 			$queue_tier_rule_no_agent_no_wait = $_POST["queue_tier_rule_no_agent_no_wait"];
 			$queue_timeout_action = $_POST["queue_timeout_action"] ?? null;
+			$queue_exit_action = $_POST["queue_exit_action"] ?? null;
 			$queue_discard_abandoned_after = $_POST["queue_discard_abandoned_after"];
 			$queue_abandoned_resume_allowed = $_POST["queue_abandoned_resume_allowed"];
 			$queue_cid_prefix = $_POST["queue_cid_prefix"];
@@ -135,6 +138,8 @@
 			$queue_cc_exit_keys = $_POST["queue_cc_exit_keys"] ?? null;
 			$queue_email_address = $_POST["queue_email_address"] ?? null;
 			$queue_description = $_POST["queue_description"];
+			$call_center_menu_options = $_POST["call_center_menu_options"];
+			$call_center_menu_options_delete = $_POST["call_center_menu_options_delete"] ?? null;
 
 		//set the context for users that do not have the permission
 			if (permission_exists('call_center_queue_context')) {
@@ -266,6 +271,16 @@
 			//if (empty($queue_abandoned_resume_allowed)) { $msg .= $text['message-required'].$text['label-abandoned_resume_allowed']."<br>\n"; }
 			//if (empty($queue_cid_prefix)) { $msg .= $text['message-required'].$text['label-caller_id_name_prefix']."<br>\n"; }
 			//if (empty($queue_description)) { $msg .= $text['message-required'].$text['label-description']."<br>\n"; }
+
+			$tier_agent_uuids = [];
+			foreach ($_POST["call_center_tiers"] as $k => $v) {
+				if (in_array($v['call_center_agent_uuid'], $tier_agent_uuids)) {
+					$msg .= "An agent is assigned multiple times to this queue";
+				} else if (!empty($v['call_center_agent_uuid'])) {
+					array_push($tier_agent_uuids, $v['call_center_agent_uuid']);
+				}
+			}
+
 			if (!empty($msg) && empty($_POST["persistformvar"])) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -314,6 +329,11 @@
 			unset($action_array[0]);
 			$queue_timeout_data = implode($action_array);
 
+			$action_array = explode(":",$queue_exit_action);
+			$queue_exit_app = $action_array[0];
+			unset($action_array[0]);
+			$queue_exit_data = implode($action_array);
+
 		//add the recording path if needed
 			if (!empty($queue_greeting)) {
 				if (file_exists($settings->get('switch','recordings', '').'/'.$domain_name.'/'.$queue_greeting)) {
@@ -323,6 +343,8 @@
 					$queue_greeting_path = trim($queue_greeting);
 				}
 			}
+
+
 
 		//set the the record_template for mod call center
 			if ($queue_record_enabled == 'true') {
@@ -337,6 +359,7 @@
 			$array['call_center_queues'][0]['queue_name'] = $queue_name;
 			$array['call_center_queues'][0]['queue_extension'] = $queue_extension;
 			$array['call_center_queues'][0]['queue_greeting'] = $queue_greeting;
+			$array['call_center_queues'][0]['queue_audio'] = $queue_audio;
 			$array['call_center_queues'][0]['queue_language'] = $queue_language;
 			$array['call_center_queues'][0]['queue_dialect'] = $queue_dialect;
 			$array['call_center_queues'][0]['queue_voice'] = $queue_voice;
@@ -351,6 +374,9 @@
 			$array['call_center_queues'][0]['queue_max_wait_time_with_no_agent_time_reached'] = $queue_max_wait_time_with_no_agent_time_reached;
 			if ($destination->valid($queue_timeout_action)) {
 				$array['call_center_queues'][0]['queue_timeout_action'] = $queue_timeout_action;
+			}
+			if ($destination->valid($queue_exit_action)) {
+				$array['call_center_queues'][0]['queue_exit_action'] = $queue_exit_action;
 			}
 			$array['call_center_queues'][0]['queue_tier_rules_apply'] = $queue_tier_rules_apply;
 			$array['call_center_queues'][0]['queue_tier_rule_wait_second'] = $queue_tier_rule_wait_second;
@@ -402,6 +428,31 @@
 				}
 			}
 
+			$y = 0;
+			foreach ($call_center_menu_options as $row) {
+				if (isset($row['digits']) && $row['digits'] != '') {
+					if (!empty($row['call_center_menu_option_uuid']) && is_uuid($row['call_center_menu_option_uuid'])) {
+						$call_center_menu_option_uuid = $row['call_center_menu_option_uuid'];
+					}
+					else {
+						$call_center_menu_option_uuid = uuid();
+					}
+					//seperate the action and the param
+					$options_array = explode(":", $row["param"]);
+					$menu_option_action = array_shift($options_array);
+					$menu_option_param = join(':', $options_array);
+					$array['call_center_menu_options'][$y]["domain_uuid"] = $domain_uuid;
+					$array['call_center_menu_options'][$y]["call_center_queue_uuid"] = $call_center_queue_uuid;
+					$array['call_center_menu_options'][$y]["call_center_menu_option_uuid"] = $call_center_menu_option_uuid;
+					$array['call_center_menu_options'][$y]["digits"] = $row["digits"];
+					$array['call_center_menu_options'][$y]["action"] = $menu_option_action;
+					$array['call_center_menu_options'][$y]["param"] = $menu_option_param;
+					$array['call_center_menu_options'][$y]["description"] = $row["description"];
+					$array["call_center_menu_options"][$y]["enabled"] = $row['enabled'];
+					$y++;
+				}
+			}
+
 		//add definable export variables can be set in default settings
 			$export_variables = 'call_center_queue_uuid,sip_h_Alert-Info,sound_prefix';
 			if (!empty($settings->get('call_center','export_vars', []))) {
@@ -418,65 +469,77 @@
 			}
 
 		//build the xml dialplan
-			$dialplan_xml = "<extension name=\"".xml::sanitize($queue_name)."\" continue=\"\" uuid=\"".xml::sanitize($dialplan_uuid)."\">\n";
-			if (!empty($queue_limit)) {
-				$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".xml::sanitize($queue_extension)."$\" break=\"on-false\">\n";
-				$dialplan_xml .= "		<action application=\"limit\" data=\"hash inbound \${destination_number} ".xml::sanitize($queue_limit)." !NORMAL_CIRCUIT_CONGESTION\"/>\n";
-				$dialplan_xml .= "	</condition>\n";
-			}
-			$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^([^#]+#)(.*)\$\" break=\"never\">\n";
-			$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=\$2\"/>\n";
-			$dialplan_xml .= "	</condition>\n";
-			$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".xml::sanitize($queue_extension)."$\">\n";
-			$dialplan_xml .= "		<action application=\"answer\" data=\"\"/>\n";
-			$dialplan_xml .= "		<action application=\"set\" data=\"sound_prefix=".$settings->get('switch','sounds', '').'/'.xml::sanitize($queue_language)."/".xml::sanitize($queue_dialect)."/".xml::sanitize($queue_voice)."\"/>\n";
-			if (!empty($call_center_queue_uuid) && is_uuid($call_center_queue_uuid)) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"call_center_queue_uuid=".xml::sanitize($call_center_queue_uuid)."\"/>\n";
-			}
-			if (!empty($queue_extension) && is_numeric($queue_extension)) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"queue_extension=".xml::sanitize($queue_extension)."\"/>\n";
-			}
-			$dialplan_xml .= "		<action application=\"set\" data=\"cc_export_vars=\${cc_export_vars},".$export_variables."\"/>\n";
-			$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
-			if ($queue_announce_position == 'true' && is_numeric($queue_announce_frequency)) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"result=\${luarun(app/call_centers/resources/scripts/announce-position.lua ";
-				$dialplan_xml .= "\${uuid} ".$call_center_queue_uuid." ".($queue_announce_frequency * 1000)."})\"/>\n";
-			}
-			if (!empty($queue_time_base_score_sec)) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"cc_base_score=".xml::sanitize($queue_time_base_score_sec)."\"/>\n";
-			}
-			if (!empty($queue_greeting_path)) {
-				$dialplan_xml .= "		<action application=\"sleep\" data=\"1000\"/>\n";
-				$greeting_array = explode(':', $queue_greeting_path);
-				if (count($greeting_array) == 1) {
-					$dialplan_xml .= "		<action application=\"playback\" data=\"".xml::sanitize($queue_greeting_path)."\"/>\n";
+			if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+				$dialplan_xml = "<extension name=\"".xml::sanitize($queue_name)."\" continue=\"\" uuid=\"".xml::sanitize($dialplan_uuid)."\">\n";
+				if (!empty($queue_limit)) {
+					$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".xml::sanitize($queue_extension)."$\" break=\"on-false\">\n";
+					$dialplan_xml .= "		<action application=\"limit\" data=\"hash inbound \${destination_number} ".xml::sanitize($queue_limit)." !NORMAL_CIRCUIT_CONGESTION\"/>\n";
+					$dialplan_xml .= "	</condition>\n";
 				}
-				else {
-					if ($greeting_array[0] == 'say' || $greeting_array[0] == 'tone_stream' || $greeting_array[0] == 'phrase') {
-						$dialplan_xml .= "		<action application=\"".xml::sanitize($greeting_array[0])."\" data=\"".xml::sanitize($greeting_array[1])."\"/>\n";
+				$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^([^#]+#)(.*)\$\" break=\"never\">\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=\$2\"/>\n";
+				$dialplan_xml .= "	</condition>\n";
+				$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".xml::sanitize($queue_extension)."$\">\n";
+				$dialplan_xml .= "		<action application=\"answer\" data=\"\"/>\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"sound_prefix=".$settings->get('switch','sounds', '').'/'.xml::sanitize($queue_language)."/".xml::sanitize($queue_dialect)."/".xml::sanitize($queue_voice)."\"/>\n";
+				if (!empty($call_center_queue_uuid) && is_uuid($call_center_queue_uuid)) {
+					$dialplan_xml .= "		<action application=\"set\" data=\"call_center_queue_uuid=".xml::sanitize($call_center_queue_uuid)."\"/>\n";
+				}
+				if (!empty($queue_extension) && is_numeric($queue_extension)) {
+					$dialplan_xml .= "		<action application=\"set\" data=\"queue_extension=".xml::sanitize($queue_extension)."\"/>\n";
+				}
+				$dialplan_xml .= "		<action application=\"set\" data=\"cc_export_vars=\${cc_export_vars},".$export_variables."\"/>\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
+				if ($queue_announce_position == 'true' && is_numeric($queue_announce_frequency)) {
+					$dialplan_xml .= "		<action application=\"set\" data=\"result=\${luarun(app/call_centers/resources/scripts/announce-position.lua ";
+					$dialplan_xml .= "\${uuid} ".$call_center_queue_uuid." ".($queue_announce_frequency * 1000)."})\"/>\n";
+				}
+				if (!empty($queue_time_base_score_sec)) {
+					$dialplan_xml .= "		<action application=\"set\" data=\"cc_base_score=".xml::sanitize($queue_time_base_score_sec)."\"/>\n";
+				}
+				if (!empty($queue_greeting_path)) {
+					$dialplan_xml .= "		<action application=\"sleep\" data=\"1000\"/>\n";
+					$greeting_array = explode(':', $queue_greeting_path);
+					if (count($greeting_array) == 1) {
+						$dialplan_xml .= "		<action application=\"playback\" data=\"".xml::sanitize($queue_greeting_path)."\"/>\n";
+					}
+					else {
+						if ($greeting_array[0] == 'say' || $greeting_array[0] == 'tone_stream' || $greeting_array[0] == 'phrase') {
+							$dialplan_xml .= "		<action application=\"".xml::sanitize($greeting_array[0])."\" data=\"".xml::sanitize($greeting_array[1])."\"/>\n";
+						}
 					}
 				}
-			}
-			if (!empty($queue_cid_prefix)) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".xml::sanitize($queue_cid_prefix)."#\${caller_id_name}\"/>\n";
-				$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=".xml::sanitize($queue_cid_prefix)."#\${caller_id_name}\"/>\n";
-			}
-			if (!strpos($queue_cc_exit_keys, "1") && strlen($queue_callback_profile) > 0) {
-				$queue_cc_exit_keys .= "1";
-			}
-			if ($queue_cc_exit_keys !== null) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".xml::sanitize($queue_cc_exit_keys)."\"/>\n";
-			}
-			$dialplan_xml .= "		<action application=\"callcenter\" data=\"".xml::sanitize($queue_extension)."@".$domain_name."\"/>\n";
-			if (strlen($queue_callback_profile) > 0) {
-				$dialplan_xml .= "		<action application=\"lua\" data=\"app/call_centers/resources/scripts/callback.lua start ".$call_center_queue_uuid."\"/>\n";
-			}
+				if (!empty($queue_cid_prefix)) {
+					$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".xml::sanitize($queue_cid_prefix)."#\${caller_id_name}\"/>\n";
+					$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=".xml::sanitize($queue_cid_prefix)."#\${caller_id_name}\"/>\n";
+				}
+				if (!strpos($queue_cc_exit_keys, "1") && strlen($queue_callback_profile) > 0) {
+					$queue_cc_exit_keys .= "1";
+				}
+				if ($queue_cc_exit_keys !== null) {
+					$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".xml::sanitize($queue_cc_exit_keys)."\"/>\n";
+				}
+				$dialplan_xml .= "		<action application=\"callcenter\" data=\"".xml::sanitize($queue_extension)."@".$domain_name."\"/>\n";
+				if (strlen($queue_callback_profile) > 0) {
+					$dialplan_xml .= "		<action application=\"lua\" data=\"app/call_centers/resources/scripts/callback.lua start ".$call_center_queue_uuid."\"/>\n";
+				}
 
-			if ($destination->valid($queue_timeout_app.':'.$queue_timeout_data)) {
-				$dialplan_xml .= "		<action application=\"".xml::sanitize($queue_timeout_app)."\" data=\"".xml::sanitize($queue_timeout_data)."\"/>\n";
+				if ($destination->valid($queue_timeout_app.':'.$queue_timeout_data)) {
+					$dialplan_xml .= "		<action application=\"".xml::sanitize($queue_timeout_app)."\" data=\"".xml::sanitize($queue_timeout_data)."\"/>\n";
+				}
+				$dialplan_xml .= "	</condition>\n";
+				$dialplan_xml .= "</extension>\n";
+			} else {
+				$dialplan_xml = "<extension name=\"".xml::sanitize($queue_name)."\" continue=\"\" uuid=\"".xml::sanitize($dialplan_uuid)."\">\n";
+				$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^(callcenter\+)?".xml::sanitize($queue_extension)."$\">\n";
+				$dialplan_xml .= "		<action application=\"answer\" data=\"\"/>\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"sound_prefix=".$settings->get('switch','sounds', '').'/'.xml::sanitize($queue_language)."/".xml::sanitize($queue_dialect)."/".xml::sanitize($queue_voice)."\"/>\n";
+				$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
+				$dialplan_xml .= "		<action application=\"event\" data=\"Event-Name=CUSTOM,Event-Subclass=callcenter::enter,CC-Queue=".xml::sanitize($call_center_queue_uuid)."\"/>\n";
+				$dialplan_xml .= "		<action application=\"park\" data=\"\"/>\n";
+				$dialplan_xml .= "	</condition>\n";
+				$dialplan_xml .= "</extension>\n";
 			}
-			$dialplan_xml .= "	</condition>\n";
-			$dialplan_xml .= "</extension>\n";
 			
 		//build the dialplan array
 			$array['dialplans'][0]["domain_uuid"] = $domain_uuid;
@@ -503,6 +566,17 @@
 		//remove the temporary permission
 			$p->delete("dialplan_add", "temp");
 			$p->delete("dialplan_edit", "temp");
+
+		//remove checked options
+			if (
+				$action == 'update'
+				&& permission_exists('call_center_menu_option_delete')
+				&& !empty($call_center_menu_options_delete)
+				) {
+				$obj = new call_center;
+				$obj->call_center_queue_uuid = $call_center_queue_uuid;
+				$obj->delete_options($call_center_menu_options_delete);
+			}
 
 		//debug info
 			//echo "<pre>". print_r($message, true) ."</pre>"; exit;
@@ -570,6 +644,15 @@
 					}
 			}
 
+			if ($settings->get('call_center', 'use_modern_call_center', null)) {
+				$cmd = "sendevent CUSTOM\n";
+				$cmd .= "Event-Name: CUSTOM\n";
+				$cmd .= "Event-Subclass: callcenter::command\n";
+				$cmd .= "CC-Command: update_queue\n";
+				$cmd .= "Queue: " . $call_center_queue_uuid . "\n";
+				$response = event_socket::command($cmd);
+			}
+
 		//synchronize configuration
 			save_call_center_xml();
 
@@ -593,6 +676,7 @@
 		$sql .= "dialplan_uuid, ";
 		$sql .= "queue_extension, ";
 		$sql .= "queue_greeting, ";
+		$sql .= "queue_audio, ";
 		$sql .= "queue_language, ";
 		$sql .= "queue_dialect, ";
 		$sql .= "queue_voice , ";
@@ -606,6 +690,7 @@
 		$sql .= "queue_max_wait_time_with_no_agent, ";
 		$sql .= "queue_max_wait_time_with_no_agent_time_reached, ";
 		$sql .= "queue_timeout_action, ";
+		$sql .= "queue_exit_action, ";
 		$sql .= "queue_tier_rules_apply, ";
 		$sql .= "queue_tier_rule_wait_second, ";
 		$sql .= "queue_tier_rule_wait_multiply_level, ";
@@ -637,6 +722,7 @@
 				$database_queue_name = $row["queue_name"];
 				$queue_extension = $row["queue_extension"];
 				$queue_greeting = $row["queue_greeting"];
+				$queue_audio = $row["queue_audio"];
 				$queue_language = $row["queue_language"];
 				$queue_dialect = $row["queue_dialect"];
 				$queue_voice = $row["queue_voice"];
@@ -650,6 +736,7 @@
 				$queue_max_wait_time_with_no_agent = $row["queue_max_wait_time_with_no_agent"];
 				$queue_max_wait_time_with_no_agent_time_reached = $row["queue_max_wait_time_with_no_agent_time_reached"];
 				$queue_timeout_action = $row["queue_timeout_action"];
+				$queue_exit_action = $row["queue_exit_action"];
 				$queue_tier_rules_apply = $row["queue_tier_rules_apply"];
 				$queue_tier_rule_wait_second = $row["queue_tier_rule_wait_second"];
 				$queue_ring_progressively_delay = $row["queue_ring_progressively_delay"];
@@ -734,8 +821,19 @@
 	$cbprofiles = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
+//get the ivr menu options
+	$sql = "select * from v_call_center_menu_options ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "and call_center_queue_uuid = :call_center_queue_uuid ";
+	$sql .= "order by natural_sort(digits::text) asc ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+	$call_center_menu_options = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
 //set default values
 	$queue_greeting = $queue_greeting ?? '';
+	$queue_audio = $queue_audio ?? '';
 	$queue_strategy = $queue_strategy ?? "longest-idle-agent";
 	$queue_moh_sound = $queue_moh_sound ?? "\$\${hold_music}";
 	$queue_time_base_score = $queue_time_base_score ?? "system";
@@ -752,6 +850,27 @@
 	$queue_abandoned_resume_allowed = $queue_abandoned_resume_allowed ?? false;
 	$queue_announce_sound = $queue_announce_sound ?? '';
 	$queue_context = $queue_context ?? $domain_name;
+
+//add an empty row to the options array
+	if (count($call_center_menu_options) == 0) {
+		$rows = $settings->get('ivr_menu', 'option_add_rows');
+		$id = 0;
+		$show_option_delete = false;
+	}
+	if (count($call_center_menu_options) > 0) {
+		$rows = $settings->get('ivr_menu', 'option_edit_rows');
+		$id = count($call_center_menu_options)+1;
+		$show_option_delete = true;
+	}
+	for ($x = 0; $x < $rows; $x++) {
+		$call_center_menu_options[$id]['digits'] = '';
+		$call_center_menu_options[$id]['action'] = '';
+		$call_center_menu_options[$id]['param'] = '';
+		$call_center_menu_options[$id]['order'] = '';
+		$call_center_menu_options[$id]['description'] = '';
+		$call_center_menu_options[$id]['enabled'] = true;
+		$id++;
+	}
 
 //create token
 	$object = new token;
@@ -842,6 +961,62 @@
 		echo "</script>\n";
 	}
 
+	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+		$sql = "select s.days_of_week, s.login_time, s.logout_time, s.tier, s.call_center_agent_uuid, a.agent_name ";
+		$sql .= "from v_call_center_agent_schedules as s ";
+		$sql .= "join v_call_center_agents as a on s.call_center_agent_uuid = a.call_center_agent_uuid ";
+		$sql .= "where s.call_center_queue_uuid = :call_center_queue_uuid ";
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid ?? null;
+		$schedule = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+
+		echo "<script src='/resources/chartjs/chart.min.js'></script>";
+		echo "<script src='./chart.js'></script>";
+		$modal = "<div id='modal-coverage' class='modal-window'>\n";
+		$modal .= "	<div>\n";
+		$modal .= "		<span title=\"" . $text['button-close'] . "\" class='modal-close' onclick=\"modal_close();\">&times</span>\n";
+		$modal .= "		<span class='modal-title'>Coverage</span>\n";
+		$modal .= "		<span class='modal-message'><div ><canvas id='coverage_chart'></canvas></div></span>\n";
+		$modal .= "		<span class='modal-actions'>" . button::create(['type'=>'button','label'=>$text['button-close'],'style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close()"]) . "</span>\n";
+		$modal .= "	</div>\n";
+		$modal .= "</div>";
+		echo $modal;
+
+		?>
+		<script>
+			{
+				const datasets = {}
+
+				const schedules = JSON.parse('<?php echo json_encode($schedule); ?>')
+				for (let schedule of schedules) {
+					let dataset = datasets[schedule.call_center_agent_uuid]
+					if (!dataset) {
+						dataset = datasets[schedule.call_center_agent_uuid] = {}
+						dataset.label = schedule.agent_name
+						dataset.data = []
+					}
+
+					for (let day = 0; day < 7; day++) {
+						if (schedule.days_of_week & (1 << day)) {
+							dataset.data.push({
+								y: coverage_chart_labels[day],
+								x: [coverage_chart_time_to_num(schedule.login_time), coverage_chart_time_to_num(schedule.logout_time)],
+								tier: schedule.tier
+							})
+						}
+					}
+				}
+
+				window.coverage_chart = new Chart(document.getElementById('coverage_chart'), {
+					type: 'bar',
+					data: { labels: coverage_chart_labels, datasets: Object.values(datasets) },
+					options: coverage_chart_options
+				})
+			}
+		</script>
+		<?php
+	}
+
 	echo "<form name='frm' id='frm' method='post'>\n";
 
 	echo "<div class='action_bar' id='action_bar'>\n";
@@ -862,8 +1037,12 @@
 		}
 		//echo button::create(['type'=>'button','label'=>$text['button-stop'],'icon'=>$settings->get('theme', 'button_icon_stop'),'link'=>'cmd.php?cmd=unload&id='.urlencode($call_center_queue_uuid)]);
 		//echo button::create(['type'=>'button','label'=>$text['button-start'],'icon'=>$settings->get('theme', 'button_icon_start'),'link'=>'cmd.php?cmd=load&id='.urlencode($call_center_queue_uuid)]);
-		echo button::create(['type'=>'button','label'=>$text['button-reload'],'icon'=>$settings->get('theme','button_icon_reload', ''),'link'=>'cmd.php?cmd=reload&id='.urlencode($call_center_queue_uuid)]);
-		echo button::create(['type'=>'button','label'=>$text['button-view'],'icon'=>$settings->get('theme','button_icon_view', ''),'style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/call_center_active/call_center_active.php?queue_name='.urlencode($call_center_queue_uuid)]);
+		if ($settings->get('call_center', 'use_modern_call_center', null)) {
+			echo button::create(['type'=>'button','label'=>'Coverage','icon'=>$settings->get('theme','button_icon_view', ''),'onclick'=>"modal_open('modal-coverage')"]);
+		} else {
+			echo button::create(['type'=>'button','label'=>$text['button-reload'],'icon'=>$settings->get('theme','button_icon_reload', ''),'link'=>'cmd.php?cmd=reload&id='.urlencode($call_center_queue_uuid)]);
+			echo button::create(['type'=>'button','label'=>$text['button-view'],'icon'=>$settings->get('theme','button_icon_view', ''),'style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/call_center_active/call_center_active.php?queue_name='.urlencode($call_center_queue_uuid)]);
+		}
 	}
 	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme','button_icon_save', ''),'id'=>'btn_save']);
 	echo "	</div>\n";
@@ -908,8 +1087,8 @@
 	echo "<select name='".$instance_id."' id='".$instance_id."' class='formfld' ".(permission_exists('recording_play') || permission_exists('recording_download') ? "onchange=\"recording_reset('".$instance_id."'); set_playable('".$instance_id."', this.value, this.options[this.selectedIndex].parentNode.getAttribute('data-type'));\"" : null).">\n";
 	echo "	<option value=''></option>\n";
 	$found = $playable = false;
-	if (!empty($audio_files[0]) && is_array($audio_files[0]) && @sizeof($audio_files[0]) != 0) {
-		foreach ($audio_files[0] as $key => $value) {
+	if (!empty($audio_files[1]) && is_array($audio_files[1]) && @sizeof($audio_files[1]) != 0) {
+		foreach ($audio_files[1] as $key => $value) {
 			echo "<optgroup label=".$text['label-'.$key]." data-type='".$key."'>\n";
 			foreach ($value as $row) {
 				if ($key == 'recordings') {
@@ -966,34 +1145,112 @@
 	echo $text['description-'.$instance_label]."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-language']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <select class='formfld' type='text' name='queue_language'>\n";
-	echo "		<option></option>\n";
-	if (!empty($queue_language) && !empty($queue_dialect) && !empty($queue_voice)) {
-		$language_formatted = $queue_language."-".$queue_dialect." ".$queue_voice;
-		echo "		<option value='".escape($queue_language.'/'.$queue_dialect.'/'.$queue_voice)."' selected='selected'>".escape($language_formatted)."</option>\n";
-	}
-	if (!empty($language_paths)) {
-		foreach ($language_paths as $key => $language_variables) {
-			$language_variables = explode('/',$language_paths[$key]);
-			$language = $language_variables[0];
-			$dialect = $language_variables[1];
-			$voice = $language_variables[2];
-			if (empty($language_formatted) || $language_formatted != $language.'-'.$dialect.' '.$voice) {
-				echo "		<option value='".$language."/".$dialect."/".$voice."'>".$language."-".$dialect." ".$voice."</option>\n";
+	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+		$instance_id = 'queue_audio';
+		$instance_label = 'audio';
+		$instance_value = $queue_audio;
+		echo "<tr>\n";
+		echo "<td class='vncell' rowspan='2' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "	Audio recording of Queue name\n";
+		echo "</td>\n";
+		echo "<td class='vtable playback_progress_bar_background' id='recording_progress_bar_".$instance_id."' onclick=\"recording_play('".$instance_id."', document.getElementById('".$instance_id."').value, document.getElementById('".$instance_id."').options[document.getElementById('".$instance_id."').selectedIndex].parentNode.getAttribute('data-type'));\" style='display: none; border-bottom: none; padding-top: 0 !important; padding-bottom: 0 !important;' align='left'><span class='playback_progress_bar' id='recording_progress_".$instance_id."'></span></td>\n";
+		echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "<select name='".$instance_id."' id='".$instance_id."' class='formfld' ".(permission_exists('recording_play') || permission_exists('recording_download') ? "onchange=\"recording_reset('".$instance_id."'); set_playable('".$instance_id."', this.value, this.options[this.selectedIndex].parentNode.getAttribute('data-type'));\"" : null).">\n";
+		echo "	<option value=''></option>\n";
+		$found = $playable = false;
+		if (!empty($audio_files[0]) && is_array($audio_files[0]) && @sizeof($audio_files[0]) != 0) {
+			foreach ($audio_files[0] as $key => $value) {
+				echo "<optgroup label=".$text['label-'.$key]." data-type='".$key."'>\n";
+				foreach ($value as $row) {
+					if ($key == 'recordings') {
+						if (
+							!empty($instance_value) &&
+							($instance_value == $row["value"] || $instance_value == $settings->get('switch','recordings', '')."/".$domain_name.'/'.$row["value"]) &&
+							file_exists($settings->get('switch','recordings', '')."/".$domain_name.'/'.pathinfo($row["value"], PATHINFO_BASENAME))
+							) {
+							$selected = "selected='selected'";
+							$playable = '../recordings/recordings.php?action=download&type=rec&filename='.pathinfo($row["value"], PATHINFO_BASENAME);
+							$found = true;
+						}
+						else {
+							unset($selected);
+						}
+					}
+					else if ($key == 'sounds') {
+						if (!empty($instance_value) && $instance_value == $row["value"]) {
+							$selected = "selected='selected'";
+							$playable = '../switch/sounds.php?action=download&filename='.$row["value"];
+							$found = true;
+						}
+						else {
+							unset($selected);
+						}
+					}
+					else {
+						unset($selected);
+					}
+					echo "	<option value='".escape($row["value"])."' ".($selected ?? '').">".escape($row["name"])."</option>\n";
+				}
+				echo "</optgroup>\n";
 			}
 		}
+
+
+		if (if_group("superadmin") && !empty($instance_value) && !$found) {
+			echo "	<option value='".escape($instance_value)."' selected='selected'>".escape($instance_value)."</option>\n";
+		}
+		unset($selected);
+		echo "	</select>\n";
+		if (if_group("superadmin")) {
+			echo "<input type='button' id='btn_select_to_input_".$instance_id."' class='btn' name='' alt='back' onclick='toggle_select_input(document.getElementById(\"".$instance_id."\"), \"".$instance_id."\"); this.style.visibility=\"hidden\";' value='&#9665;'>";
+		}
+		if ((permission_exists('recording_play') || permission_exists('recording_download')) && (!empty($playable) || empty($instance_value))) {
+			switch (pathinfo($playable, PATHINFO_EXTENSION)) {
+				case 'wav' : $mime_type = 'audio/wav'; break;
+				case 'mp3' : $mime_type = 'audio/mpeg'; break;
+				case 'ogg' : $mime_type = 'audio/ogg'; break;
+			}
+			echo "<audio id='recording_audio_".$instance_id."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".$instance_id."')\" onended=\"recording_reset('".$instance_id."');\" src='".($playable ?? '')."' type='".($mime_type ?? '')."'></audio>";
+			echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$settings->get('theme','button_icon_play', ''),'id'=>'recording_button_'.$instance_id,'style'=>'display: '.(!empty($mime_type) ? 'inline' : 'none'),'onclick'=>"recording_play('".$instance_id."', document.getElementById('".$instance_id."').value, document.getElementById('".$instance_id."').options[document.getElementById('".$instance_id."').selectedIndex].parentNode.getAttribute('data-type'))"]);
+			unset($playable, $mime_type);
+		}
+		echo "<br />\n";
+		echo "Audio to be used for confirm prompts and login/out\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 	}
-	echo "  </select>\n";
-	echo "<br />\n";
-	echo $text['description-language']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-language']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <select class='formfld' type='text' name='queue_language'>\n";
+		echo "		<option></option>\n";
+		if (!empty($queue_language) && !empty($queue_dialect) && !empty($queue_voice)) {
+			$language_formatted = $queue_language."-".$queue_dialect." ".$queue_voice;
+			echo "		<option value='".escape($queue_language.'/'.$queue_dialect.'/'.$queue_voice)."' selected='selected'>".escape($language_formatted)."</option>\n";
+		}
+		if (!empty($language_paths)) {
+			foreach ($language_paths as $key => $language_variables) {
+				$language_variables = explode('/',$language_paths[$key]);
+				$language = $language_variables[0];
+				$dialect = $language_variables[1];
+				$voice = $language_variables[2];
+				if (empty($language_formatted) || $language_formatted != $language.'-'.$dialect.' '.$voice) {
+					echo "		<option value='".$language."/".$dialect."/".$voice."'>".$language."-".$dialect." ".$voice."</option>\n";
+				}
+			}
+		}
+		echo "  </select>\n";
+		echo "<br />\n";
+		echo $text['description-language']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
@@ -1001,66 +1258,19 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "	<select class='formfld' name='queue_strategy'>\n";
-	if ($queue_strategy == "ring-all") {
-		echo "	<option value='ring-all' selected='selected' >".$text['option-ring_all']."</option>\n";
-	}
-	else {
-		echo "	<option value='ring-all'>".$text['option-ring_all']."</option>\n";
-	}
-	if ($queue_strategy == "ring-progressively") {
-		echo "	<option value='ring-progressively' selected='selected' >".$text['option-ring_progressively']."</option>\n";
-	}
-	else {
-		echo "	<option value='ring-progressively'>".$text['option-ring_progressively']."</option>\n";
-	}
-	if ($queue_strategy == "longest-idle-agent") {
-		echo "	<option value='longest-idle-agent' selected='selected' >".$text['option-longest_idle_agent']."</option>\n";
-	}
-	else {
-		echo "	<option value='longest-idle-agent'>".$text['option-longest_idle_agent']."</option>\n";
-	}
-	if ($queue_strategy == "round-robin") {
-		echo "	<option value='round-robin' selected='selected'>".$text['option-round_robin']."</option>\n";
-	}
-	else {
-		echo "	<option value='round-robin'>".$text['option-round_robin']."</option>\n";
-	}
-	if ($queue_strategy == "top-down") {
-		echo "	<option value='top-down' selected='selected'>".$text['option-top_down']."</option>\n";
-	}
-	else {
-		echo "	<option value='top-down'>".$text['option-top_down']."</option>\n";
-	}
-	if ($queue_strategy == "agent-with-least-talk-time") {
-		echo "	<option value='agent-with-least-talk-time' selected='selected'>".$text['option-agent_with_least_talk_time']."</option>\n";
-	}
-	else {
-		echo "	<option value='agent-with-least-talk-time'>".$text['option-agent_with_least_talk_time']."</option>\n";
-	}
-
-	if ($queue_strategy == "agent-with-fewest-calls") {
-		echo "	<option value='agent-with-fewest-calls' selected='selected'>".$text['option-agent_with_fewest_calls']."</option>\n";
-	}
-	else {
-		echo "	<option value='agent-with-fewest-calls'>".$text['option-agent_with_fewest_calls']."</option>\n";
-	}
-	if ($queue_strategy == "sequentially-by-agent-order") {
-		echo "	<option value='sequentially-by-agent-order' selected='selected'>".$text['option-sequentially_by_agent_order']."</option>\n";
-	}
-	else {
-		echo "	<option value='sequentially-by-agent-order'>".$text['option-sequentially_by_agent_order']."</option>\n";
-	}
-	if ($queue_strategy == "sequentially-by-next-agent-order") {
-		echo "	<option value='sequentially-by-next-agent-order' selected='selected'>".$text['option-sequentially_by_next_agent_order']."</option>\n";
-	}
-	else {
-		echo "	<option value='sequentially-by-next-agent-order'>".$text['option-sequentially_by_next_agent_order']."</option>\n";
-	}
-	if ($queue_strategy == "random") {
-		echo "	<option value='random' selected='selected'>".$text['option-random']."</option>\n";
-	}
-	else {
-		echo "	<option value='random'>".$text['option-random']."</option>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "	<option value='ring-all' ".($queue_strategy == 'ring-all' ? "selected" : "").">".$text['option-ring_all']."</option>\n";
+		echo "	<option value='longest-idle-agent' ".($queue_strategy == 'longest-idle-agent' ? "selected" : "").">".$text['option-longest_idle_agent']."</option>\n";
+		echo "	<option value='round-robin' ".($queue_strategy == 'round-robin' ? "selected" : "").">".$text['option-round_robin']."</option>\n";
+		echo "	<option value='top-down' ".($queue_strategy == 'top-down' ? "selected" : "").">".$text['option-top_down']."</option>\n";
+		echo "	<option value='agent-with-least-talk-time' ".($queue_strategy == 'agent-with-least-talk-time' ? "selected" : "").">".$text['option-agent_with_least_talk_time']."</option>\n";
+		echo "	<option value='agent-with-fewest-calls' ".($queue_strategy == 'agent-with-fewest-calls' ? "selected" : "").">".$text['option-agent_with_fewest_calls']."</option>\n";
+		echo "	<option value='sequentially-by-agent-order' ".($queue_strategy == 'sequentially-by-agent-order' ? "selected" : "").">".$text['option-sequentially_by_agent_order']."</option>\n";
+		echo "	<option value='sequentially-by-next-agent-order' ".($queue_strategy == 'sequentially-by-next-agent-order' ? "selected" : "").">".$text['option-sequentially_by_next_agent_order']."</option>\n";
+		echo "	<option value='random' ".($queue_strategy == 'random' ? "selected" : "").">".$text['option-random']."</option>\n";
+	} else {
+		echo "	<option value='ring-all' ".($queue_strategy == 'ring-all' ? "selected" : "").">".$text['option-ring_all']."</option>\n";
+		echo "	<option value='round-robin' ".($queue_strategy == 'round-robin' ? "selected" : "").">".$text['option-round_robin']."</option>\n";
 	}
 	echo "	</select>\n";
 	echo "<br />\n";
@@ -1076,7 +1286,9 @@
 		echo "			<tr>\n";
 		echo "				<td class='vtable'>".$text['label-agent_name']."</td>\n";
 		echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_level']."</td>\n";
-		echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_position']."</td>\n";
+		if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+			echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_position']."</td>\n";
+		}
 		echo "				<td></td>\n";
 		echo "			</tr>\n";
 		$x = 0;
@@ -1101,7 +1313,7 @@
 				echo "		</td>\n";
 				echo "		<td class='' style='text-align: center;'>";
 				echo "				 <select name=\"call_center_tiers[$x][tier_level]\" class=\"formfld\">\n";
-				$i=0;
+				$i=1;
 				while($i<=9) {
 					$selected = ($i == $field['tier_level']) ? "selected" : null;
 					echo "				<option value=\"$i\" $selected>$i</option>\n";
@@ -1110,16 +1322,18 @@
 				echo "				</select>\n";
 				echo "		</td>\n";
 
-				echo "		<td class='' style='text-align: center;'>\n";
-				echo "				<select name=\"call_center_tiers[$x][tier_position]\" class=\"formfld\">\n";
-				$i=0;
-				while($i<=9) {
-					$selected = ($i == $field['tier_position']) ? "selected" : null;
-					echo "				<option value=\"$i\" $selected>$i</option>\n";
-					$i++;
+				if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+					echo "		<td class='' style='text-align: center;'>\n";
+					echo "				<select name=\"call_center_tiers[$x][tier_position]\" class=\"formfld\">\n";
+					$i=0;
+					while($i<=9) {
+						$selected = ($i == $field['tier_position']) ? "selected" : null;
+						echo "				<option value=\"$i\" $selected>$i</option>\n";
+						$i++;
+					}
+					echo "				</select>\n";
+					echo "		</td>\n";
 				}
-				echo "				</select>\n";
-				echo "		</td>\n";
 				echo "		<td class=''>";
 				if (permission_exists('call_center_tier_delete')) {
 					echo "			<a href=\"call_center_queue_edit.php?id=".escape($call_center_queue_uuid)."&call_center_tier_uuid=".escape($field['call_center_tier_uuid'])."&a=delete\" alt=\"".$text['button-delete']."\" onclick=\"return confirm('".$text['confirm-delete']."');\">$v_link_label_delete</a>";
@@ -1174,51 +1388,53 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-queue_limit']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_limit' maxlength='5' min='0' step='1' value='".escape($queue_limit)."'>\n";
-	echo "<br />\n";
-	echo $text['description-queue_limit']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-queue_limit']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='number' name='queue_limit' maxlength='5' min='0' step='1' value='".escape($queue_limit)."'>\n";
+		echo "<br />\n";
+		echo $text['description-queue_limit']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-time_base_score']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='queue_time_base_score'>\n";
-	if ($queue_time_base_score == "system") {
-		echo "	<option value='system' selected='selected' >".$text['option-system']."</option>\n";
-	}
-	else {
-		echo "	<option value='system'>".$text['option-system']."</option>\n";
-	}
-	if ($queue_time_base_score == "queue") {
-		echo "	<option value='queue' selected='selected' >".$text['option-queue']."</option>\n";
-	}
-	else {
-		echo "	<option value='queue'>".$text['option-queue']."</option>\n";
-	}
-	echo "	</select>\n";
-	echo "<br />\n";
-	echo $text['description-time_base_score']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-time_base_score']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "	<select class='formfld' name='queue_time_base_score'>\n";
+		if ($queue_time_base_score == "system") {
+			echo "	<option value='system' selected='selected' >".$text['option-system']."</option>\n";
+		}
+		else {
+			echo "	<option value='system'>".$text['option-system']."</option>\n";
+		}
+		if ($queue_time_base_score == "queue") {
+			echo "	<option value='queue' selected='selected' >".$text['option-queue']."</option>\n";
+		}
+		else {
+			echo "	<option value='queue'>".$text['option-queue']."</option>\n";
+		}
+		echo "	</select>\n";
+		echo "<br />\n";
+		echo $text['description-time_base_score']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-time_base_score_sec']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_time_base_score_sec' maxlength='255' min='0' step='1' value='".escape($queue_time_base_score_sec)."'>\n";
-	echo "<br />\n";
-	echo $text['description-time_base_score_sec']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-time_base_score_sec']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='number' name='queue_time_base_score_sec' maxlength='255' min='0' step='1' value='".escape($queue_time_base_score_sec)."'>\n";
+		echo "<br />\n";
+		echo $text['description-time_base_score_sec']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
@@ -1242,16 +1458,18 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-max_wait_time_with_no_agent_time_reached']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent_time_reached' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time_with_no_agent_time_reached)."'>\n";
-	echo "<br />\n";
-	echo $text['description-max_wait_time_with_no_agent_time_reached']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-max_wait_time_with_no_agent_time_reached']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent_time_reached' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time_with_no_agent_time_reached)."'>\n";
+		echo "<br />\n";
+		echo $text['description-max_wait_time_with_no_agent_time_reached']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
@@ -1264,26 +1482,39 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-tier_rules_apply']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	if ($input_toggle_style_switch) {
-		echo "	<span class='switch'>\n";
+	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "    Exit Action\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo $destination->select('dialplan', 'queue_exit_action', $queue_exit_action);
+		echo "<br />\n";
+		echo "Set the action to perform when * is pressed\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	} else {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-tier_rules_apply']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='queue_tier_rules_apply' name='queue_tier_rules_apply'>\n";
+		echo "			<option value='true' ".($queue_tier_rules_apply == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($queue_tier_rules_apply == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "<br />\n";
+		echo $text['description-tier_rules_apply']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 	}
-	echo "		<select class='formfld' id='queue_tier_rules_apply' name='queue_tier_rules_apply'>\n";
-	echo "			<option value='true' ".($queue_tier_rules_apply == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-	echo "			<option value='false' ".($queue_tier_rules_apply == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-	echo "		</select>\n";
-	if ($input_toggle_style_switch) {
-		echo "		<span class='slider'></span>\n";
-		echo "	</span>\n";
-	}
-	echo "<br />\n";
-	echo $text['description-tier_rules_apply']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
@@ -1296,101 +1527,103 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-ring_progressively_delay']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_ring_progressively_delay' maxlength='255' min='0' step='1' value='".escape($queue_ring_progressively_delay)."'>\n";
-	echo "<br />\n";
-	echo $text['description-ring_progressively_delay']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-ring_progressively_delay']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='number' name='queue_ring_progressively_delay' maxlength='255' min='0' step='1' value='".escape($queue_ring_progressively_delay)."'>\n";
+		echo "<br />\n";
+		echo $text['description-ring_progressively_delay']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-tier_rule_wait_multiply_level']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	if ($input_toggle_style_switch) {
-		echo "	<span class='switch'>\n";
-	}
-	echo "		<select class='formfld' id='queue_tier_rule_wait_multiply_level' name='queue_tier_rule_wait_multiply_level'>\n";
-	echo "			<option value='true' ".($queue_tier_rule_wait_multiply_level == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-	echo "			<option value='false' ".($queue_tier_rule_wait_multiply_level == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-	echo "		</select>\n";
-	if ($input_toggle_style_switch) {
-		echo "		<span class='slider'></span>\n";
-		echo "	</span>\n";
-	}
-	echo "<br />\n";
-	echo $text['description-tier_rule_wait_multiply_level']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-tier_rule_wait_multiply_level']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='queue_tier_rule_wait_multiply_level' name='queue_tier_rule_wait_multiply_level'>\n";
+		echo "			<option value='true' ".($queue_tier_rule_wait_multiply_level == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($queue_tier_rule_wait_multiply_level == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "<br />\n";
+		echo $text['description-tier_rule_wait_multiply_level']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-tier_rule_no_agent_no_wait']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	if ($input_toggle_style_switch) {
-		echo "	<span class='switch'>\n";
-	}
-	echo "		<select class='formfld' id='queue_tier_rule_no_agent_no_wait' name='queue_tier_rule_no_agent_no_wait'>\n";
-	echo "			<option value='true' ".($queue_tier_rule_no_agent_no_wait == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-	echo "			<option value='false' ".($queue_tier_rule_no_agent_no_wait == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-	echo "		</select>\n";
-	if ($input_toggle_style_switch) {
-		echo "		<span class='slider'></span>\n";
-		echo "	</span>\n";
-	}
-	echo "<br />\n";
-	echo $text['description-tier_rule_no_agent_no_wait']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-tier_rule_no_agent_no_wait']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='queue_tier_rule_no_agent_no_wait' name='queue_tier_rule_no_agent_no_wait'>\n";
+		echo "			<option value='true' ".($queue_tier_rule_no_agent_no_wait == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($queue_tier_rule_no_agent_no_wait == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "<br />\n";
+		echo $text['description-tier_rule_no_agent_no_wait']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-discard_abandoned_after']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_discard_abandoned_after' maxlength='255' min='0' step='1' value='".escape($queue_discard_abandoned_after)."'>\n";
-	echo "<br />\n";
-	echo $text['description-discard_abandoned_after']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-discard_abandoned_after']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='number' name='queue_discard_abandoned_after' maxlength='255' min='0' step='1' value='".escape($queue_discard_abandoned_after)."'>\n";
+		echo "<br />\n";
+		echo $text['description-discard_abandoned_after']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-abandoned_resume_allowed']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	if ($input_toggle_style_switch) {
-		echo "	<span class='switch'>\n";
-	}
-	echo "		<select class='formfld' id='queue_abandoned_resume_allowed' name='queue_abandoned_resume_allowed'>\n";
-	echo "			<option value='true' ".($queue_abandoned_resume_allowed == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-	echo "			<option value='false' ".($queue_abandoned_resume_allowed == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-	echo "		</select>\n";
-	if ($input_toggle_style_switch) {
-		echo "		<span class='slider'></span>\n";
-		echo "	</span>\n";
-	}
-	echo "<br />\n";
-	echo $text['description-abandoned_resume_allowed']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-abandoned_resume_allowed']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='queue_abandoned_resume_allowed' name='queue_abandoned_resume_allowed'>\n";
+		echo "			<option value='true' ".($queue_abandoned_resume_allowed == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($queue_abandoned_resume_allowed == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "<br />\n";
+		echo $text['description-abandoned_resume_allowed']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "	".$text['label-caller_id_name_prefix']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='queue_cid_prefix' maxlength='255' value='".escape($queue_cid_prefix)."'>\n";
-	echo "<br />\n";
-	echo $text['description-caller_id_name_prefix']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	".$text['label-caller_id_name_prefix']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='text' name='queue_cid_prefix' maxlength='255' value='".escape($queue_cid_prefix)."'>\n";
+		echo "<br />\n";
+		echo $text['description-caller_id_name_prefix']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	if (permission_exists('call_center_outbound_caller_id_name')) {
 		echo "<tr>\n";
@@ -1522,37 +1755,126 @@
 		echo "</tr>\n";
 	}
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "  Callback Profile\n";
-   	echo "</td>\n";
-   	echo "<td class='vtable' align='left'>\n";
-   	echo "  <select class='formfld' name='queue_callback_profile'>\n";
-	echo "	<option value=''></option>\n";
-	foreach ($cbprofiles as $row) {
-		if ($row['id'] == $queue_callback_profile) {
-			echo "    <option value='".escape($row['id'])."' selected='selected'>".escape($row['profile_name'])."</option>\n";
-		}
-		else {
-			echo "    <option value='".escape($row['id'])."'>".escape($row['profile_name'])."</option>\n";
-		}
-	}
-	echo "    </select>\n";
-   	echo "<br />\n";
-   	echo "Select the Queue callback profile or leave blank for none.\n";
-   	echo "</td>\n";
-   	echo "</tr>\n";
+	if ($settings->get('call_center', 'use_modern_call_center', null)) {
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-	echo "  ".$text['label-exit_keys']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='queue_cc_exit_keys' value='".escape($queue_cc_exit_keys)."'>\n";
-	echo "<br />\n";
-	echo $text['description-exit_keys']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+		echo "	<tr>";
+		echo "		<td class='vncell' valign='top'>Options</td>";
+		echo "		<td class='vtable' align='left'>";
+		echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
+		echo "				<tr>\n";
+		echo "					<td class='vtable' style='text-align: center;'>Option</td>\n";
+		echo "					<td class='vtable'>Destination</td>\n";
+		echo "					<td class='vtable'>Description</td>\n";
+		echo "					<td class='vtable'>Enabled</td>\n";
+		if ($show_option_delete && permission_exists('call_center_menu_option_delete')) {
+			echo "					<td class='vtable edit_delete_checkbox_all' onmouseover=\"swap_display('delete_label_options', 'delete_toggle_options');\" onmouseout=\"swap_display('delete_label_options', 'delete_toggle_options');\">\n";
+			echo "						<span id='delete_label_options'>".$text['label-delete']."</span>\n";
+			echo "						<span id='delete_toggle_options'><input type='checkbox' id='checkbox_all_options' name='checkbox_all' onclick=\"edit_all_toggle('options');\"></span>\n";
+			echo "					</td>\n";
+		}
+		echo "				</tr>\n";
+		if (!empty($call_center_menu_options)) {
+			$x = 0;
+			foreach($call_center_menu_options as $field) {
+
+				//add the primary key uuid
+				if (!empty($field['call_center_menu_option_uuid'])) {
+					echo "	<input name='call_center_menu_options[".$x."][call_center_menu_option_uuid]' type='hidden' value=\"".escape($field['call_center_menu_option_uuid'])."\">\n";
+				}
+
+				echo "<td class='formfld' align='center'>\n";
+				if (empty($field['call_center_menu_option_uuid'])) { // new record
+					if (substr($settings->get('theme', 'input_toggle_style'), 0, 6) == 'switch') {
+						$onkeyup = "onkeyup=\"document.getElementById('call_center_menu_options_".$x."_enabled').checked = (this.value != '' ? true : false);\""; // switch
+					}
+					else {
+						$onkeyup = "onkeyup=\"document.getElementById('call_center_menu_options_".$x."_enabled').value = (this.value != '' ? true : false);\""; // select
+					}
+				}
+				echo "  <input class='formfld' style='width: 50px; text-align: center;' type='text' name='call_center_menu_options[".$x."][digits]' maxlength='1' value='".escape($field['digits'])."' ".$onkeyup.">\n";
+				echo "</td>\n";
+
+				echo "<td class='formfld' align='left' nowrap='nowrap'>\n";
+				$destination_action = '';
+				if (!empty($field['action'].$field['param'])) {
+					$destination_action = $field['action'].':'.$field['param'];
+				} else { $destination_action = ''; }
+				echo $destination->select('broadcast', 'call_center_menu_options['.$x.'][param]', $destination_action);
+				unset($destination_action);
+				echo "</td>\n";
+
+				echo "<td class='formfld' align='left'>\n";
+				echo "	<input class='formfld' style='width:100px' type='text' name='call_center_menu_options[".$x."][description]' maxlength='255' value=\"".escape($field['description'])."\">\n";
+				echo "</td>\n";
+				echo "<td class='formfld'>\n";
+				if ($input_toggle_style_switch) {
+					echo "	<span class='switch'>\n";
+				}
+				echo "	<select class='formfld' id='call_center_menu_options_".$x."_enabled' name='call_center_menu_options[".$x."][enabled]'>\n";
+				echo "		<option value='false' ".($field['enabled'] == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+				echo "		<option value='true' ".($field['enabled'] == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+				echo "	</select>\n";
+				if ($input_toggle_style_switch) {
+					echo "		<span class='slider'></span>\n";
+					echo "	</span>\n";
+				}
+				echo "</td>\n";
+				if ($show_option_delete && permission_exists('call_center_menu_option_delete')) {
+					if (!empty($field['call_center_menu_option_uuid']) && is_uuid($field['call_center_menu_option_uuid'])) {
+						echo "<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
+						echo "	<input type='checkbox' name='call_center_menu_options_delete[".$x."][checked]' value='true' class='chk_delete checkbox_options' onclick=\"edit_delete_action('options');\">\n";
+						echo "	<input type='hidden' name='call_center_menu_options_delete[".$x."][uuid]' value='".escape($field['call_center_menu_option_uuid'])."' />\n";
+					}
+					else {
+						echo "<td>";
+					}
+					echo "</td>\n";
+				}
+
+				echo "</tr>\n";
+
+				$x++;
+			}
+		}
+		echo "			</table>\n";
+		echo "			Breakout options during queue hold\n";
+		echo "			<br />\n";
+		echo "		</td>";
+		echo "	</tr>";
+	} else {
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "  Callback Profile\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <select class='formfld' name='queue_callback_profile'>\n";
+		echo "	<option value=''></option>\n";
+		foreach ($cbprofiles as $row) {
+			if ($row['id'] == $queue_callback_profile) {
+				echo "    <option value='".escape($row['id'])."' selected='selected'>".escape($row['profile_name'])."</option>\n";
+			}
+			else {
+				echo "    <option value='".escape($row['id'])."'>".escape($row['profile_name'])."</option>\n";
+			}
+		}
+		echo "    </select>\n";
+		echo "<br />\n";
+		echo "Select the Queue callback profile or leave blank for none.\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "  ".$text['label-exit_keys']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='text' name='queue_cc_exit_keys' value='".escape($queue_cc_exit_keys)."'>\n";
+		echo "<br />\n";
+		echo $text['description-exit_keys']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	if (permission_exists('call_center_email_address')) {
 		echo "<tr>\n";

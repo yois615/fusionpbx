@@ -44,6 +44,7 @@
 		$apps[$x]['destinations'][$y]['field']['context'] = "user_context";
 		$apps[$x]['destinations'][$y]['field']['description'] = "description";
 		$apps[$x]['destinations'][$y]['select_value']['user_contact'] = "user/\${destination}@\${domain_name}";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${description}";
@@ -62,6 +63,7 @@
 		//$apps[$x]['destinations'][$y]['field']['destination']['name'] = "destination";
 		//$apps[$x]['destinations'][$y]['field']['destination']['type'] = "csv";
 		//$apps[$x]['destinations'][$y]['field']['destination']['delimiter'] = ",";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:'bridge group/\${destination}@\${domain_name}' inline";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "bridge:group/\${destination}@\${domain_name}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:bridge group/\${destination}@\${domain_name}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination}";

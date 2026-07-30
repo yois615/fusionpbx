@@ -42,6 +42,7 @@
 		$apps[$x]['destinations'][$y]['field']['name'] = "name";
 		$apps[$x]['destinations'][$y]['field']['extension'] = "extension";
 		//$apps[$x]['destinations'][$y]['field']['context'] = "context";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:\${extension} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${extension} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${extension} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${extension} \${name}";
