@@ -76,12 +76,14 @@
 			case 'copy':
 				if (permission_exists('call_center_queue_add')) {
 					$obj = new call_center;
+					$obj->settings = $settings;
 					$obj->copy_queues($call_center_queues);
 				}
 				break;
 			case 'delete':
 				if (permission_exists('call_center_queue_delete')) {
 					$obj = new call_center;
+					$obj->settings = $settings;
 					$obj->delete_queues($call_center_queues);
 				}
 				break;

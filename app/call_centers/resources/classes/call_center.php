@@ -56,6 +56,7 @@ class call_center {
 	public $queue_cid_prefix;
 	public $queue_greeting;
 	public $queue_timeout_action;
+	public $settings;
 
 	/**
 	 * Set in the constructor. Must be a database object and cannot be null.
@@ -386,7 +387,7 @@ class call_center {
 					//delete the queue in the switch
 					if ($esl->is_connected()) {
 						foreach ($uuids as $uuid) {
-							if (!$settings->get("call_center", "use_modern_call_center", null)) {
+							if (!$this->settings->get("call_center", "use_modern_call_center", null)) {
 								$cmd      = "callcenter_config queue unload " . $call_center_queues[$uuid]['queue_extension'] . "@" . $this->domain_name;
 								$response = event_socket::api($cmd);
 							} else {
@@ -498,7 +499,7 @@ class call_center {
 					//delete the agent in the switch
 					if ($esl->is_connected()) {
 						foreach ($uuids as $uuid) {
-							if (!$settings->get("call_center", "use_modern_call_center", null)) {
+							if (!$this->settings->get("call_center", "use_modern_call_center", null)) {
 								event_socket::async("callcenter_config agent del $uuid");
 							} else {
 								$cmd = "sendevent CUSTOM\n";
