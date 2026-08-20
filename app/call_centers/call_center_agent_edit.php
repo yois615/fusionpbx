@@ -78,7 +78,7 @@
 		$agent_reject_delay_time = $_POST["agent_reject_delay_time"];
 		$agent_busy_delay_time = $_POST["agent_busy_delay_time"];
 		$agent_record = $_POST["agent_record"];
-		$agent_use_system_caller_id = $_POST["use_system_caller_id"];
+		$agent_use_system_caller_id = $_POST["agent_use_system_caller_id"];
 		$agent_enabled = $_POST["agent_enabled"];
 		$agent_confirm_prompt = $_POST["agent_confirm_prompt"];
 		$call_center_tiers = $_POST["call_center_tiers"];
