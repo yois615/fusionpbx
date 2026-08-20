@@ -409,49 +409,49 @@
 					$agent_contact = $first.','.$confirm.$sip_invite_domain.$call_timeout.$recording_string.$last;
 				}
 			}
+		}
 		
-		//add the agent
-			//setup the event socket connection
-				$esl = event_socket::create();
-			//add the agent using event socket
-				if ($esl->connected()) {
-					if (!$settings->get('call_center', 'use_modern_call_center', null)) {
-					//add the agent
-						$cmd = "callcenter_config agent add ".$call_center_agent_uuid." '".$agent_type."'";
-						$response = event_socket::api($cmd);
-						usleep(200);
-					//agent set contact
-						$cmd = "callcenter_config agent set contact ".$call_center_agent_uuid." '".$agent_contact."'";
-						$response = event_socket::api($cmd);
-						usleep(200);
-					//agent set status
-						$cmd = "callcenter_config agent set status ".$call_center_agent_uuid." '".$agent_status."'";
-						$response = event_socket::api($cmd);
-						usleep(200);
-					//agent set reject_delay_time
-						$cmd = 'callcenter_config agent set reject_delay_time '.$call_center_agent_uuid.' '. $agent_reject_delay_time;
-						$response = event_socket::api($cmd);
-						usleep(200);
-					//agent set busy_delay_time
-						$cmd = 'callcenter_config agent set busy_delay_time '.$call_center_agent_uuid.' '.$agent_busy_delay_time;
-						$response = event_socket::api($cmd);
-					//agent set no_answer_delay_time
-						$cmd = 'callcenter_config agent set no_answer_delay_time '.$call_center_agent_uuid.' '.$agent_no_answer_delay_time;
-						$response = event_socket::api($cmd);
-					//agent set max_no_answer
-						$cmd = 'callcenter_config agent set max_no_answer '.$call_center_agent_uuid.' '.$agent_max_no_answer;
-						$response = event_socket::api($cmd);
-					//agent set wrap_up_time
-						$cmd = 'callcenter_config agent set wrap_up_time '.$call_center_agent_uuid.' '.$agent_wrap_up_time;
-						$response = event_socket::api($cmd);
-					} else {
-						$cmd = "sendevent CUSTOM\n";
-						$cmd .= "Event-Name: CUSTOM\n";
-						$cmd .= "Event-Subclass: callcenter::command\n";
-						$cmd .= "CC-Command: update_agent\n";
-						$cmd .= "Agent: " . $call_center_agent_uuid . "\n";
-						$response = event_socket::command($cmd);
-					}
+	//add the agent
+		//setup the event socket connection
+			$esl = event_socket::create();
+		//add the agent using event socket
+			if ($esl->connected()) {
+				if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+				//add the agent
+					$cmd = "callcenter_config agent add ".$call_center_agent_uuid." '".$agent_type."'";
+					$response = event_socket::api($cmd);
+					usleep(200);
+				//agent set contact
+					$cmd = "callcenter_config agent set contact ".$call_center_agent_uuid." '".$agent_contact."'";
+					$response = event_socket::api($cmd);
+					usleep(200);
+				//agent set status
+					$cmd = "callcenter_config agent set status ".$call_center_agent_uuid." '".$agent_status."'";
+					$response = event_socket::api($cmd);
+					usleep(200);
+				//agent set reject_delay_time
+					$cmd = 'callcenter_config agent set reject_delay_time '.$call_center_agent_uuid.' '. $agent_reject_delay_time;
+					$response = event_socket::api($cmd);
+					usleep(200);
+				//agent set busy_delay_time
+					$cmd = 'callcenter_config agent set busy_delay_time '.$call_center_agent_uuid.' '.$agent_busy_delay_time;
+					$response = event_socket::api($cmd);
+				//agent set no_answer_delay_time
+					$cmd = 'callcenter_config agent set no_answer_delay_time '.$call_center_agent_uuid.' '.$agent_no_answer_delay_time;
+					$response = event_socket::api($cmd);
+				//agent set max_no_answer
+					$cmd = 'callcenter_config agent set max_no_answer '.$call_center_agent_uuid.' '.$agent_max_no_answer;
+					$response = event_socket::api($cmd);
+				//agent set wrap_up_time
+					$cmd = 'callcenter_config agent set wrap_up_time '.$call_center_agent_uuid.' '.$agent_wrap_up_time;
+					$response = event_socket::api($cmd);
+				} else {
+					$cmd = "sendevent CUSTOM\n";
+					$cmd .= "Event-Name: CUSTOM\n";
+					$cmd .= "Event-Subclass: callcenter::command\n";
+					$cmd .= "CC-Command: update_agent\n";
+					$cmd .= "Agent: " . $call_center_agent_uuid . "\n";
+					$response = event_socket::command($cmd);
 				}
 			}
 
