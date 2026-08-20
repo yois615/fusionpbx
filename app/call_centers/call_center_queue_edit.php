@@ -1638,7 +1638,7 @@
 		echo "</tr>\n";
 	}
 
-	if (permission_exists('call_center_outbound_caller_id_number')) {
+	if (permission_exists('call_center_outbound_caller_id_number') || $settings->get('call_center', 'use_modern_call_center', null)) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 		echo "	".$text['label-outbound_caller_id_number']."\n";
@@ -1876,7 +1876,7 @@
 		echo "</tr>\n";
 	}
 
-	if (permission_exists('call_center_email_address')) {
+	if (permission_exists('call_center_email_address') || $settings->get('call_center', 'use_modern_call_center', null)) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 		echo "	".$text['label-queue_email_address']."\n";
