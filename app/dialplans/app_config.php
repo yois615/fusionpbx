@@ -43,6 +43,7 @@
 		$apps[$x]['destinations'][$y]['field']['destination'] = "destination";
 		$apps[$x]['destinations'][$y]['field']['description'] = "description";
 		//$apps[$x]['destinations'][$y]['select_value']['user_contact'] = "sofia/internal/sip:\$1\${regex(\${sofia_contact(\${destination}@\${domain_name})}|^[^@]+(.*)|%1)}";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:'\${destination}' XML \${domain_name}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${domain_name}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${domain_name}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${dialplan_name} \${description}";

@@ -3864,6 +3864,19 @@ else { //default: white
 		overflow: auto;
 		}
 
+	#modal-coverage > div {
+		width: 90%;
+		height: 90%;
+		display: flex;
+		flex-direction: column;
+		max-width: 900px;
+		max-height: 600px;
+	}
+
+	#modal-coverage .modal-message {
+		flex-grow: 1;
+	}
+
 	@media(min-width: 0px) and (max-width: 699px) {
 		.modal-window > div {
 			width: 100%;
