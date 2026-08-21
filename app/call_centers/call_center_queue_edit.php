@@ -389,8 +389,12 @@
 			if (permission_exists('call_center_outbound_caller_id_name')) {
 				$array['call_center_queues'][0]['queue_outbound_caller_id_name'] = $queue_outbound_caller_id_name;
 			}
-			if (permission_exists('call_center_outbound_caller_id_number')) {
-				$array['call_center_queues'][0]['queue_outbound_caller_id_number'] = $queue_outbound_caller_id_number;
+			if (permission_exists('call_center_outbound_caller_id_number') || $settings->get('call_center', 'use_modern_call_center', null)) {
+				// Check if we're allowed to use that number
+				$allowed_outbound_caller_id = $settings->get('call_center', 'allowed_outbound_caller_id', null);
+				if (is_array($allowed_outbound_caller_id) && in_array($queue_outbound_caller_id_number, $allowed_outbound_caller_id)){
+					$array['call_center_queues'][0]['queue_outbound_caller_id_number'] = $queue_outbound_caller_id_number;
+				}
 			}
 			$array['call_center_queues'][0]['queue_announce_position'] = $queue_announce_position;
 			if (permission_exists('call_center_announce_sound')) {
@@ -1644,9 +1648,16 @@
 		echo "	".$text['label-outbound_caller_id_number']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "  <input class='formfld' type='text' name='queue_outbound_caller_id_number' maxlength='255' value='".escape($queue_outbound_caller_id_number ?? '')."'>\n";
+		echo "	<select class='formfld' name='queue_outbound_caller_id_number'>\n";
+		$allowed_outbound_caller_id = $settings->get('call_center', 'allowed_outbound_caller_id', null);
+		if (is_array($allowed_outbound_caller_id) && count($allowed_outbound_caller_id) > 0) {
+			foreach($allowed_outbound_caller_id as $k => $v) {
+				echo "		<option value='".$v."' ".(escape($queue_outbound_caller_id_number)==$v ? "selected='selected'" : "")."'>".$v."</option>\n";
+			}
+		}
+		echo "	</select>\n";
 		echo "<br />\n";
-		echo $text['description-outbound_caller_id_number']."\n";
+		echo "Choose the outbound caller ID number from the list. Populated from Default Settings\n";
 		echo "</td>\n";
 		echo "</tr>\n";
 	}

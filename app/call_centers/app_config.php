@@ -264,6 +264,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Use modern call center";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "4d88b0c6-d2f4-4249-acb1-2d3967832c9c";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "call_center";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "allowed_outbound_caller_id";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "12125551212";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "A list of allowed numbers for outbound calls from a queue.  Add one entry for each TN incrementing the order.";
 
 	//cache details
 		$apps[$x]['cache']['key'] = "dialplan.\${domain_name}";
