@@ -1028,7 +1028,11 @@
 		unset ($tiers);
 		echo "		</table>\n";
 		echo "		<br>\n";
-		echo "		".$text['description-tiers']."\n";
+		if ($settings->get("call_center", "use_modern_call_center", null)) {
+			echo "		This agent can login to these queues at the assigned tier level\n";
+		} else {
+			echo "		".$text['description-tiers']."\n";
+		}
 		echo "		<br />\n";
 		echo "	</td>";
 		echo "</tr>";
