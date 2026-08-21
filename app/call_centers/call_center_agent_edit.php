@@ -1127,9 +1127,10 @@
 		}
 
 		echo "</table>";
-		echo "</div>\n";
-		echo "<br /><br />";
 	}
+	echo "</table>";
+	echo "</div>\n";
+	echo "<br />";
 
 	if ($action == "update") {
 		echo "<input type='hidden' name='call_center_agent_uuid' value='".escape($call_center_agent_uuid)."'>\n";
