@@ -71,7 +71,7 @@
 		$agent_id = $_POST["agent_id"];
 		$agent_password = $_POST["agent_password"];
 		$agent_status = $_POST["agent_status"];
-		$agent_contact = $_POST["agent_contact"];
+		$agent_contact = preg_replace('/[^0-9]/', '', $_POST["agent_contact"]);
 		$agent_no_answer_delay_time = $_POST["agent_no_answer_delay_time"];
 		$agent_max_no_answer = $_POST["agent_max_no_answer"];
 		$agent_wrap_up_time = $_POST["agent_wrap_up_time"];
@@ -778,7 +778,7 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	if ($settings->get('call_center', 'use_modern_call_center', null))
-		echo "<input class='formfld' type='text' name='agent_contact' id='agent_contact' value='".escape($agent_contact)."'>\n";
+		echo "<input class='formfld' type='text' name='agent_contact' id='agent_contact' onkeyup='this.value = this.value.replace(/[^\d]/g, \"\")' value='".escape($agent_contact)."'>\n";
 	else
 		echo $destination->select('user_contact', 'agent_contact', ($agent_contact ?? null));
 	echo "<br />\n";
