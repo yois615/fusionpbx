@@ -160,6 +160,9 @@
 	if (permission_exists('call_center_agent_view')) {
 		echo button::create(['type'=>'button','label'=>$text['button-agents'],'icon'=>'users','link'=>'call_center_agents.php']);
 	}
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		echo button::create(['type'=>'button','label'=>'Statistics','icon'=>'chart-area','link'=>'call_center_stats.php']);
+	}
 	if (permission_exists('call_center_wallboard')) {
 		echo button::create(['type'=>'button','label'=>$text['button-wallboard'],'icon'=>'th','link'=>PROJECT_PATH.'/app/call_center_wallboard/call_center_wallboard.php']);
 	}
