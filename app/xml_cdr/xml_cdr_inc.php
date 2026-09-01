@@ -265,7 +265,7 @@
 	}
 
 //create the sql query to get the xml cdr records
-	if (empty($order_by)) { $order_by  = "start_stamp"; }
+	if (empty($order_by)) { $order_by  = "c.start_stamp"; }
 	if (empty($order)) { $order  = "desc"; }
 
 //set a default number of rows to show
@@ -319,8 +319,8 @@
 	$sql .= "e.effective_caller_id_name as extension_name, \n";
 	$sql .= "c.start_stamp, \n";
 	$sql .= "c.end_stamp, \n";
-	$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-	$sql .= "to_char(timezone(:time_zone, start_stamp), '".$time_format."') as start_time_formatted, \n";
+	$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+	$sql .= "to_char(timezone(:time_zone, c.start_stamp), '".$time_format."') as start_time_formatted, \n";
 	$sql .= "c.start_epoch, \n";
 	$sql .= "c.hangup_cause, \n";
 	$sql .= "c.duration, \n";
@@ -512,17 +512,17 @@
 		$start_stamp_end_formatted = ($settings->get('domain', 'time_format') == '24h' ? $start_stamp_end : DateTime::createFromFormat('Y-m-d h:i a', $start_stamp_end)->format('Y-m-d H:i'));
 	}
 	if (!empty($start_stamp_begin_formatted) && !empty($start_stamp_end_formatted)) {
-		$sql .= "and start_stamp between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
+		$sql .= "and c.start_stamp between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz \n";
 		$parameters['start_stamp_begin'] = $start_stamp_begin_formatted.':00.000 '.$time_zone;
 		$parameters['start_stamp_end'] = $start_stamp_end_formatted.':59.999 '.$time_zone;
 	}
 	else {
 		if (!empty($start_stamp_begin_formatted)) {
-			$sql .= "and start_stamp >= :start_stamp_begin \n";
+			$sql .= "and c.start_stamp >= :start_stamp_begin \n";
 			$parameters['start_stamp_begin'] = $start_stamp_begin_formatted.':00.000 '.$time_zone;
 		}
 		if (!empty($start_stamp_end_formatted)) {
-			$sql .= "and start_stamp <= :start_stamp_end \n";
+			$sql .= "and c.start_stamp <= :start_stamp_end \n";
 			$parameters['start_stamp_end'] = $start_stamp_end_formatted.':59.999 '.$time_zone;
 		}
 	}
