@@ -179,6 +179,19 @@ EOF;
 	//echo $text['description-call_center_queues']."\n";
 	//echo "<br /><br />\n";
 
+	function build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, $agents_order_by, $agents_order) {
+		$date_format = $GLOBALS['settings']->get('domain', 'time_format') == '24h' ? 'Y-m-d H:i' : 'Y-m-d h:i a';
+		$from_stamp = is_string($from_stamp) ? date_create($from_stamp) : $from_stamp;
+		$to_stamp = is_string($to_stamp) ? date_create($to_stamp) : $to_stamp;
+		$query = "?from_stamp=".urlencode(date_format($from_stamp, $date_format));
+		$query .= "&to_stamp=".urlencode(date_format($to_stamp, $date_format));
+		$query .= "&calls_order_by=".urlencode($calls_order_by ?? '');
+		$query .= "&calls_order=".urlencode($calls_order ?? '');
+		$query .= "&agents_order_by=".urlencode($agents_order_by ?? '');
+		$query .= "&agents_order=".urlencode($agents_order ?? '');
+		return $query;
+	}
+
 	echo "<form name='frm' id='frm' method='get'>\n";
 	echo "<div class='card'>\n";
 	echo "	<div>\n";
@@ -186,12 +199,15 @@ EOF;
 	echo "		<div class='field no-wrap'>\n";
 	echo "			<input type='text' class='formfld datetimepicker' data-toggle='datetimepicker' data-target='#from_stamp' onblur=\"$(this).datetimepicker('hide');\" style='".($settings->get('domain', 'time_format') == '24h' ? 'min-width: 115px; width: 115px;' : 'min-width: 115px; width: 130px;')."' name='from_stamp' id='from_stamp' placeholder='".$text['label-from']."' value='".escape($from_stamp)."' autocomplete='off'>\n";
 	echo "			<input type='text' class='formfld datetimepicker' data-toggle='datetimepicker' data-target='#to_stamp' onblur=\"$(this).datetimepicker('hide');\" style='".($settings->get('domain', 'time_format') == '24h' ? 'min-width: 115px; width: 115px;' : 'min-width: 115px; width: 130px;')."' name='to_stamp' id='to_stamp' placeholder='".$text['label-to']."' value='".escape($to_stamp)."' autocomplete='off'>\n";
+	echo "			<input type='hidden' name='calls_order_by value='".escape($calls_order_by ?? '')."'>";
+	echo "			<input type='hidden' name='calls_order value='".escape($calls_order ?? '')."'>";
+	echo "			<input type='hidden' name='agents_order_by value='".escape($agents_order_by ?? '')."'>";
+	echo "			<input type='hidden' name='agents_order value='".escape($agents_order ?? '')."'>";
 	echo button::create(['label'=>$text['button-search'],'icon'=>$settings->get('theme', 'button_icon_search'),'type'=>'submit','id'=>'btn_save','name'=>'submit']);
 	echo "		</div>\n";
-	$date_format = $settings->get('domain', 'time_format') == '24h' ? 'Y-m-d H:i' : 'Y-m-d H:i a';
-	echo "		<a href='?from_stamp=".urlencode(date_format(date_create('midnight'), $date_format))."' style='margin-right: 5px;'>Today</a>";
-	echo "		<a href='?from_stamp=".urlencode(date_format(date_create('sunday -1 week 00:00'), $date_format))."' style='margin-right: 5px;'>This week</a>";
-	echo "		<a href='?from_stamp=".urlencode(date_format(date_create('first day of 00:00'), $date_format))."' style='margin-right: 5px;'>This month</a>";
+	echo "		<a href='".build_href_params(date_create('midnight'), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>Today</a>";
+	echo "		<a href='".build_href_params(date_create('sunday -1 week 00:00'), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>This week</a>";
+	echo "		<a href='".build_href_params(date_create('first day of 00:00'), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>This month</a>";
 	echo "	</div>\n";
 	echo "</div>\n";
 	echo "<br />\n";
@@ -204,12 +220,12 @@ EOF;
 	echo "<div class='card'>\n";
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
-	echo th_order_by('queue_name', "Queue name", $calls_order_by, $calls_order);
-	echo th_order_by('total', "Total calls", $calls_order_by, $calls_order);
-	echo th_order_by('answered', "Answered calls", $calls_order_by, $calls_order);
-	echo th_order_by('abandoned', "Abandoned calls", $calls_order_by, $calls_order);
-	echo th_order_by('timed_out', "Timed-out calls", $calls_order_by, $calls_order);
-	echo th_order_by('avg_wait_time', "Average wait time", $calls_order_by, $calls_order);
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, 'queue_name', ($calls_order_by == 'queue_name' && $calls_order == 'asc') ? 'desc' : 'asc', $agents_order_by, $agents_order)."'>Queue name</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, 'total', ($calls_order_by == 'total' && $calls_order == 'asc') ? 'desc' : 'asc', $agents_order_by, $agents_order)."'>Total calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, 'answered', ($calls_order_by == 'answered' && $calls_order == 'asc') ? 'desc' : 'asc', $agents_order_by, $agents_order)."'>Answered calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, 'abandoned', ($calls_order_by == 'abandoned' && $calls_order == 'asc') ? 'desc' : 'asc', $agents_order_by, $agents_order)."'>Abandoned calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, 'timed_out', ($calls_order_by == 'timed_out' && $calls_order == 'asc') ? 'desc' : 'asc', $agents_order_by, $agents_order)."'>Timed out calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, 'avg_wait_time', ($calls_order_by == 'avg_wait_time' && $calls_order == 'asc') ? 'desc' : 'asc', $agents_order_by, $agents_order)."'>Average wait time</a></th>";
 	echo "</tr>\n";
 
 	if (!empty($call_stats)) {
@@ -235,10 +251,10 @@ EOF;
 	echo "<div class='card'>\n";
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
-	echo th_order_by('agent_name', "Agent name", $agents_order_by, $agents_order);
-	echo th_order_by('answered', "Answered calls", $agents_order_by, $agents_order);
-	echo th_order_by('missed', "Missed calls", $agents_order_by, $agents_order);
-	echo th_order_by('in_call_time', "Total time in call", $agents_order_by, $agents_order);
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'agent_name', ($agents_order_by == 'agent_name' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Agent name</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'answered', ($agents_order_by == 'answered' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Answered calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'missed', ($agents_order_by == 'missed' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Timed out calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'in_call_time', ($agents_order_by == 'in_call_time' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Average wait time</a></th>";
 	echo "</tr>\n";
 
 	if (!empty($agent_stats)) {
