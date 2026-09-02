@@ -253,8 +253,8 @@ EOF;
 	echo "<tr class='list-header'>\n";
 	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'agent_name', ($agents_order_by == 'agent_name' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Agent name</a></th>";
 	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'answered', ($agents_order_by == 'answered' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Answered calls</a></th>";
-	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'missed', ($agents_order_by == 'missed' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Timed out calls</a></th>";
-	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'in_call_time', ($agents_order_by == 'in_call_time' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Average wait time</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'missed', ($agents_order_by == 'missed' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Missed calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'in_call_time', ($agents_order_by == 'in_call_time' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Total in-call time</a></th>";
 	echo "</tr>\n";
 
 	if (!empty($agent_stats)) {
