@@ -582,7 +582,7 @@
 				echo "			<option value='destination_number' ".($order_by == 'destination_number' ? "selected='selected'" : null).">".$text['label-destination']."</option>\n";
 			}
 			if ($permission['xml_cdr_start']) {
-				echo "			<option value='start_stamp' ".($order_by == 'start_stamp' || $order_by == '' ? "selected='selected'" : null).">".$text['label-start']."</option>\n";
+				echo "			<option value='c.start_stamp' ".($order_by == 'c.start_stamp' ? "selected='selected'" : null).">".$text['label-start']."</option>\n";
 			}
 			if ($permission['xml_cdr_wait']) {
 				echo "			<option value='wait' ".($order_by == 'wait' ? "selected='selected'" : null).">".$text['label-wait']."</option>\n";
