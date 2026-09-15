@@ -186,6 +186,8 @@ end
 
 -- Chumash by parsha function
 local function chumash_by_parsha(epoch)
+    local parsha_start_chapter, parsha_start_verse, parsha_end_chapter, parsha_end_verse = nil
+
     local cache_file = api:execute("http_get", "http://www.hebcal.com/hebcal?v=1&cfg=json&s=on" .. israel_user .. "&year=now&ss=on&start=" .. os.date("%Y-%m-%d", epoch) .. os.date("&end=%Y-%m-%d", epoch + 7*24*60*60));
     local file = io.open(cache_file, "r")
     if file then
@@ -224,14 +226,25 @@ local function chumash_by_parsha(epoch)
     if tbl_cur_parsha[1] == "Numbers" then parallel_class_id = 4; end;
     if tbl_cur_parsha[1] == "Deuteronomy" then parallel_class_id = 5; end;
 
-    local tbl_parsha_range = split(tbl_cur_parsha[2], "-");
-
-    local tbl_parsha_start = split(tbl_parsha_range[1], ":")
-    local parsha_start_chapter = tbl_parsha_start[1];
-    local parsha_start_verse = tbl_parsha_start[2];
-    local tbl_parsha_end = split(tbl_parsha_range[2], ":")
-    local parsha_end_chapter = tbl_parsha_end[1];
-    local parsha_end_verse = tbl_parsha_end[2];
+    -- Parsha might be all one perek (32:1-52), so this doesn't work
+    -- there will be only 1 colon and the dash is between the verses
+    local _, colonCount = string.gsub(tbl_cur_parsha[2], ":", "");
+    if colonCount >= 2 then
+         local tbl_parsha_range = split(tbl_cur_parsha[2], "-");
+         local tbl_parsha_start = split(tbl_parsha_range[1], ":")
+         parsha_start_chapter = tbl_parsha_start[1];
+         parsha_start_verse = tbl_parsha_start[2];
+         local tbl_parsha_end = split(tbl_parsha_range[2], ":")
+         parsha_end_chapter = tbl_parsha_end[1];
+         parsha_end_verse = tbl_parsha_end[2];
+    else
+        local tbl_parsha_range = split(tbl_cur_parsha[2], ":");
+        parsha_start_chapter = tbl_parsha_range[1];
+        parsha_end_chapter = tbl_parsha_range[1];
+        local tbl_parsha_verses = split(tbl_parsha_range[2], "-");
+        parsha_start_verse = tbl_parsha_verses[1]
+        parsha_end_verse = tbl_parsha_verses[2]
+    end
 
     -- If there is more than one leyning, the parsha_end_verse will end with a ;
     -- "torah":"Genesis 41:1-44:17; Numbers 28:9-15, 7:42-47","haftarah":"Zechariah 2:14-4:7 | Shabbat Rosh Chodesh Chanukah"
