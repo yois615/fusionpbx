@@ -324,23 +324,26 @@
 	$sql .= "c.start_epoch, \n";
 	$sql .= "c.hangup_cause, \n";
 	$sql .= "c.duration, \n";
-	if (strlen($call_center_agent_uuid) == 0 && strlen($call_center_queue_uuid) == 0) {
-		$sql .= "c.start_epoch, \n";
-		$sql .= "c.billmsec, \n";
-		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
-	} elseif (strlen($call_center_agent_uuid) > 0) {
-		$sql .= "c.cc_queue_answered_epoch as start_epoch, \n";
-		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'DD Mon YYYY') as start_date_formatted, \n";
-		$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'HH12:MI:SS am') as start_time_formatted, \n";
-		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) * 1000 as billmsec, \n";
-	} elseif (strlen($call_center_queue_uuid) > 0) {
-		$sql .= "c.start_epoch, \n";
-		$sql .= "c.billmsec, \n";
-		$sql .= "c.cc_queue_joined_epoch, c.cc_queue_answered_epoch, \n";
-		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
-		$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
-		$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) as agent_talk_time, \n";
+
+	if (!$settings->get("call_center", "use_modern_call_center", null)) {
+		if (strlen($call_center_agent_uuid) == 0 && strlen($call_center_queue_uuid) == 0) {
+			$sql .= "c.start_epoch, \n";
+			$sql .= "c.billmsec, \n";
+			$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+			$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+		} elseif (strlen($call_center_agent_uuid) > 0) {
+			$sql .= "c.cc_queue_answered_epoch as start_epoch, \n";
+			$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'DD Mon YYYY') as start_date_formatted, \n";
+			$sql .= "to_char(timezone(:time_zone, to_timestamp(c.cc_queue_answered_epoch)), 'HH12:MI:SS am') as start_time_formatted, \n";
+			$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) * 1000 as billmsec, \n";
+		} elseif (strlen($call_center_queue_uuid) > 0) {
+			$sql .= "c.start_epoch, \n";
+			$sql .= "c.billmsec, \n";
+			$sql .= "c.cc_queue_joined_epoch, c.cc_queue_answered_epoch, \n";
+			$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+			$sql .= "to_char(timezone(:time_zone, c.start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
+			$sql .= "(c.end_epoch - c.cc_queue_answered_epoch) as agent_talk_time, \n";
+		}
 	}
 	
 	$sql .= "c.missed_call, \n";
@@ -402,6 +405,10 @@
 		$sql .= "inner join v_xml_cdr_json as json on c.xml_cdr_uuid = json.xml_cdr_uuid \n";
 		$sql .= "inner join v_xml_cdr_flow as flow on c.xml_cdr_uuid = flow.xml_cdr_uuid \n";
 	}
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		$sql .= "left join v_call_center_member_events as cc_me on c.xml_cdr_uuid = cc_me.call_uuid ";
+		$sql .= "left join v_call_center_cdr as cc_cdr on cc_cdr.member_id = cc_me.id ";
+	}
 	if (!empty($_REQUEST['show']) && $_REQUEST['show'] == "all" && $permission['xml_cdr_all']) {
 		$sql .= "where true \n";
 	}
@@ -418,7 +425,10 @@
 		}
 	}
 	if (!empty($start_epoch) && !empty($stop_epoch)) {
-		$sql .= "and ".((strlen($call_center_agent_uuid) == 0) ? "start_epoch " : "cc_queue_answered_epoch ")."between :start_epoch and :stop_epoch \n";
+		if (!empty($call_center_agent_uuid) && $settings->get("call_center", "use_modern_call_center", null))
+			$sql .= "and cc_queue_answered_epoch between :start_epoch and :stop_epoch \n";
+		else
+			$sql .= "and start_epoch between :start_epoch and :stop_epoch \n";
 		$parameters['start_epoch'] = $start_epoch;
 		$parameters['stop_epoch'] = $stop_epoch;
 	}
@@ -621,20 +631,38 @@
 		$sql .= "and network_addr like :network_addr \n";
 		$parameters['network_addr'] = '%'.$network_addr.'%';
 	}
-	if (strlen($call_center_agent_uuid) > 0) {
-		$sql .= "and cc_agent = :call_center_agent_uuid \n";
-		$sql .= "and cc_cause = 'answered' \n";
-		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
-	}
-	if (strlen($call_center_queue_uuid) > 0) {
-		$sql .= "and call_center_queue_uuid = :call_center_queue_uuid \n";
-		if ($call_center_abandoned != 'on') {
+
+	if (!$settings->get("call_center", "use_modern_call_center", null)) {
+		if (strlen($call_center_agent_uuid) > 0) {
+			$sql .= "and cc_agent = :call_center_agent_uuid \n";
 			$sql .= "and cc_cause = 'answered' \n";
-		} else {
-			$sql .= "and cc_cause = 'cancel' \n";
+			$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
 		}
-		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+		if (strlen($call_center_queue_uuid) > 0) {
+			$sql .= "and call_center_queue_uuid = :call_center_queue_uuid \n";
+			if ($call_center_abandoned != 'on') {
+				$sql .= "and cc_cause = 'answered' \n";
+			} else {
+				$sql .= "and cc_cause = 'cancel' \n";
+			}
+			$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+		}
+	} else {
+		if (strlen($call_center_agent_uuid) > 0) {
+			$sql .= "and cc_cdr.reason = 'bridged' and cc_cdr.agent_id = :call_center_agent_uuid ";
+			$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+		}
+		if (strlen($call_center_queue_uuid) > 0) {
+			$sql .= "and cc_me.queue_id = :call_center_queue_uuid ";
+			if ($call_center_abandoned != 'on') {
+				$sql .= "and cc_me.leave_reason = 'bridged' ";
+			} else {
+				$sql .= "and cc_me.leave_reason = 'abandoned' ";
+			}
+			$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+		}
 	}
+
 	if ($disa_outbound_only == 'on') {
 		$sql .= "and json.json #>> '{variables,disa_outbound}' is not null \n";
 	}
@@ -682,7 +710,10 @@
 	}
 	//show specific call center queue
 	if (!empty($call_center_queue_uuid) && $permission['xml_cdr_call_center_queues']) {
-		$sql .= "and call_center_queue_uuid = :call_center_queue_uuid \n";
+		if (!$settings->get("call_center", "use_modern_call_center", null))
+			$sql .= "and call_center_queue_uuid = :call_center_queue_uuid \n";
+		else
+			$sql .= "and cc_me.queue_id = :call_center_queue_uuid \n";
 		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 	}
 	//show specific ring groups

@@ -309,6 +309,33 @@
 	//prepares the raw call flow data to be displayed
 	$call_flow_summary = $xml_cdr->call_flow_summary($call_flow_array);
 
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		$sql = "select to_char(cdr.bridge_time, 'YYYY-MM-DD HH24:MI:SS') as start_stamp, 
+				to_char(me.leave_time, 'YYYY-MM-DD HH24:MI:SS') as end_stamp,
+				to_char(me.leave_time - cdr.bridge_time, 'HH24:MI:SS') as duration_formatted,
+				a.agent_contact as destination_number, a.agent_name as destination_label,
+				'/app/call_centers/call_center_agent_edit.php?id=' || a.call_center_agent_uuid as destination_url,
+				'/app/call_centers/call_center_agent_edit.php?id=' || a.call_center_agent_uuid as application_url,
+				me.caller_id_name || ' ' || me.caller_id_number as source_number,
+				'answered' as destination_status ";
+		$sql .= "from v_call_center_cdr as cdr ";
+		$sql .= "inner join v_call_center_member_events as me on cdr.member_id = me.id ";
+		$sql .= "inner join v_call_center_agents as a on cdr.agent_id = a.call_center_agent_uuid ";
+		$sql .= "where me.call_uuid = :uuid and cdr.reason = 'bridged' ";
+		$parameters['uuid'] = $uuid;
+		$cc_events = $database->select($sql, $parameters);
+		unset($sql, $parameters, $row);
+
+		for ($i = 0; $i < count($cc_events); $i++) {
+			$cc_events[$i]['application_name'] = 'agent';
+			$cc_events[$i]['application_icon'] = ['agent' => 'fa-headset'];
+			$cc_events[$i]['application_label'] = 'Agent';
+		}
+
+		$call_flow_summary = array_merge($call_flow_summary, $cc_events);
+		usort($call_flow_summary, function($a, $b) {return $a['start_time'] - $b['start_time'];});
+	}
+
 //debug information
 	if (isset($_REQUEST['debug']) && $_REQUEST['debug'] == 'true') {
 		$i = 0;
