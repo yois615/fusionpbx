@@ -443,11 +443,11 @@
 	if (!empty($caller_id_name)) {
 		$mod_caller_id_name = str_replace("*", "%", $caller_id_name);
 		if (strstr($mod_caller_id_name, '%')) {
-			$sql .= "and caller_id_name like :caller_id_name \n";
+			$sql .= "and c.caller_id_name like :caller_id_name \n";
 			$parameters['caller_id_name'] = $mod_caller_id_name;
 		}
 		else {
-			$sql .= "and caller_id_name = :caller_id_name \n";
+			$sql .= "and c.caller_id_name = :caller_id_name \n";
 			$parameters['caller_id_name'] = $mod_caller_id_name;
 		}
 	}
@@ -455,11 +455,11 @@
 		$mod_caller_id_number = str_replace("*", "%", $caller_id_number);
 		$mod_caller_id_number = preg_replace("#[^\+0-9.%/]#", "", $mod_caller_id_number);
 		if (strstr($mod_caller_id_number, '%')) {
-			$sql .= "and caller_id_number like :caller_id_number \n";
+			$sql .= "and c.caller_id_number like :caller_id_number \n";
 			$parameters['caller_id_number'] = $mod_caller_id_number;
 		}
 		else {
-			$sql .= "and caller_id_number = :caller_id_number \n";
+			$sql .= "and c.caller_id_number = :caller_id_number \n";
 			$parameters['caller_id_number'] = $mod_caller_id_number;
 		}
 	}
