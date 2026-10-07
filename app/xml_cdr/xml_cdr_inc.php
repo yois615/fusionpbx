@@ -407,7 +407,7 @@
 	}
 	if ($settings->get("call_center", "use_modern_call_center", null)) {
 		$sql .= "left join v_call_center_member_events as cc_me on c.xml_cdr_uuid = cc_me.call_uuid ";
-		$sql .= "left join v_call_center_cdr as cc_cdr on cc_cdr.member_id = cc_me.id ";
+		$sql .= "left join v_call_center_cdr as cc_cdr on cc_cdr.member_id = cc_me.id and cc_cdr.reason = 'bridged' ";
 	}
 	if (!empty($_REQUEST['show']) && $_REQUEST['show'] == "all" && $permission['xml_cdr_all']) {
 		$sql .= "where true \n";
