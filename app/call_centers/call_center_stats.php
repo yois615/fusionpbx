@@ -92,14 +92,15 @@
 				)
 			),
 		0) AS "avg_wait_time",
-		"q"."queue_name"
+		"q"."queue_name",
+		"q"."call_center_queue_uuid" as queue_id
 		FROM
 		"v_call_center_member_events" AS "me"
 		LEFT JOIN "v_call_center_cdr" AS "cdr" ON "me"."id" = "cdr"."member_id" AND "cdr"."reason" = 'bridged'
 		INNER JOIN "v_call_center_queues" AS "q" ON "me"."queue_id" = "q"."call_center_queue_uuid"
 		WHERE q.domain_uuid = :domain_uuid
 		AND (me.join_time AT TIME ZONE :time_zone) BETWEEN :from_stamp::timestamptz AND :to_stamp::timestamptz
-		GROUP BY q.queue_name
+		GROUP BY q.call_center_queue_uuid, q.queue_name
 EOF;
 
 	$parameters['domain_uuid'] = $domain_uuid;
@@ -179,12 +180,14 @@ EOF;
 	//echo $text['description-call_center_queues']."\n";
 	//echo "<br /><br />\n";
 
-	function build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, $agents_order_by, $agents_order) {
+	function normalize_stamp($stamp) {
 		$date_format = $GLOBALS['settings']->get('domain', 'time_format') == '24h' ? 'Y-m-d H:i' : 'Y-m-d h:i a';
-		$from_stamp = is_string($from_stamp) ? date_create($from_stamp) : $from_stamp;
-		$to_stamp = is_string($to_stamp) ? date_create($to_stamp) : $to_stamp;
-		$query = "?from_stamp=".urlencode(date_format($from_stamp, $date_format));
-		$query .= "&to_stamp=".urlencode(date_format($to_stamp, $date_format));
+		return date_format(is_string($stamp) ? date_create($stamp) : $stamp, $date_format);
+	}
+
+	function build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, $agents_order_by, $agents_order) {
+		$query = "?from_stamp=".urlencode(normalize_stamp($from_stamp));
+		$query .= "&to_stamp=".urlencode(normalize_stamp($to_stamp));
 		$query .= "&calls_order_by=".urlencode($calls_order_by ?? '');
 		$query .= "&calls_order=".urlencode($calls_order ?? '');
 		$query .= "&agents_order_by=".urlencode($agents_order_by ?? '');
@@ -233,7 +236,7 @@ EOF;
 		foreach($call_stats as $row) {
 			echo "<tr class='list-row'>\n";
 			echo "	<td>".$row['queue_name']."</td>\n";
-			echo "	<td>".number_format($row['total'], 0, '.', ',')."</td>\n";
+			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_queue_uuid=".$row["queue_id"]."&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."\">".number_format($row['total'], 0, '.', ',')."</a></td>\n";
 			echo "	<td>".number_format($row['answered'], 0, '.', ',')."</td>\n";
 			echo "	<td>".number_format($row['abandoned'], 0, '.', ',')."</td>\n";
 			echo "	<td>".number_format($row['timed_out'], 0, '.', ',')."</td>\n";
@@ -262,7 +265,7 @@ EOF;
 		foreach($agent_stats as $row) {
 			echo "<tr class='list-row'>\n";
 			echo "	<td>".$row['agent_name']."</td>\n";
-			echo "	<td>".number_format($row['answered'], 0, '.', ',')."</td>\n";
+			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_agent_uuid=".$row["agent_id"]."&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."\">".number_format($row['answered'], 0, '.', ',')."</a></td>\n";
 			echo "	<td>".number_format($row['missed'], 0, '.', ',')."</td>\n";
 			echo "	<td>".secToDuration($row['in_call_time'])."</td>\n";
 			echo "</tr>\n";
