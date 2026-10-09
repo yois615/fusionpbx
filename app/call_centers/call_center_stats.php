@@ -184,7 +184,7 @@ EOF;
 
 	function normalize_stamp($stamp) {
 		$date_format = $GLOBALS['settings']->get('domain', 'time_format') == '24h' ? 'Y-m-d H:i' : 'Y-m-d h:i a';
-		return date_format(is_string($stamp) ? date_create($stamp, $timezone) : $stamp, $date_format);
+		return date_format(is_string($stamp) ? date_create($stamp, $GLOBALS['timezone']) : $stamp, $date_format);
 	}
 
 	function build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, $agents_order_by, $agents_order) {
