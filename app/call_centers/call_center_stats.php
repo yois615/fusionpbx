@@ -53,21 +53,23 @@
 //set from session variables
 	$list_row_edit_button = $settings->get('theme', 'list_row_edit_button', false);
 
+//set the time zone
+	$time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
+	$timezone = new DateTimeZone($time_zone);
+
 //get http variables and set as php variables
 	$from_stamp = $_REQUEST["from_stamp"];
 	$from_stamp = ($from_stamp && $settings->get('domain', 'time_format') != '24h') ? DateTime::createFromFormat('Y-m-d h:i a', $from_stamp)->format('Y-m-d H:i') : $from_stamp;
-	$from_stamp ??= date_format(date_create(), "Y-m-d 00:00");
+	$from_stamp ??= date_format(date_create('now', $timezone), "Y-m-d 00:00");
 	$to_stamp = $_REQUEST["to_stamp"];
 	$to_stamp = ($to_stamp && $settings->get('domain', 'time_format') != '24h') ? DateTime::createFromFormat('Y-m-d h:i a', $to_stamp)->format('Y-m-d H:i') : $to_stamp;
-	$to_stamp ??= date_format(date_create("+1 day"), "Y-m-d 00:00");
+	$to_stamp ??= date_format(date_create("+1 day", $timezone), "Y-m-d 00:00");
 	$calls_order_by = $_GET["calls_order_by"] ?? '';
 	$calls_order = $_GET["calls_order"] ?? '';
 	$agents_order_by = $_GET["agents_order_by"] ?? '';
 	$agents_order = $_GET["agents_order"] ?? '';
 	$sort = null;
 
-//set the time zone
-	$time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
 
 //add the search term
 	$search = strtolower($_GET["search"] ?? '');
@@ -182,7 +184,7 @@ EOF;
 
 	function normalize_stamp($stamp) {
 		$date_format = $GLOBALS['settings']->get('domain', 'time_format') == '24h' ? 'Y-m-d H:i' : 'Y-m-d h:i a';
-		return date_format(is_string($stamp) ? date_create($stamp) : $stamp, $date_format);
+		return date_format(is_string($stamp) ? date_create($stamp, $timezone) : $stamp, $date_format);
 	}
 
 	function build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, $agents_order_by, $agents_order) {
@@ -208,9 +210,9 @@ EOF;
 	echo "			<input type='hidden' name='agents_order value='".escape($agents_order ?? '')."'>";
 	echo button::create(['label'=>$text['button-search'],'icon'=>$settings->get('theme', 'button_icon_search'),'type'=>'submit','id'=>'btn_save','name'=>'submit']);
 	echo "		</div>\n";
-	echo "		<a href='".build_href_params(date_create('midnight'), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>Today</a>";
-	echo "		<a href='".build_href_params(date_create('sunday -1 week 00:00'), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>This week</a>";
-	echo "		<a href='".build_href_params(date_create('first day of 00:00'), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>This month</a>";
+	echo "		<a href='".build_href_params(date_create('midnight', $timezone), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>Today</a>";
+	echo "		<a href='".build_href_params(date_create('sunday -1 week 00:00', $timezone), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>This week</a>";
+	echo "		<a href='".build_href_params(date_create('first day of 00:00', $timezone), "", $calls_order_by, $calls_order, $agents_order_by, $agents_order)."' style='margin-right: 5px;'>This month</a>";
 	echo "	</div>\n";
 	echo "</div>\n";
 	echo "<br />\n";
@@ -236,9 +238,9 @@ EOF;
 		foreach($call_stats as $row) {
 			echo "<tr class='list-row'>\n";
 			echo "	<td>".$row['queue_name']."</td>\n";
-			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_queue_uuid=".$row["queue_id"]."&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."\">".number_format($row['total'], 0, '.', ',')."</a></td>\n";
-			echo "	<td>".number_format($row['answered'], 0, '.', ',')."</td>\n";
-			echo "	<td>".number_format($row['abandoned'], 0, '.', ',')."</td>\n";
+			echo "	<td>".number_format($row['total'], 0, '.', ',')."</td>\n";
+			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_queue_uuid=".$row["queue_id"]."&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."\">".number_format($row['answered'], 0, '.', ',')."</a></td>\n";
+			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_queue_uuid=".$row["queue_id"]."&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."&call_center_abandoned=on\">".number_format($row['abandoned'], 0, '.', ',')."</a></td>\n";
 			echo "	<td>".number_format($row['timed_out'], 0, '.', ',')."</td>\n";
 			echo "	<td>".secToDuration($row['avg_wait_time'])."</td>\n";
 			echo "</tr>\n";
