@@ -3172,7 +3172,7 @@ $text['description-max_wait_time_with_no_agent_time_reached']['zh-cn'] = "输入
 $text['description-max_wait_time_with_no_agent_time_reached']['ja-jp'] = "エージェント時間に到達しない最大待機時間を入力します。";
 $text['description-max_wait_time_with_no_agent_time_reached']['ko-kr'] = "에이전트 시간에 도달하지 않은 최대 대기 시간을 입력하십시오.";
 
-$text['description-max_wait_time_with_no_agent']['en-us'] = "Enter the max wait time with no agent.";
+$text['description-max_wait_time_with_no_agent']['en-us'] = "Enter the max wait time with no agent, or 0 to disable the timer.";
 $text['description-max_wait_time_with_no_agent']['en-gb'] = "Enter the max wait time with no agent.";
 $text['description-max_wait_time_with_no_agent']['ar-eg'] = "أدخل أقصى وقت انتظار بدون وكيل.";
 $text['description-max_wait_time_with_no_agent']['de-at'] = "Geben Sie die maximale Wartezeit ohne Agent an.";
