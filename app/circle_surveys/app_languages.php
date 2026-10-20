@@ -60,6 +60,16 @@
 		$text['button-female']['en-us'] = "Female";
 
 		$text['button-all']['en-us'] = "All";
-		
 
-?>
+		$text['label-conditional_exits']['en-us'] = "Conditional Exit Actions";
+		$text['description-conditional_exits']['en-us'] = "When the caller's answer to the selected question matches the value, send the call to the destination instead of the default Exit Action. Rows are evaluated in order; the first match wins.";
+		$text['label-conditional_question']['en-us'] = "Question";
+		$text['label-conditional_answer']['en-us'] = "Answer";
+		$text['label-conditional_destination']['en-us'] = "Destination";
+		$text['label-conditional_order']['en-us'] = "Order";
+        $text['label-description']['en-us'] = "Description";
+        $text['label-delete']['en-us'] = "Delete";
+
+        $text['description-exit_action']['en-us'] = "Destination used when no conditional exit action matches.";
+        $text['description-exit_file']['en-us'] = "Recording played before the call is sent to the exit action.";
+

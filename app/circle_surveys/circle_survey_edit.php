@@ -37,6 +37,10 @@
 		exit;
 	}
 
+//add multi-lingual support
+	$language = new text;
+	$text = $language->get();
+
 	//action add or update
 	if (is_uuid($_REQUEST["id"])) {
 		$action = "update";
@@ -65,6 +69,8 @@
 		$survey_questions = $_POST["survey_questions"];
 		$survey_questions_delete = $_POST["survey_questions_delete"];
 		$ask_only_odd_even = $_POST["ask_only_odd_even"];
+		$conditional_exits = $_POST["conditional_exits"] ?? [];
+		$conditional_exits_delete = $_POST["conditional_exits_delete"] ?? [];
 	}
 
 //process the user data and save it to the database
@@ -92,8 +98,9 @@
 
 		//prepare the recordings array
 			$msg = '';
+			$array = [];
+			$sequence_ids = [];
 			if (is_array($survey_questions)) {
-				$sequence_ids = array();
 				foreach ($survey_questions as $i => $r) {
 					if (in_array($r['sequence_id'], $sequence_ids)) {
 						//duplicate sequence_id
@@ -122,18 +129,32 @@
 			}
 
 			// Check that no question is missing in the sequence
-			$all_sequence_id = range(1,max($sequence_ids));                                                    
+			if (count($sequence_ids) > 0) {
+				$all_sequence_id = range(1, max($sequence_ids));
+				$missing = array_diff($all_sequence_id, $sequence_ids);
+				if (count($missing) > 0) {
+					$msg .= "Missing sequence id detected.<br>\n";
+				}
+			}
 
-			// use array_diff to get the missing elements 
-			$missing = array_diff($all_sequence_id, $sequence_ids);
-
-			if (count($missing) > 0) {
-				$msg .= "Missing sequence id detected.<br>\n";
+			// Validate conditional exits before the form error check.
+			if (is_array($conditional_exits)) {
+				foreach ($conditional_exits as $row) {
+					$question_sequence_id = $row['question_sequence_id'] ?? '';
+					$answer = $row['answer'] ?? '';
+					$conditional_exit_action = $row['exit_action'] ?? '';
+					if ($question_sequence_id === '' && $answer === '' && $conditional_exit_action === '') {
+						continue;
+					}
+					if (!ctype_digit((string)$question_sequence_id) || !is_numeric($answer) || $conditional_exit_action === '') {
+						$msg .= $text['message-required']." ".$text['label-conditional_exits']."<br>\n";
+					}
+				}
 			}
 
 		//check for all required data
 			if (strlen($greeting) == 0) { $msg .= $text['message-required']." ".$text['label-greeting']."<br>\n"; }
-			if (!is_array($array['circle_surveys'][0]['circle_survey_questions']) || sizeof($array['circle_surveys'][0]['circle_survey_questions']) == 0) {
+			if (empty($array['circle_surveys'][0]['circle_survey_questions'])) {
 				$msg .= $text['message-required']." ".$text['label-survey-questions']."<br>\n"; 
 			}
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
@@ -168,16 +189,49 @@
 			$array['circle_surveys'][0]['exit_action'] = $exit_action;
 			$array['circle_surveys'][0]['ask_only_odd_even'] = $ask_only_odd_even;
 
+			if (is_array($conditional_exits)) {
+				$conditional_row = 0;
+				foreach ($conditional_exits as $row) {
+					$question_sequence_id = $row['question_sequence_id'] ?? '';
+					$answer = $row['answer'] ?? '';
+					$conditional_exit_action = $row['exit_action'] ?? '';
 
+					// Ignore completely empty rows; reject incomplete or invalid ones.
+					if ($question_sequence_id === '' && $answer === '' && $conditional_exit_action === '') {
+						continue;
+					}
+					if (!ctype_digit((string)$question_sequence_id) || !is_numeric($answer) || $conditional_exit_action === '') {
+						continue;
+					}
+
+					$conditional_exit_uuid = is_uuid($row['circle_survey_conditional_exit_uuid'] ?? '')
+						? $row['circle_survey_conditional_exit_uuid']
+						: uuid();
+
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['circle_survey_conditional_exit_uuid'] = $conditional_exit_uuid;
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['circle_survey_uuid'] = $circle_survey_uuid;
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['domain_uuid'] = $_SESSION['domain_uuid'];
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['question_sequence_id'] = $question_sequence_id;
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['answer'] = $answer;
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['exit_action'] = $conditional_exit_action;
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['description'] = $row['description'] ?? '';
+					$array['circle_surveys'][0]['circle_survey_conditional_exits'][$conditional_row]['conditional_order'] = is_numeric($row['conditional_order'] ?? null)
+						? $row['conditional_order']
+						: $conditional_row;
+					$conditional_row++;
+				}
+			}
 
 		//grant temporary permissions
 			$p = new permissions;
 			$p->add('circle_survey_question_add', 'temp');
 			$p->add('circle_survey_question_edit', 'temp');
+			$p->add('circle_survey_conditional_exit_add', 'temp');
+			$p->add('circle_survey_conditional_exit_edit', 'temp');
 
 		//save to the data
 			$database = new database;
-			$database->app_name = 'circle_survey';
+			$database->app_name = 'circle_surveys';
 			$database->app_uuid = '32af1175-9f22-4073-9499-33b50bbddad5';
 			$database->save($array);
 			$message = $database->message;
@@ -185,6 +239,8 @@
 		//remove temporary permissions
 				$p->delete('circle_survey_question_add', 'temp');
 				$p->delete('circle_survey_question_edit', 'temp');
+				$p->delete('circle_survey_conditional_exit_add', 'temp');
+				$p->delete('circle_survey_conditional_exit_edit', 'temp');
 
 		//clear the destinations session array
 			if (isset($_SESSION['destinations']['array'])) {
@@ -224,6 +280,30 @@
 				unset($sql, $parameters, $survey_questions);
 			}
 
+		//remove checked conditional exits
+			if ($action == 'update' && is_array($conditional_exits_delete)) {
+				$conditional_exit_delete_array = [];
+				foreach ($conditional_exits_delete as $row) {
+					if (($row['checked'] ?? '') == 'true' && is_uuid($row['uuid'] ?? '')) {
+						$conditional_exit_delete_array['circle_survey_conditional_exits'][] = [
+							'circle_survey_conditional_exit_uuid' => $row['uuid'],
+							'circle_survey_uuid' => $circle_survey_uuid,
+							'domain_uuid' => $_SESSION['domain_uuid']
+						];
+					}
+				}
+				if (!empty($conditional_exit_delete_array)) {
+					$p = new permissions;
+					$p->add('circle_survey_conditional_exit_delete', 'temp');
+					$database = new database;
+					$database->app_name = 'circle_surveys';
+					$database->app_uuid = '32af1175-9f22-4073-9499-33b50bbddad5';
+					$database->delete($conditional_exit_delete_array);
+					$p->delete('circle_survey_conditional_exit_delete', 'temp');
+					unset($conditional_exit_delete_array);
+				}
+			}
+
 		//redirect the user
 			if (isset($action)) {
 				if ($action == "add") {
@@ -238,10 +318,6 @@
 	}
 
 
-
-//add multi-lingual support
-	$language = new text;
-	$text = $language->get();
 
 //initialize the destinations object
 $destination = new destinations;
@@ -276,18 +352,46 @@ $destination = new destinations;
 		$sql .= "where domain_uuid = :domain_uuid ";
 		$sql .= "and circle_survey_uuid = :circle_survey_uuid ";
 		$sql .= "order by sequence_id asc ";
-		$parameters['domain_uuid'] = $domain_uuid;
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 		$parameters['circle_survey_uuid'] = $circle_survey_uuid;
 		$database = new database;
 		$survey_questions = $database->select($sql, $parameters, 'all');
 		unset($sql, $parameters);
 	}
 
+    $survey_questions_for_select = $survey_questions;
+    $conditional_exits = [];
+
+    if (is_uuid($circle_survey_uuid)) {
+        $sql = "select * from v_circle_survey_conditional_exits ";
+        $sql .= "where domain_uuid = :domain_uuid ";
+        $sql .= "and circle_survey_uuid = :circle_survey_uuid ";
+        $sql .= "order by conditional_order asc, circle_survey_conditional_exit_uuid asc ";
+        $parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+        $parameters['circle_survey_uuid'] = $circle_survey_uuid;
+        $database = new database;
+        $conditional_exits = $database->select($sql, $parameters, 'all');
+        unset($sql, $parameters);
+    }
+
+	if (!is_array($conditional_exits)) {
+		$conditional_exits = [];
+	}
+	$show_conditional_delete = count($conditional_exits) > 0;
+	$conditional_exits[] = [
+		'question_sequence_id' => '',
+		'answer' => '',
+		'exit_action' => '',
+		'conditional_order' => count($conditional_exits),
+		'description' => ''
+	];
+
 //add an empty row to the options array
+$rows = 0;
+$sequence_id = 0;
+$show_destination_delete = false;
 if (!is_array($survey_questions) || count($survey_questions) == 0) {
 	$rows = 5;
-	$sequence_id = 0;
-	$show_destination_delete = false;
 }
 if (is_array($survey_questions) && count($survey_questions) > 0) {
 	$rows = 1;
@@ -769,6 +873,90 @@ for ($x = 0; $x < $rows; $x++) {
 	echo $text['description-exit_file']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
+
+	echo "	<tr>";
+    echo "		<td class='vncell' valign='top'>".$text['label-conditional_exits']."</td>";
+    echo "		<td class='vtable' align='left'>";
+    echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
+    echo "				<tr>\n";
+    echo "					<td class='vtable'>".$text['label-conditional_question']."</td>\n";
+    echo "					<td class='vtable' style='text-align: center;'>".$text['label-conditional_answer']."</td>\n";
+    echo "					<td class='vtable'>".$text['label-conditional_destination']."</td>\n";
+    echo "					<td class='vtable'>".$text['label-conditional_order']."</td>\n";
+    echo "					<td class='vtable'>".$text['label-description']."</td>\n";
+    if ($show_conditional_delete) {
+        echo "					<td class='vtable edit_delete_checkbox_all' onmouseover=\"swap_display('delete_label_conditionals', 'delete_toggle_conditionals');\" onmouseout=\"swap_display('delete_label_conditionals', 'delete_toggle_conditionals');\">\n";
+        echo "						<span id='delete_label_conditionals'>".$text['label-delete']."</span>\n";
+        echo "						<span id='delete_toggle_conditionals'><input type='checkbox' id='checkbox_all_conditionals' name='checkbox_all' onclick=\"edit_all_toggle('conditionals');\"></span>\n";
+        echo "					</td>\n";
+    }
+    echo "				</tr>\n";
+    $x = 0;
+    foreach ($conditional_exits as $field) {
+        echo "<tr>\n";
+        if (is_uuid($field['circle_survey_conditional_exit_uuid'])) {
+            echo "	<input type='hidden' name='conditional_exits[".$x."][circle_survey_conditional_exit_uuid]' value='".escape($field['circle_survey_conditional_exit_uuid'])."'>\n";
+        }
+
+        //question
+        echo "<td class='formfld' align='left'>\n";
+        echo "	<select name='conditional_exits[".$x."][question_sequence_id]' class='formfld' style='width: 200px;'>\n";
+        echo "		<option value=''></option>\n";
+        if (is_array($survey_questions_for_select)) {
+            foreach ($survey_questions_for_select as $q) {
+                if (strlen($q['sequence_id']) == 0) { continue; }
+                $selected = (strlen($field['question_sequence_id']) > 0 && $field['question_sequence_id'] == $q['sequence_id']) ? " selected='selected'" : "";
+                echo "		<option value='".escape($q['sequence_id'])."'".$selected.">".escape($q['sequence_id']." - ".$q['description'])."</option>\n";
+            }
+        }
+        echo "	</select>\n";
+        echo "</td>\n";
+
+        //answer
+        echo "<td class='formfld' align='center'>\n";
+        echo "	<input class='formfld' style='width: 50px; text-align: center;' type='number' min='0' step='1' name='conditional_exits[".$x."][answer]' value='".escape($field['answer'])."'>\n";
+        echo "</td>\n";
+
+        //destination
+        echo "<td class='formfld' align='left' nowrap='nowrap'>\n";
+        echo $destination->select('dialplan', 'conditional_exits['.$x.'][exit_action]', $field['exit_action']);
+        echo "</td>\n";
+
+        //order
+        echo "<td class='formfld' align='left'>\n";
+        echo "	<select name='conditional_exits[".$x."][conditional_order]' class='formfld' style='width:55px'>\n";
+        for ($i = 0; $i <= 99; $i++) {
+            $selected = (strlen($field['conditional_order']) > 0 && (int)$field['conditional_order'] == $i) ? " selected='selected'" : "";
+            echo "		<option value='".$i."'".$selected.">".str_pad($i, 2, '0', STR_PAD_LEFT)."</option>\n";
+        }
+        echo "	</select>\n";
+        echo "</td>\n";
+
+        //description
+        echo "<td class='formfld' align='left'>\n";
+        echo "	<input class='formfld' style='width:100px' type='text' name='conditional_exits[".$x."][description]' maxlength='255' value=\"".escape($field['description'])."\">\n";
+        echo "</td>\n";
+
+        //delete
+        if ($show_conditional_delete) {
+            if (is_uuid($field['circle_survey_conditional_exit_uuid'])) {
+                echo "<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
+                echo "	<input type='checkbox' name='conditional_exits_delete[".$x."][checked]' value='true' class='chk_delete checkbox_conditionals' onclick=\"edit_delete_action('conditionals');\">\n";
+                echo "	<input type='hidden' name='conditional_exits_delete[".$x."][uuid]' value='".escape($field['circle_survey_conditional_exit_uuid'])."' />\n";
+            }
+            else {
+                echo "<td>";
+            }
+            echo "</td>\n";
+        }
+        echo "</tr>\n";
+        $x++;
+    }
+    echo "			</table>\n";
+    echo "			".$text['description-conditional_exits']."\n";
+    echo "			<br />\n";
+    echo "		</td>";
+    echo "	</tr>";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
