@@ -185,6 +185,41 @@ if session:ready() then
     session:streamFile(recordings_dir .. greeting_file);
 end
 
+-- Preload conditional exits (ordered list) and the questions they apply to
+conditional_exits = {};
+conditional_questions = {};
+conditional_exit_answer = {};
+if session:ready() then
+    local sql = [[SELECT question_sequence_id, answer, exit_action
+        FROM v_circle_survey_conditional_exits
+        WHERE domain_uuid = :domain_uuid
+        AND circle_survey_uuid = :circle_survey_uuid
+        ORDER BY conditional_order ASC, question_sequence_id ASC]];
+    local params = {
+        domain_uuid = domain_uuid,
+        circle_survey_uuid = circle_survey_uuid
+    };
+    if (debug["sql"]) then
+        freeswitch.consoleLog("notice",
+            "[circle_survey_conditional_exits] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+    end
+    dbh:query(sql, params, function(row)
+        local question_id = tonumber(row["question_sequence_id"]);
+        local answer = tonumber(row["answer"]);
+        if question_id ~= nil and answer ~= nil and row["exit_action"] ~= nil and string.len(row["exit_action"]) > 0 then
+            table.insert(conditional_exits, {
+                question_sequence_id = question_id,
+                answer = answer,
+                exit_action = row["exit_action"]
+            });
+            conditional_questions[question_id] = true;
+        end
+    end);
+end
+
+-- Caller answers keyed by question sequence_id
+survey_answers = {};
+
         if session:ready() and greeting_suffix ~= nil and string.len(greeting_suffix) > 0 then
             session:streamFile(recordings_dir .. greeting_suffix)
         end
@@ -327,6 +362,9 @@ if session:ready() then
                     session:streamFile(recordings_dir .. question_answered_file);
                 end
                 save_vote(dtmf_digits, reason, i)
+                if conditional_questions[i] then
+                    conditional_exit_answer[i] = tonumber(dtmf_digits);
+                end
             end
         end
     end
@@ -337,8 +375,19 @@ if session:ready() and exit_file ~= nil and string.len(exit_file) > 0 then
     session:streamFile(recordings_dir .. exit_file);
 end
 
+-- Evaluate conditional exits (first match by conditional_order wins)
+local final_exit_action = exit_action;
+for _, condition in ipairs(conditional_exits) do
+    if conditional_exit_answer[condition.question_sequence_id] == condition.answer then
+        final_exit_action = condition.exit_action;
+        freeswitch.consoleLog("notice", "[circle_survey] conditional exit matched: question "
+            .. condition.question_sequence_id .. " = " .. condition.answer .. " -> " .. final_exit_action .. "\n");
+        break;
+    end
+end
+
 -- Transfer to exit_action
-if exit_action ~= nil and string.len(exit_action) > 0 then
-    local exit_action_app, exit_action_params = split_first(exit_action, ":", true);
+if session:ready() and final_exit_action ~= nil and string.len(final_exit_action) > 0 then
+    local exit_action_app, exit_action_params = split_first(final_exit_action, ":", true);
     session:execute(exit_action_app, exit_action_params);
 end
