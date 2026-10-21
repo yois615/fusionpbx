@@ -61,7 +61,7 @@
 	$users = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
-	$sql = "select call_center_queue_uuid, queue_name from v_call_center_queues ";
+	$sql = "select call_center_queue_uuid, queue_name, queue_extension from v_call_center_queues ";
 	$sql .= "where domain_uuid = :domain_uuid order by queue_name asc ";
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 	$call_center_queues = $database->select($sql, $parameters, 'all') ?: [];
@@ -1144,7 +1144,7 @@
 			if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
 				foreach ($call_center_queues as $row) {
 					$selected = in_array($row['call_center_queue_uuid'], $field['queue_uuids'], true) ? 'checked' : '';
-					echo "<label class='schedule-queue-option'><input type='checkbox' name='agent_schedules[".$x."][queue_uuids][]' value='".escape($row['call_center_queue_uuid'])."' ".$selected."> <span>".escape($row['queue_name'])."</span></label>\n";
+					echo "<label class='schedule-queue-option'><input type='checkbox' name='agent_schedules[".$x."][queue_uuids][]' value='".escape($row['call_center_queue_uuid'])."' ".$selected."> <span>".escape($row['queue_extension'])." - ".escape($row['queue_name'])."</span></label>\n";
 				}
 			}
 			echo "</div><div class='schedule-queue-no-results' role='status' hidden>No matching queues found.</div></div></div>\n";
@@ -1205,12 +1205,12 @@
 			.schedule-queue-selected { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 			.schedule-queue-arrow { flex-shrink: 0; font-size: 12px; transition: transform 0.2s; }
 			.schedule-queues.is-open .schedule-queue-arrow { transform: rotate(180deg); }
-			.schedule-queues .schedule-queue-menu.formfld { position: absolute; z-index: 100; top: 100%; left: 0; right: 0; height: auto; padding: 6px; }
+			.schedule-queues .schedule-queue-menu.formfld { position: absolute; z-index: 100; top: 100%; left: 0; right: auto; width: max-content; min-width: 100%; max-width: calc(100vw - 32px); height: auto; padding: 6px; }
 			.schedule-queue-search { width: 100%; margin-bottom: 10px !important; }
 			.schedule-queue-list { --schedule-queue-row-height: max(2.5em, 28px); max-height: calc(6 * var(--schedule-queue-row-height) + 6px); overflow-y: auto; border-top: 1px solid; border-color: inherit; padding-top: 5px; }
-			.schedule-queue-option { display: flex; align-items: center; gap: 6px; height: var(--schedule-queue-row-height); padding: 6px; cursor: pointer; text-align: left; }
+			.schedule-queue-option { display: flex; align-items: center; gap: 6px; min-height: var(--schedule-queue-row-height); padding: 6px; cursor: pointer; text-align: left; }
 			.schedule-queue-option input[type='checkbox'] { margin: 0; cursor: pointer; flex-shrink: 0; }
-			.schedule-queue-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+			.schedule-queue-option span { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
 			.schedule-queue-no-results { padding: 10px 6px; text-align: center; }
 			.schedule-queues [hidden] { display: none; }
 		</style>
