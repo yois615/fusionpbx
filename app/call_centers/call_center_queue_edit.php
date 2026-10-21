@@ -1274,7 +1274,9 @@
 		echo "	<option value='random' ".($queue_strategy == 'random' ? "selected" : "").">".$text['option-random']."</option>\n";
 	} else {
 		echo "	<option value='ring-all' ".($queue_strategy == 'ring-all' ? "selected" : "").">".$text['option-ring_all']."</option>\n";
+		echo "	<option value='ring-all-overflow' ".($queue_strategy == 'ring-all-overflow' ? "selected" : "").">Ring All Overflow</option>\n";
 		echo "	<option value='round-robin' ".($queue_strategy == 'round-robin' ? "selected" : "").">".$text['option-round_robin']."</option>\n";
+		echo "	<option value='round-robin-overflow' ".($queue_strategy == 'round-robin-overflow' ? "selected" : "").">Round Robin Overflow</option>\n";
 	}
 	echo "	</select>\n";
 	echo "<br />\n";
