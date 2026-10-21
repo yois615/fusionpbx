@@ -1142,7 +1142,17 @@
 			echo "<input type='text' class='formfld schedule-queue-search' placeholder='Search queues...' aria-label='Search queues'>\n";
 			echo "<div class='schedule-queue-list'>\n";
 			if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
-				foreach ($call_center_queues as $row) {
+				$checked_queue_options = [];
+				$unchecked_queue_options = [];
+				foreach ($call_center_queues as $queue_option) {
+					if (in_array($queue_option['call_center_queue_uuid'], $field['queue_uuids'], true)) {
+						$checked_queue_options[] = $queue_option;
+					}
+					else {
+						$unchecked_queue_options[] = $queue_option;
+					}
+				}
+				foreach (array_merge($checked_queue_options, $unchecked_queue_options) as $row) {
 					$selected = in_array($row['call_center_queue_uuid'], $field['queue_uuids'], true) ? 'checked' : '';
 					echo "<label class='schedule-queue-option'><input type='checkbox' name='agent_schedules[".$x."][queue_uuids][]' value='".escape($row['call_center_queue_uuid'])."' ".$selected."> <span>".escape($row['queue_extension'])." - ".escape($row['queue_name'])."</span></label>\n";
 				}
