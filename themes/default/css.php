@@ -1835,6 +1835,8 @@ else { //default: white
 	input[type=url].formfld,
 	input[type=password].formfld,
 	input[type=email].formfld,
+	button.formfld.schedule-queue-toggle,
+	div.formfld.schedule-queue-menu,
 	label.formfld {
 		font-family: <?=$input_text_font?>;
 		font-size: <?=$input_text_size?>;
@@ -1890,6 +1892,7 @@ else { //default: white
 	input[type=number].formfld,
 	input[type=url].formfld,
 	input[type=password].formfld,
+	button.formfld.schedule-queue-toggle,
 	input[type=email].formfld {
 		transition: all 0.25s ease;
 		-moz-transition: all 0.25s ease;
@@ -1929,6 +1932,7 @@ else { //default: white
 	input[type=url].formfld:hover,
 	input[type=password].formfld:hover,
 	input[type=email].formfld:hover,
+	button.formfld.schedule-queue-toggle:hover,
 	label.formfld:hover {
 		border: none !important;
 		border-width: <?=$input_border_size?> !important;
@@ -1959,6 +1963,7 @@ else { //default: white
 	input[type=url].formfld:focus,
 	input[type=password].formfld:focus,
 	input[type=email].formfld:focus,
+	button.formfld.schedule-queue-toggle:focus,
 	label.formfld:focus {
 		border: none !important;
 		border-width: <?=$input_border_size?> !important;
@@ -1997,6 +2002,7 @@ else { //default: white
 	input[type=url].formfld:focus-visible,
 	input[type=password].formfld:focus-visible,
 	input[type=email].formfld:focus-visible,
+	button.formfld.schedule-queue-toggle:focus-visible,
 	label.formfld:focus-visible {
 		<?php if (!empty($input_outline_size_focus)) { ?>
 			outline-width: <?=$input_outline_size_focus?> !important;

@@ -61,6 +61,14 @@
 	$users = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
+	$sql = "select call_center_queue_uuid, queue_name from v_call_center_queues ";
+	$sql .= "where domain_uuid = :domain_uuid order by queue_name asc ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$call_center_queues = $database->select($sql, $parameters, 'all') ?: [];
+	unset($sql, $parameters);
+	$agent_schedules = [];
+	$schedule_post_errors = '';
+
 //get http post variables and set them to php variables
 	if (!empty($_POST)) {
 		$call_center_agent_uuid = $_POST["call_center_agent_uuid"] ?? null;
@@ -82,31 +90,77 @@
 		$agent_enabled = $_POST["agent_enabled"];
 		$agent_confirm_prompt = $_POST["agent_confirm_prompt"];
 		$call_center_tiers = $_POST["call_center_tiers"];
-		$agent_schedules_ = $_POST["agent_schedules"];
+		$agent_schedules_ = $_POST["agent_schedules"] ?? [];
 		//$agent_logout = $_POST["agent_logout"];
 
 		$agent_schedules = [];
 
-		if (is_array($agent_schedules_)) {
-			$i = 0;
-			foreach($agent_schedules_ as $k => $v) {
-				$dow = $v['dow'];
-				$days_of_week = ((int)$dow['sun']) + ((int)$dow['mon'] << 1) + ((int)$dow['tue'] << 2) + ((int)$dow['wed'] << 3) + ((int)$dow['thu'] << 4) + ((int)$dow['fri'] << 5) + ((int)$dow['sat'] << 6);
-
-				if (empty($v['call_center_queue_uuid']) && $days_of_week == 0 && empty($v['login_time']) && empty($v['logout_time']))
+		if ($settings->get('call_center', 'use_modern_call_center', null) && is_array($agent_schedules_)) {
+			$existing_schedules = [];
+			if ($action == 'update' && is_uuid($call_center_agent_uuid)) {
+				$sql = "select s.* from v_call_center_agent_schedules s ";
+				$sql .= "join v_call_center_agents a on a.call_center_agent_uuid = s.call_center_agent_uuid ";
+				$sql .= "where s.call_center_agent_uuid = :call_center_agent_uuid and a.domain_uuid = :domain_uuid ";
+				$parameters = ['call_center_agent_uuid' => $call_center_agent_uuid, 'domain_uuid' => $_SESSION['domain_uuid']];
+				$existing_schedules = array_column($database->select($sql, $parameters, 'all') ?: [], null, 'call_center_agent_schedule_uuid');
+				unset($sql, $parameters);
+			}
+			$allowed_queue_uuids = array_column($call_center_queues, 'call_center_queue_uuid');
+			$used_schedule_uuids = [];
+			$agent_schedule_groups = [];
+			foreach ($agent_schedules_ as $schedule_group) {
+				$days_of_week = 0;
+				foreach (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as $day_index => $day_name) {
+					if (($schedule_group['dow'][$day_name] ?? '') == '1') {
+						$days_of_week |= 1 << $day_index;
+					}
+				}
+				$selected_queues = array_values(array_unique((array)($schedule_group['queue_uuids'] ?? [])));
+				$group_records = [];
+				foreach ((array)($schedule_group['records'] ?? []) as $schedule_uuid) {
+					if (!is_string($schedule_uuid) || !isset($existing_schedules[$schedule_uuid]) || isset($used_schedule_uuids[$schedule_uuid])) {
+						$schedule_post_errors .= 'Invalid agent schedule record<br>';
+						continue;
+					}
+					$group_records[$schedule_uuid] = $existing_schedules[$schedule_uuid];
+					$used_schedule_uuids[$schedule_uuid] = true;
+				}
+				$group_deleted = ($schedule_group['delete'] ?? '') === 'true';
+				$group_values = [
+					'tier' => $schedule_group['tier'] ?? '1',
+					'days_of_week' => $days_of_week,
+					'login_time' => $schedule_group['login_time'] ?? '',
+					'logout_time' => $schedule_group['logout_time'] ?? '',
+					'enabled' => ($schedule_group['enabled'] ?? 'false') === 'true',
+					'delete' => $group_deleted
+				];
+				$agent_schedule_groups[] = $group_values + ['queue_uuids' => $selected_queues, 'records' => array_keys($group_records)];
+				foreach ($group_records as $schedule_uuid => $existing_schedule) {
+					if ($group_deleted || !in_array($existing_schedule['call_center_queue_uuid'], $selected_queues, true)) {
+						$agent_schedules[] = array_merge($existing_schedule, ['delete' => true]);
+					}
+				}
+				if ($group_deleted || (!$selected_queues && $group_records)) {
 					continue;
-
-				$agent_schedules[$i]['call_center_agent_schedule_uuid'] = $v['call_center_agent_schedule_uuid'];
-				$agent_schedules[$i]['call_center_agent_uuid'] = $call_center_agent_uuid;
-				$agent_schedules[$i]['call_center_queue_uuid'] = $v['call_center_queue_uuid'];
-				$agent_schedules[$i]['tier'] = $v['tier'];
-				$agent_schedules[$i]['days_of_week'] = $days_of_week;
-				$agent_schedules[$i]['login_time'] = $v['login_time'];
-				$agent_schedules[$i]['logout_time'] = $v['logout_time'];
-				$agent_schedules[$i]['enabled'] = $v['enabled'];
-				$agent_schedules[$i]['delete'] = $v['delete'];
-
-				$i++;
+				}
+				if (!$selected_queues && $days_of_week == 0 && $group_values['login_time'] === '' && $group_values['logout_time'] === '') {
+					continue;
+				}
+				foreach ($selected_queues ?: [''] as $queue_uuid) {
+					if (!in_array($queue_uuid, $allowed_queue_uuids, true)) {
+						$schedule_post_errors .= 'Agent schedule queue must belong to the current domain<br>';
+						continue;
+					}
+					$queue_records = array_filter($group_records, function ($existing_schedule) use ($queue_uuid) {
+						return $existing_schedule['call_center_queue_uuid'] === $queue_uuid;
+					});
+					foreach (array_keys($queue_records) ?: [null] as $schedule_uuid) {
+						$agent_schedules[] = $group_values + [
+							'call_center_agent_schedule_uuid' => $schedule_uuid,
+							'call_center_queue_uuid' => $queue_uuid
+						];
+					}
+				}
 			}
 		}
 	}
@@ -175,7 +229,7 @@
 			}
 
 		//check for all required data
-			$msg = '';
+			$msg = $schedule_post_errors;
 			//if (empty($call_center_agent_uuid)) { $msg .= $text['message-required']." ".$text['label-call_center_agent_uuid']."<br>\n"; }
 			//if (empty($domain_uuid)) { $msg .= $text['message-required']." ".$text['label-domain_uuid']."<br>\n"; }
 			//if (empty($user_uuid)) { $msg .= $text['message-required']." ".$text['label-user_uuid']."<br>\n"; }
@@ -302,7 +356,10 @@
 			$i = 0;
 			foreach ($agent_schedules as $k => $v) {
 				if ($v['delete']) {
-					$delete_array['call_center_agent_schedules'][count($delete_array)]['call_center_agent_schedule_uuid'] = $v['call_center_agent_schedule_uuid'];
+					$delete_array['call_center_agent_schedules'][] = [
+						'call_center_agent_schedule_uuid' => $v['call_center_agent_schedule_uuid'],
+						'call_center_agent_uuid' => $call_center_agent_uuid
+					];
 					continue;
 				}
 
@@ -320,6 +377,12 @@
 				if (empty($v['login_time'])) { $msg .= 'Agent schedule login time cannot be empty<br>'; }
 				if (empty($v['logout_time'])) { $msg .= 'Agent schedule logout time cannot be empty<br>'; }
 				if ($v['logout_time'] < $v['login_time']) { $msg .= 'Agent schedule logout time cannot be before login time<br>'; }
+				if (!ctype_digit((string)$v['tier']) || (int)$v['tier'] < 1 || (int)$v['tier'] > 100) { $msg .= 'Agent schedule tier must be between 1 and 100<br>'; }
+				foreach (['login_time', 'logout_time'] as $time_field) {
+					if (!preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $v[$time_field])) {
+						$msg .= 'Invalid agent schedule time<br>';
+					}
+				}
 
 				$dow_labels = [0=>'Sun', 1=>'Mon', 2=>'Tue', 3=>'Wed', 4=>'Thu', 5=>'Fri', 6=>'Sat'];
 				foreach ($agent_schedules as $l => $w) {
@@ -328,7 +391,7 @@
 
 					for ($d = 0; $d < 7; $d++) {
 						if ($v['days_of_week'] & (1 << $d) && $w['days_of_week'] & (1 << $d) && $v['call_center_queue_uuid'] == $w['call_center_queue_uuid'] &&
-							(($w['login_time'] >= $v['login_time'] && $w['login_time'] <= $v['logout_time']) || ($w['logout_time'] >= $v['login_time'] && $w['logout_time'] <= $v['logout_time']))) {
+							($w['login_time'] <= $v['logout_time'] && $w['logout_time'] >= $v['login_time'])) {
 							$msg .= 'Schedules overlap on '.$dow_labels[$d].' between '.max($v['login_time'], $w['login_time']).' and '.min($v['logout_time'], $w['logout_time']).'';
 						}
 					}
@@ -357,7 +420,9 @@
 			$p->add('call_center_agent_schedule_delete', 'temp');
 
 			$database->save($array);
-			$database->delete($delete_array);
+			if (!empty($delete_array)) {
+				$database->delete($delete_array);
+			}
 
 			$p->delete('call_center_agent_schedule_add', 'temp');
 			$p->delete('call_center_agent_schedule_edit', 'temp');
@@ -533,18 +598,13 @@
 			$sql .= "enabled ";
 			$sql .= "from v_call_center_agent_schedules ";
 			$sql .= "where call_center_agent_uuid = :call_center_agent_uuid ";
+			$sql .= "and call_center_agent_uuid in (select call_center_agent_uuid from v_call_center_agents where domain_uuid = :domain_uuid) ";
 			$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 			$agent_schedules = $database->select($sql, $parameters, 'all');
 			unset($sql, $parameters, $row);
 		}
 	}
-
-	$sql = "select call_center_queue_uuid, queue_name from v_call_center_queues ";
-	$sql .= "where domain_uuid = :domain_uuid ";
-	$sql .= "order by queue_name asc ";
-	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$call_center_queues = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters, $row);
 
 //set default values
 	if (empty($agent_type)) { $agent_type = "callback"; }
@@ -558,10 +618,22 @@
 	$agent_enabled = $agent_enabled ?? true;
 	$agent_confirm_prompt = $agent_confirm_prompt ?? true;
 	$agent_use_system_caller_id = $agent_use_system_caller_id ?? false;
-	if (!is_array($agent_schedules)) $agent_schedules = [];
-	$i = count($agent_schedules);
-	$agent_schedules[$i]['call_center_agent_schedule_uuid'] = "";
-	$agent_schedules[$i]['enabled'] = true;
+	if (!isset($agent_schedule_groups)) {
+		$agent_schedule_groups = [];
+		foreach ($agent_schedules ?: [] as $schedule_row) {
+			$schedule_row['enabled'] = in_array($schedule_row['enabled'], [true, 1, '1', 'true', 't'], true);
+			$group_key = json_encode([$schedule_row['days_of_week'], $schedule_row['login_time'], $schedule_row['logout_time'], $schedule_row['tier'], $schedule_row['enabled']]);
+			if (!isset($agent_schedule_groups[$group_key])) {
+				$agent_schedule_groups[$group_key] = $schedule_row;
+				$agent_schedule_groups[$group_key]['queue_uuids'] = [];
+				$agent_schedule_groups[$group_key]['records'] = [];
+			}
+			$agent_schedule_groups[$group_key]['queue_uuids'][] = $schedule_row['call_center_queue_uuid'];
+			$agent_schedule_groups[$group_key]['records'][] = $schedule_row['call_center_agent_schedule_uuid'];
+		}
+		$agent_schedule_groups = array_values($agent_schedule_groups);
+	}
+	$agent_schedule_groups[] = ['queue_uuids' => [], 'records' => [], 'tier' => '1', 'days_of_week' => 0, 'login_time' => '', 'logout_time' => '', 'enabled' => true, 'delete' => false];
 
 //get the tiers
 	$sql = "select t.call_center_tier_uuid, t.call_center_agent_uuid, t.call_center_queue_uuid, t.tier_level, t.tier_position, q.queue_name ";
@@ -1057,23 +1129,25 @@
 		echo "				</tr>\n";
 
 		$x = 0;
-		foreach($agent_schedules as $field) {
+		foreach($agent_schedule_groups as $field) {
 
-			//add the primary key uuid
-			if (!empty($field['call_center_agent_schedule_uuid'])) {
-				echo "	<input name='agent_schedules[".$x."][call_center_agent_schedule_uuid]' type='hidden' value=\"".escape($field['call_center_agent_schedule_uuid'])."\">\n";
+			echo "<tr>\n";
+			echo "<td class='formfld' align='left' style='padding-right: 16px;'>\n";
+			foreach ($field['records'] as $schedule_uuid) {
+				echo "<input name='agent_schedules[".$x."][records][]' type='hidden' value='".escape($schedule_uuid)."'>\n";
 			}
-
-			echo "<td class='formfld' align='left'>\n";
-			echo "	<select class='formfld' name='agent_schedules[".$x."][call_center_queue_uuid]'>\n";
-			echo "		<option value=''></option>";
+			echo "<div class='schedule-queues'>\n";
+			echo "<button type='button' class='formfld schedule-queue-toggle' aria-expanded='false' aria-controls='schedule_queue_menu_".$x."' aria-label='Queues'><span class='schedule-queue-selected'>Select queues</span><i class='fas fa-chevron-down schedule-queue-arrow' aria-hidden='true'></i></button>\n";
+			echo "<div class='formfld schedule-queue-menu' id='schedule_queue_menu_".$x."' role='group' aria-label='Queue options' hidden>\n";
+			echo "<input type='text' class='formfld schedule-queue-search' placeholder='Search queues...' aria-label='Search queues'>\n";
+			echo "<div class='schedule-queue-list'>\n";
 			if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
 				foreach ($call_center_queues as $row) {
-					$selected = ($row['call_center_queue_uuid'] == $field['call_center_queue_uuid']) ? "selected" : null;
-					echo "<option value='".escape($row['call_center_queue_uuid'])."' $selected>".escape($row['queue_name'])."</option>";
+					$selected = in_array($row['call_center_queue_uuid'], $field['queue_uuids'], true) ? 'checked' : '';
+					echo "<label class='schedule-queue-option'><input type='checkbox' name='agent_schedules[".$x."][queue_uuids][]' value='".escape($row['call_center_queue_uuid'])."' ".$selected."> <span>".escape($row['queue_name'])."</span></label>\n";
 				}
 			}
-			echo "	</select>\n";
+			echo "</div><div class='schedule-queue-no-results' role='status' hidden>No matching queues found.</div></div></div>\n";
 			echo "</td>";
 
 			echo "<td class='formfld' align='left'>\n";
@@ -1081,13 +1155,9 @@
 			echo "</td>\n";
 
 			echo "<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][sun]' value='1' ".($field['days_of_week'] & (1 << 0) ? 'checked' : '')." class='chk_delete checkbox_options'> Sun</label>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][mon]' value='1' ".($field['days_of_week'] & (1 << 1) ? 'checked' : '')." class='chk_delete checkbox_options'> Mon</label>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][tue]' value='1' ".($field['days_of_week'] & (1 << 2) ? 'checked' : '')." class='chk_delete checkbox_options'> Tue</label>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][wed]' value='1' ".($field['days_of_week'] & (1 << 3) ? 'checked' : '')." class='chk_delete checkbox_options'> Wed</label>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][thu]' value='1' ".($field['days_of_week'] & (1 << 4) ? 'checked' : '')." class='chk_delete checkbox_options'> Thu</label>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][fri]' value='1' ".($field['days_of_week'] & (1 << 5) ? 'checked' : '')." class='chk_delete checkbox_options'> Fri</label>";
-			echo "	<label><input type='checkbox' name='agent_schedules[".$x."][dow][sat]' value='1' ".($field['days_of_week'] & (1 << 6) ? 'checked' : '')." class='chk_delete checkbox_options'> Sat</label>";
+			foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $weekday_index => $weekday_label) {
+				echo "<label><input type='checkbox' name='agent_schedules[".$x."][dow][".strtolower($weekday_label)."]' value='1' ".($field['days_of_week'] & (1 << $weekday_index) ? 'checked' : '')."> ".$weekday_label."</label>";
+			}
 			echo "</td>";
 
 			echo "<td class='formfld' align='left'>\n";
@@ -1112,9 +1182,9 @@
 			}
 			echo "</td>\n";
 
-			if (!empty($field['call_center_agent_schedule_uuid']) && is_uuid($field['call_center_agent_schedule_uuid'])) {
+			if (!empty($field['records'])) {
 				echo "<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
-				echo "	<input type='checkbox' name='agent_schedules[".$x."][delete]' value='true' ".($field['delete'] ? 'checked' : null)." class='chk_delete checkbox_options' onclick=\"edit_delete_action('options');\">\n";
+				echo "	<input type='checkbox' name='agent_schedules[".$x."][delete]' value='true' ".(!empty($field['delete']) ? 'checked' : null)." class='chk_delete checkbox_options' onclick=\"edit_delete_action('options');\">\n";
 			}
 			else {
 				echo "<td>";
@@ -1126,7 +1196,80 @@
 			$x++;
 		}
 
-		echo "</table>";
+		echo "</table></td></tr>";
+		?>
+		<style>
+			.schedule-queues { position: relative; width: 200px; max-width: calc(100vw - 32px); }
+			.schedule-queues * { box-sizing: border-box; }
+			.schedule-queue-toggle { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; cursor: pointer; }
+			.schedule-queue-selected { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+			.schedule-queue-arrow { flex-shrink: 0; font-size: 12px; transition: transform 0.2s; }
+			.schedule-queues.is-open .schedule-queue-arrow { transform: rotate(180deg); }
+			.schedule-queues .schedule-queue-menu.formfld { position: absolute; z-index: 100; top: 100%; left: 0; right: 0; height: auto; padding: 6px; }
+			.schedule-queue-search { width: 100%; margin-bottom: 10px !important; }
+			.schedule-queue-list { --schedule-queue-row-height: max(2.5em, 28px); max-height: calc(6 * var(--schedule-queue-row-height) + 6px); overflow-y: auto; border-top: 1px solid; border-color: inherit; padding-top: 5px; }
+			.schedule-queue-option { display: flex; align-items: center; gap: 6px; height: var(--schedule-queue-row-height); padding: 6px; cursor: pointer; text-align: left; }
+			.schedule-queue-option input[type='checkbox'] { margin: 0; cursor: pointer; flex-shrink: 0; }
+			.schedule-queue-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+			.schedule-queue-no-results { padding: 10px 6px; text-align: center; }
+			.schedule-queues [hidden] { display: none; }
+		</style>
+		<script>
+			function setScheduleQueuesOpen(dropdown, isOpen) {
+				dropdown.classList.toggle('is-open', isOpen);
+				dropdown.querySelector('.schedule-queue-menu').hidden = !isOpen;
+				dropdown.querySelector('.schedule-queue-toggle').setAttribute('aria-expanded', String(isOpen));
+				if (isOpen) dropdown.querySelector('.schedule-queue-search').focus();
+			}
+			document.querySelectorAll('.schedule-queues').forEach(function (dropdown) {
+				const toggleButton = dropdown.querySelector('.schedule-queue-toggle');
+				const searchInput = dropdown.querySelector('.schedule-queue-search');
+				const checkboxes = Array.from(dropdown.querySelectorAll('.schedule-queue-option input[type="checkbox"]'));
+				function updateQueueSummary() {
+					const selected = checkboxes.filter(function (checkbox) { return checkbox.checked; });
+					dropdown.querySelector('.schedule-queue-selected').textContent = selected.length > 1
+						? selected.length + ' queues selected'
+						: selected.length === 1 ? selected[0].closest('label').querySelector('span').textContent.trim() : 'Select queues';
+				}
+				dropdown.addEventListener('change', updateQueueSummary);
+				toggleButton.addEventListener('click', function () {
+					const isOpen = dropdown.classList.contains('is-open');
+					document.querySelectorAll('.schedule-queues.is-open').forEach(function (other) {
+						if (other !== dropdown) setScheduleQueuesOpen(other, false);
+					});
+					setScheduleQueuesOpen(dropdown, !isOpen);
+				});
+				searchInput.addEventListener('input', function () {
+					const searchTerm = searchInput.value.trim().toLowerCase();
+					let visibleCount = 0;
+					checkboxes.forEach(function (checkbox) {
+						const option = checkbox.closest('.schedule-queue-option');
+						option.hidden = !option.textContent.trim().toLowerCase().includes(searchTerm);
+						if (!option.hidden) visibleCount++;
+					});
+					dropdown.querySelector('.schedule-queue-no-results').hidden = visibleCount !== 0;
+				});
+				searchInput.addEventListener('keydown', function (event) {
+					if (event.key === 'Enter') event.preventDefault();
+				});
+				dropdown.querySelector('.schedule-queue-no-results').hidden = checkboxes.length !== 0;
+				updateQueueSummary();
+			});
+			document.addEventListener('click', function (event) {
+				document.querySelectorAll('.schedule-queues.is-open').forEach(function (dropdown) {
+					if (!dropdown.contains(event.target)) setScheduleQueuesOpen(dropdown, false);
+				});
+			});
+			document.addEventListener('keydown', function (event) {
+				if (event.key === 'Escape') {
+					document.querySelectorAll('.schedule-queues.is-open').forEach(function (dropdown) {
+						setScheduleQueuesOpen(dropdown, false);
+						dropdown.querySelector('.schedule-queue-toggle').focus();
+					});
+				}
+			});
+		</script>
+		<?php
 	}
 	echo "</table>";
 	echo "</div>\n";
