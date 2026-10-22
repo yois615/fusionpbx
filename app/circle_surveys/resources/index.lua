@@ -370,11 +370,6 @@ if session:ready() then
     end
 end
 
--- Play exit file
-if session:ready() and exit_file ~= nil and string.len(exit_file) > 0 then
-    session:streamFile(recordings_dir .. exit_file);
-end
-
 -- Evaluate conditional exits (first match by conditional_order wins)
 local final_exit_action = exit_action;
 for _, condition in ipairs(conditional_exits) do
@@ -384,6 +379,11 @@ for _, condition in ipairs(conditional_exits) do
             .. condition.question_sequence_id .. " = " .. condition.answer .. " -> " .. final_exit_action .. "\n");
         break;
     end
+end
+
+-- Play exit file if the final exit action is the default exit action
+if session:ready() and exit_file ~= nil and string.len(exit_file) > 0 and final_exit_action == exit_action then
+    session:streamFile(recordings_dir .. exit_file);
 end
 
 -- Transfer to exit_action
