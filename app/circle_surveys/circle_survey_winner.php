@@ -29,7 +29,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('circle_votes_view')) {
+	if (permission_exists('circle_survey_view')) {
 		//access granted
 	}
 	else {

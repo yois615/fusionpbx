@@ -287,7 +287,7 @@ if (!class_exists('circle_survey')) {
 						//save the changes and set the message
 							if (is_array($array) && @sizeof($array) != 0) {
 
-								$p = new permissions;
+								$p = permissions::new();
 								$p->add('circle_survey_question_add', 'temp');
 								$p->add('circle_survey_add', 'temp');
 
@@ -314,10 +314,9 @@ if (!class_exists('circle_survey')) {
 		public function delete_questions($records) {
 
 			//assign private variables
-				$this->permission_prefix = 'circle_survey_questions_';
 				$this->table = 'circle_survey_questions';
 
-			if (true) {
+			if (permission_exists($this->permission_prefix.'edit')) {
 
 				//add multi-lingual support
 					$language = new text;
@@ -358,7 +357,7 @@ if (!class_exists('circle_survey')) {
 							if (is_array($array) && @sizeof($array) != 0) {
 
 								//grant temporary permissions
-									$p = new permissions;
+									$p = permissions::new();
 									$p->add('circle_survey_question_delete', 'temp');
 
 								//execute delete

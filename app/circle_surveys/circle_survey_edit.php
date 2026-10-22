@@ -223,7 +223,7 @@
 			}
 
 		//grant temporary permissions
-			$p = new permissions;
+			$p = permissions::new();
 			$p->add('circle_survey_question_add', 'temp');
 			$p->add('circle_survey_question_edit', 'temp');
 			$p->add('circle_survey_conditional_exit_add', 'temp');
@@ -293,7 +293,7 @@
 					}
 				}
 				if (!empty($conditional_exit_delete_array)) {
-					$p = new permissions;
+					$p = permissions::new();
 					$p->add('circle_survey_conditional_exit_delete', 'temp');
 					$database = new database;
 					$database->app_name = 'circle_surveys';

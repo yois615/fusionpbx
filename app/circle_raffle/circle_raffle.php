@@ -175,7 +175,7 @@
 	echo "<input type='hidden' id='action' name='action' value=''>\n";
 		echo "	<div class='actions'>\n";
 	
-	if (permission_exists('circle_votes_delete')) {
+	if (permission_exists('circle_raffle_delete')) {
 		if (count($winning_number_results) == 0) {
 			echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','name'=>'action','value'=>'save']);
 		} else {

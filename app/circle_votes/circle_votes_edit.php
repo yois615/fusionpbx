@@ -100,7 +100,7 @@
 			$array['circle_tt_vote_audios'][0]['question_audio'] = $question_audio;
 
 		//grant temporary permissions
-			$p = new permissions;
+			$p = permissions::new();
 			$p->add('circle_tt_vote_audio_add', 'temp');
 			$p->add('circle_tt_vote_audio_edit', 'temp');
 
