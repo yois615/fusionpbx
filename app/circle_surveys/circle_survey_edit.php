@@ -845,35 +845,6 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "		</td>";
 	echo "	</tr>";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-exit_file']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "<select name='exit_file' id='exit_file' class='formfld'>\n";
-	echo "	<option></option>\n";
-		//recordings
-		if (is_array($recordings)) {
-			echo "<optgroup label='Recordings'>\n";
-			foreach ($recordings as $row) {
-				$recording_name = $row["recording_name"];
-				$recording_filename = $row["recording_filename"];
-				if (strlen($exit_file) > 0 && $exit_file == $recording_filename) {
-					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
-				}
-				else {
-					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
-				}
-			}
-			echo "</optgroup>\n";
-		}
-	echo "	</select>\n";
-	echo "</td>\n";
-	echo "<br />\n";
-	echo $text['description-exit_file']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
 	echo "	<tr>";
     echo "		<td class='vncell' valign='top'>".$text['label-conditional_exits']."</td>";
     echo "		<td class='vtable' align='left'>";
@@ -957,6 +928,35 @@ for ($x = 0; $x < $rows; $x++) {
     echo "			<br />\n";
     echo "		</td>";
     echo "	</tr>";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-exit_file']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<select name='exit_file' id='exit_file' class='formfld'>\n";
+	echo "	<option></option>\n";
+		//recordings
+		if (is_array($recordings)) {
+			echo "<optgroup label='Recordings'>\n";
+			foreach ($recordings as $row) {
+				$recording_name = $row["recording_name"];
+				$recording_filename = $row["recording_filename"];
+				if (strlen($exit_file) > 0 && $exit_file == $recording_filename) {
+					echo "	<option value='".escape($recording_filename)."' selected='selected'>".escape($recording_name)."</option>\n";
+				}
+				else {
+					echo "	<option value='".escape($recording_filename)."'>".escape($recording_name)."</option>\n";
+				}
+			}
+			echo "</optgroup>\n";
+		}
+	echo "	</select>\n";
+	echo "</td>\n";
+	echo "<br />\n";
+	echo $text['description-exit_file']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
