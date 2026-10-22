@@ -61,6 +61,14 @@
 	$users = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
+	$sql = "select call_center_queue_uuid, queue_name, queue_extension from v_call_center_queues ";
+	$sql .= "where domain_uuid = :domain_uuid order by queue_name asc ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$call_center_queues = $database->select($sql, $parameters, 'all') ?: [];
+	unset($sql, $parameters);
+	$agent_schedules = [];
+	$schedule_post_errors = '';
+
 //get http post variables and set them to php variables
 	if (!empty($_POST)) {
 		$call_center_agent_uuid = $_POST["call_center_agent_uuid"] ?? null;
@@ -71,14 +79,142 @@
 		$agent_id = $_POST["agent_id"];
 		$agent_password = $_POST["agent_password"];
 		$agent_status = $_POST["agent_status"];
-		$agent_contact = $_POST["agent_contact"];
+		$agent_contact = preg_replace('/[^0-9]/', '', $_POST["agent_contact"]);
 		$agent_no_answer_delay_time = $_POST["agent_no_answer_delay_time"];
 		$agent_max_no_answer = $_POST["agent_max_no_answer"];
 		$agent_wrap_up_time = $_POST["agent_wrap_up_time"];
 		$agent_reject_delay_time = $_POST["agent_reject_delay_time"];
 		$agent_busy_delay_time = $_POST["agent_busy_delay_time"];
 		$agent_record = $_POST["agent_record"];
+		$agent_use_system_caller_id = $_POST["agent_use_system_caller_id"];
+		$agent_enabled = $_POST["agent_enabled"];
+		$agent_confirm_prompt = $_POST["agent_confirm_prompt"];
+		$call_center_tiers = $_POST["call_center_tiers"];
+		$agent_schedules_ = $_POST["agent_schedules"] ?? [];
 		//$agent_logout = $_POST["agent_logout"];
+
+		$agent_schedules = [];
+
+		if ($settings->get('call_center', 'use_modern_call_center', null) && is_array($agent_schedules_)) {
+			$existing_schedules = [];
+			if ($action == 'update' && is_uuid($call_center_agent_uuid)) {
+				$sql = "select s.* from v_call_center_agent_schedules s ";
+				$sql .= "join v_call_center_agents a on a.call_center_agent_uuid = s.call_center_agent_uuid ";
+				$sql .= "where s.call_center_agent_uuid = :call_center_agent_uuid and a.domain_uuid = :domain_uuid ";
+				$parameters = ['call_center_agent_uuid' => $call_center_agent_uuid, 'domain_uuid' => $_SESSION['domain_uuid']];
+				$existing_schedules = array_column($database->select($sql, $parameters, 'all') ?: [], null, 'call_center_agent_schedule_uuid');
+				unset($sql, $parameters);
+			}
+			$allowed_queue_uuids = array_column($call_center_queues, 'call_center_queue_uuid');
+			$used_schedule_uuids = [];
+			$agent_schedule_groups = [];
+			foreach ($agent_schedules_ as $schedule_group) {
+				$days_of_week = 0;
+				foreach (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as $day_index => $day_name) {
+					if (($schedule_group['dow'][$day_name] ?? '') == '1') {
+						$days_of_week |= 1 << $day_index;
+					}
+				}
+				$selected_queues = array_values(array_unique((array)($schedule_group['queue_uuids'] ?? [])));
+				$group_records = [];
+				foreach ((array)($schedule_group['records'] ?? []) as $schedule_uuid) {
+					if (!is_string($schedule_uuid) || !isset($existing_schedules[$schedule_uuid]) || isset($used_schedule_uuids[$schedule_uuid])) {
+						$schedule_post_errors .= 'Invalid agent schedule record<br>';
+						continue;
+					}
+					$group_records[$schedule_uuid] = $existing_schedules[$schedule_uuid];
+					$used_schedule_uuids[$schedule_uuid] = true;
+				}
+				$group_deleted = ($schedule_group['delete'] ?? '') === 'true';
+				$group_values = [
+					'tier' => $schedule_group['tier'] ?? '1',
+					'days_of_week' => $days_of_week,
+					'login_time' => $schedule_group['login_time'] ?? '',
+					'logout_time' => $schedule_group['logout_time'] ?? '',
+					'enabled' => ($schedule_group['enabled'] ?? 'false') === 'true',
+					'delete' => $group_deleted
+				];
+				$agent_schedule_groups[] = $group_values + ['queue_uuids' => $selected_queues, 'records' => array_keys($group_records)];
+				foreach ($group_records as $schedule_uuid => $existing_schedule) {
+					if ($group_deleted || !in_array($existing_schedule['call_center_queue_uuid'], $selected_queues, true)) {
+						$agent_schedules[] = array_merge($existing_schedule, ['delete' => true]);
+					}
+				}
+				if ($group_deleted || (!$selected_queues && $group_records)) {
+					continue;
+				}
+				if (!$selected_queues && $days_of_week == 0 && $group_values['login_time'] === '' && $group_values['logout_time'] === '') {
+					continue;
+				}
+				foreach ($selected_queues ?: [''] as $queue_uuid) {
+					if (!in_array($queue_uuid, $allowed_queue_uuids, true)) {
+						$schedule_post_errors .= 'Agent schedule queue must belong to the current domain<br>';
+						continue;
+					}
+					$queue_records = array_filter($group_records, function ($existing_schedule) use ($queue_uuid) {
+						return $existing_schedule['call_center_queue_uuid'] === $queue_uuid;
+					});
+					foreach (array_keys($queue_records) ?: [null] as $schedule_uuid) {
+						$agent_schedules[] = $group_values + [
+							'call_center_agent_schedule_uuid' => $schedule_uuid,
+							'call_center_queue_uuid' => $queue_uuid
+						];
+					}
+				}
+			}
+		}
+	}
+
+//delete the tier (agent from the queue)
+	if (!empty($_REQUEST["a"]) && $_REQUEST["a"] == "delete" && is_uuid($_REQUEST["id"]) && permission_exists("call_center_tier_delete")) {
+		//set the variables
+			$call_center_queue_uuid = $_REQUEST["id"];
+			$call_center_tier_uuid = $_REQUEST["call_center_tier_uuid"];
+
+		//get the agent details
+			$sql = "select t.call_center_agent_uuid, t.call_center_queue_uuid, q.queue_extension  ";
+			$sql .= "from v_call_center_tiers as t, v_call_center_queues as q ";
+			$sql .= "where t.domain_uuid = :domain_uuid  ";
+			$sql .= "and t.call_center_tier_uuid = :call_center_tier_uuid ";
+			$sql .= "and t.call_center_queue_uuid = q.call_center_queue_uuid; ";
+			$parameters['domain_uuid'] = $domain_uuid;
+			$parameters['call_center_tier_uuid'] = $call_center_tier_uuid;
+			$tiers = $database->select($sql, $parameters, 'all');
+			unset($sql, $parameters);
+
+			if (!empty($tiers)) {
+				foreach ($tiers as $row) {
+					$call_center_agent_uuid = $row["call_center_agent_uuid"];
+					$call_center_queue_uuid = $row["call_center_queue_uuid"];
+					$queue_extension = $row["queue_extension"];
+				}
+			}
+
+		//delete the agent from freeswitch
+			//setup the event socket connection
+			$esl = event_socket::create();
+			//delete the agent over event socket
+			if ($esl->is_connected()) {
+				//callcenter_config tier del [queue_name] [agent_name]
+				if (is_numeric($queue_extension) && is_uuid($call_center_agent_uuid)) {
+					$cmd = "callcenter_config tier del ".$queue_extension."@".$domain_name." ".$call_center_agent_uuid;
+					$response = event_socket::api($cmd);
+				}
+			}
+
+		//delete the tier from the database
+			if (!empty($call_center_tier_uuid)) {
+				$array['call_center_tiers'][0]['call_center_tier_uuid'] = $call_center_tier_uuid;
+				$array['call_center_tiers'][0]['domain_uuid'] = $domain_uuid;
+
+				$p = permissions::new();
+				$p->add('call_center_tier_delete', 'temp');
+
+				$database->delete($array);
+				unset($array);
+
+				$p->delete('call_center_tier_delete', 'temp');
+			}
 	}
 
 //process the user data and save it to the database
@@ -93,18 +229,28 @@
 			}
 
 		//check for all required data
-			$msg = '';
+			$msg = $schedule_post_errors;
 			//if (empty($call_center_agent_uuid)) { $msg .= $text['message-required']." ".$text['label-call_center_agent_uuid']."<br>\n"; }
 			//if (empty($domain_uuid)) { $msg .= $text['message-required']." ".$text['label-domain_uuid']."<br>\n"; }
 			//if (empty($user_uuid)) { $msg .= $text['message-required']." ".$text['label-user_uuid']."<br>\n"; }
 			if (empty($agent_name)) { $msg .= $text['message-required']." ".$text['label-agent_name']."<br>\n"; }
-			if (empty($agent_type)) { $msg .= $text['message-required']." ".$text['label-agent_type']."<br>\n"; }
+			//if (empty($agent_type)) { $msg .= $text['message-required']." ".$text['label-agent_type']."<br>\n"; }
 			if (empty($agent_call_timeout)) { $msg .= $text['message-required']." ".$text['label-agent_call_timeout']."<br>\n"; }
 			//if (empty($agent_id)) { $msg .= $text['message-required']." ".$text['label-agent_id']."<br>\n"; }
 			//if (empty($agent_password)) { $msg .= $text['message-required']." ".$text['label-agent_password']."<br>\n"; }
 			//if (empty($agent_status)) { $msg .= $text['message-required']." ".$text['label-agent_status']."<br>\n"; }
 			if (empty($agent_contact)) { $msg .= $text['message-required']." ".$text['label-agent_contact']."<br>\n"; }
 			//if (empty($agent_logout)) { $msg .= $text['message-required']." ".$text['label-agent_logout']."<br>\n"; }
+
+			$tier_queue_uuids = [];
+			foreach ($_POST["call_center_tiers"] as $k => $v) {
+				if (in_array($v['call_center_queue_uuid'], $tier_queue_uuids)) {
+					$msg .= "Agent is assigned to the same queue multiple times";
+				} else if (!empty($v['call_center_queue_uuid'])) {
+					array_push($tier_queue_uuids, $v['call_center_queue_uuid']);
+				}
+			}
+
 			if (!empty($msg) && empty($_POST["persistformvar"])) {
 				require_once "resources/header.php";
 				require_once "resources/persist_form_var.php";
@@ -141,6 +287,23 @@
 		//freeswitch expands the contact string, so we need to sanitize it.
 			$agent_contact = str_replace('$', '', $agent_contact);
 
+		//update the call center tiers array
+			$x = 0;
+			if (!empty($_POST["call_center_tiers"])) {
+				foreach ($_POST["call_center_tiers"] as $row) {
+					//add the domain_uuid
+						if (empty($row["domain_uuid"])) {
+							$_POST["call_center_tiers"][$x]["domain_uuid"] = $domain_uuid;
+						}
+					//unset ring_group_destination_uuid if the field has no value
+						if (empty($row["call_center_queue_uuid"])) {
+							unset($_POST["call_center_tiers"][$x]);
+						}
+					//increment the row
+						$x++;
+				}
+			}
+
 		//prepare the array
 			$array['call_center_agents'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
 			$array['call_center_agents'][0]['call_center_agent_uuid'] = $call_center_agent_uuid;
@@ -158,14 +321,112 @@
 			$array['call_center_agents'][0]['agent_reject_delay_time'] = $agent_reject_delay_time;
 			$array['call_center_agents'][0]['agent_busy_delay_time'] = $agent_busy_delay_time;
 			$array['call_center_agents'][0]['agent_record'] = $agent_record;
+			$array['call_center_agents'][0]['agent_use_system_caller_id'] = $agent_use_system_caller_id;
+			$array['call_center_agents'][0]['agent_enabled'] = $agent_enabled;
+			$array['call_center_agents'][0]['agent_confirm_prompt'] = $agent_confirm_prompt;
 			if (is_uuid($user_uuid)) {
 				$array['users'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
 				$array['users'][0]['user_uuid'] = $user_uuid;
 				$array['users'][0]['user_status'] = $agent_status;
 			}
 
+			$y = 0;
+			if (!empty($_POST["call_center_tiers"])) {
+				foreach ($_POST["call_center_tiers"] as $row) {
+					if (is_uuid($row['call_center_tier_uuid'])) {
+						$call_center_tier_uuid = $row['call_center_tier_uuid'];
+					}
+					else {
+						$call_center_tier_uuid = uuid();
+					}
+					if (!empty($row['call_center_queue_uuid'])) {
+						$array["call_center_tiers"][$y]["call_center_tier_uuid"] = $call_center_tier_uuid;
+						$array["call_center_tiers"][$y]["call_center_queue_uuid"] = $row['call_center_queue_uuid'];
+						$array["call_center_tiers"][$y]["call_center_agent_uuid"] = $call_center_agent_uuid;
+						$array["call_center_tiers"][$y]["tier_level"] = $row['tier_level'];
+						$array["call_center_tiers"][$y]["tier_position"] = $row['tier_position'];
+						$array["call_center_tiers"][$y]["domain_uuid"] = $domain_uuid;
+					}
+					$y++;
+				}
+			}
+
+			$delete_array = [];
+
+			$i = 0;
+			foreach ($agent_schedules as $k => $v) {
+				if ($v['delete']) {
+					$delete_array['call_center_agent_schedules'][] = [
+						'call_center_agent_schedule_uuid' => $v['call_center_agent_schedule_uuid'],
+						'call_center_agent_uuid' => $call_center_agent_uuid
+					];
+					continue;
+				}
+
+				$array['call_center_agent_schedules'][$i]['call_center_agent_schedule_uuid'] = $v['call_center_agent_schedule_uuid'] ?? uuid();
+				$array['call_center_agent_schedules'][$i]['call_center_agent_uuid'] = $call_center_agent_uuid;
+				$array['call_center_agent_schedules'][$i]['call_center_queue_uuid'] = $v['call_center_queue_uuid'];
+				$array['call_center_agent_schedules'][$i]['tier'] = $v['tier'];
+				$array['call_center_agent_schedules'][$i]['days_of_week'] = $v['days_of_week'];
+				$array['call_center_agent_schedules'][$i]['login_time'] = $v['login_time'];
+				$array['call_center_agent_schedules'][$i]['logout_time'] = $v['logout_time'];
+				$array['call_center_agent_schedules'][$i]['enabled'] = $v['enabled'];
+
+				if (empty($v['call_center_queue_uuid'])) { $msg .= 'Agent schedule queue cannot be empty<br>'; }
+				if ($v['days_of_week'] == 0) { $msg .= 'Agent schedule must have at least one day selected<br>'; }
+				if (empty($v['login_time'])) { $msg .= 'Agent schedule login time cannot be empty<br>'; }
+				if (empty($v['logout_time'])) { $msg .= 'Agent schedule logout time cannot be empty<br>'; }
+				if ($v['logout_time'] < $v['login_time']) { $msg .= 'Agent schedule logout time cannot be before login time<br>'; }
+				if (!ctype_digit((string)$v['tier']) || (int)$v['tier'] < 1 || (int)$v['tier'] > 100) { $msg .= 'Agent schedule tier must be between 1 and 100<br>'; }
+				foreach (['login_time', 'logout_time'] as $time_field) {
+					if (!preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $v[$time_field])) {
+						$msg .= 'Invalid agent schedule time<br>';
+					}
+				}
+
+				$dow_labels = [0=>'Sun', 1=>'Mon', 2=>'Tue', 3=>'Wed', 4=>'Thu', 5=>'Fri', 6=>'Sat'];
+				foreach ($agent_schedules as $l => $w) {
+					if ($l == $k || $w['delete'])
+						continue;
+
+					for ($d = 0; $d < 7; $d++) {
+						if ($v['days_of_week'] & (1 << $d) && $w['days_of_week'] & (1 << $d) && $v['call_center_queue_uuid'] == $w['call_center_queue_uuid'] &&
+							($w['login_time'] <= $v['logout_time'] && $w['logout_time'] >= $v['login_time'])) {
+							$msg .= 'Schedules overlap on '.$dow_labels[$d].' between '.max($v['login_time'], $w['login_time']).' and '.min($v['logout_time'], $w['logout_time']).'';
+						}
+					}
+				}
+
+				if (!empty($msg) && empty($_POST["persistformvar"])) {
+					require_once "resources/header.php";
+					require_once "resources/persist_form_var.php";
+					echo "<div align='center'>\n";
+					echo "<table><tr><td>\n";
+					echo $msg."<br />";
+					echo "</td></tr></table>\n";
+					persistformvar($_POST);
+					echo "</div>\n";
+					require_once "resources/footer.php";
+					return;
+				}
+
+				$i++;
+			}
+
 		//save to the database
+			$p = permissions::new();
+			$p->add('call_center_agent_schedule_add', 'temp');
+			$p->add('call_center_agent_schedule_edit', 'temp');
+			$p->add('call_center_agent_schedule_delete', 'temp');
+
 			$database->save($array);
+			if (!empty($delete_array)) {
+				$database->delete($delete_array);
+			}
+
+			$p->delete('call_center_agent_schedule_add', 'temp');
+			$p->delete('call_center_agent_schedule_edit', 'temp');
+			$p->delete('call_center_agent_schedule_delete', 'temp');
 
 		//syncrhonize configuration
 			save_call_center_xml();
@@ -176,48 +437,51 @@
 
 	//get and then set the complete agent_contact with the call_timeout, recording and when necessary confirm
 		//if you change this variable, also change resources/switch.php
-		$confirm = "group_confirm_file=custom/press_1_to_accept_this_call.wav,group_confirm_key=1,group_confirm_read_timeout=2000,leg_timeout=".$agent_call_timeout;
-		if(strstr($agent_contact, '}') === FALSE) {
-			//not found
-			if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
-				//add the call_timeout and recording
-				$orig_agent_contact = $agent_contact;
-				$agent_contact = "{call_timeout=".$agent_call_timeout.",domain_name=".$_SESSION['domain_name'].",domain_uuid=".$_SESSION['domain_uuid'];
-				$agent_contact .= ',sip_h_caller_destination=${caller_destination}';
-				if ($agent_record == "true") {
-					$agent_contact .= ',execute_on_pre_bridge="record_session ${recordings_dir}/'.$_SESSION['domain_name'].'/archive/${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}"';
+		if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+			$confirm = "group_confirm_file=custom/press_1_to_accept_this_call.wav,group_confirm_key=1,group_confirm_read_timeout=2000,leg_timeout=".$agent_call_timeout;
+			if(strstr($agent_contact, '}') === FALSE) {
+				//not found
+				if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
+					//add the call_timeout and recording
+					$orig_agent_contact = $agent_contact;
+					$agent_contact = "{call_timeout=".$agent_call_timeout.",domain_name=".$_SESSION['domain_name'].",domain_uuid=".$_SESSION['domain_uuid'];
+					$agent_contact .= ',sip_h_caller_destination=${caller_destination}';
+					if ($agent_record == "true") {
+						$agent_contact .= ',execute_on_pre_bridge="record_session ${recordings_dir}/'.$_SESSION['domain_name'].'/archive/${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}"';
+					}
+					$agent_contact .= "}".$orig_agent_contact;
 				}
-				$agent_contact .= "}".$orig_agent_contact;
+				else {
+					//add the call_timeout and confirm
+					$agent_contact = "{".$confirm.",call_timeout=".$agent_call_timeout.",sip_invite_domain=".$_SESSION['domain_name']."}".$agent_contact;
+				}
 			}
 			else {
-				//add the call_timeout and confirm
-				$agent_contact = "{".$confirm.",call_timeout=".$agent_call_timeout.",sip_invite_domain=".$_SESSION['domain_name']."}".$agent_contact;
+				$position = strrpos($agent_contact, "}");
+				$first = substr($agent_contact, 0, $position);
+				$last = substr($agent_contact, $position);
+				//add call_timeout and sip_invite_domain, only if missing
+				$call_timeout = (stristr($agent_contact, 'call_timeout') === FALSE) ? ',call_timeout='.$agent_call_timeout : null;
+				$sip_invite_domain = (stristr($agent_contact, 'sip_invite_domain') === FALSE) ? ',sip_invite_domain='.$_SESSION['domain_name'] : null;
+				if ($agent_record == "true" && stristr($agent_contact, 'record_session') === FALSE) {
+					$recording_string = ',execute_on_pre_bridge="record_session ${recordings_dir}/'.$_SESSION['domain_name'].'/archive/${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}"';
+				}
+				//compose
+				if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
+					$agent_contact = $first.$sip_invite_domain.$call_timeout.$recording_string.$last;
+				}
+				else {
+					$agent_contact = $first.','.$confirm.$sip_invite_domain.$call_timeout.$recording_string.$last;
+				}
 			}
 		}
-		else {
-			$position = strrpos($agent_contact, "}");
-			$first = substr($agent_contact, 0, $position);
-			$last = substr($agent_contact, $position);
-			//add call_timeout and sip_invite_domain, only if missing
-			$call_timeout = (stristr($agent_contact, 'call_timeout') === FALSE) ? ',call_timeout='.$agent_call_timeout : null;
-			$sip_invite_domain = (stristr($agent_contact, 'sip_invite_domain') === FALSE) ? ',sip_invite_domain='.$_SESSION['domain_name'] : null;
-			if ($agent_record == "true" && stristr($agent_contact, 'record_session') === FALSE) {
-				$recording_string = ',execute_on_pre_bridge="record_session ${recordings_dir}/'.$_SESSION['domain_name'].'/archive/${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}"';
-			}
-			//compose
-			if(stristr($agent_contact, 'sofia/gateway') === FALSE) {
-				$agent_contact = $first.$sip_invite_domain.$call_timeout.$recording_string.$last;
-			}
-			else {
-				$agent_contact = $first.','.$confirm.$sip_invite_domain.$call_timeout.$recording_string.$last;
-			}
-		}
-
+		
 	//add the agent
 		//setup the event socket connection
 			$esl = event_socket::create();
 		//add the agent using event socket
 			if ($esl->connected()) {
+				if (!$settings->get('call_center', 'use_modern_call_center', null)) {
 				//add the agent
 					$cmd = "callcenter_config agent add ".$call_center_agent_uuid." '".$agent_type."'";
 					$response = event_socket::api($cmd);
@@ -246,6 +510,14 @@
 				//agent set wrap_up_time
 					$cmd = 'callcenter_config agent set wrap_up_time '.$call_center_agent_uuid.' '.$agent_wrap_up_time;
 					$response = event_socket::api($cmd);
+				} else {
+					$cmd = "sendevent CUSTOM\n";
+					$cmd .= "Event-Name: CUSTOM\n";
+					$cmd .= "Event-Subclass: callcenter::command\n";
+					$cmd .= "CC-Command: update_agent\n";
+					$cmd .= "Agent: " . $call_center_agent_uuid . "\n";
+					$response = event_socket::command($cmd);
+				}
 			}
 
 		//redirect the user
@@ -256,7 +528,7 @@
 				if ($action == "update") {
 					message::add($text['message-update']);
 				}
-				header("Location: call_center_agents.php");
+				header("Location: call_center_agent_edit.php?id=".urlencode($call_center_agent_uuid));
 				return;
 			}
 	} //(is_array($_POST) && empty($_POST["persistformvar"]))
@@ -282,7 +554,10 @@
 		$sql .= "agent_wrap_up_time, ";
 		$sql .= "agent_reject_delay_time, ";
 		$sql .= "agent_busy_delay_time, ";
-		$sql .= "agent_record ";
+		$sql .= "agent_record, ";
+		$sql .= "agent_use_system_caller_id, ";
+		$sql .= "agent_enabled, ";
+		$sql .= "agent_confirm_prompt ";
 		$sql .= "from v_call_center_agents ";
 		$sql .= "where domain_uuid = :domain_uuid ";
 		$sql .= "and call_center_agent_uuid = :call_center_agent_uuid ";
@@ -305,9 +580,30 @@
 			$agent_reject_delay_time = $row["agent_reject_delay_time"];
 			$agent_busy_delay_time = $row["agent_busy_delay_time"];
 			$agent_record = $row["agent_record"];
+			$agent_enabled = $row["agent_enabled"];
+			$agent_confirm_prompt = $row["agent_confirm_prompt"];
+			$agent_use_system_caller_id = $row["agent_use_system_caller_id"];
 			//$agent_logout = $row["agent_logout"];
 		}
 		unset($sql, $parameters, $row);
+
+		if ($settings->get("call_center", "use_modern_call_center", null)) {
+			$sql = "select ";
+			$sql .= "call_center_agent_schedule_uuid, ";
+			$sql .= "call_center_queue_uuid, ";
+			$sql .= "tier, ";
+			$sql .= "days_of_week, ";
+			$sql .= "login_time, ";
+			$sql .= "logout_time, ";
+			$sql .= "enabled ";
+			$sql .= "from v_call_center_agent_schedules ";
+			$sql .= "where call_center_agent_uuid = :call_center_agent_uuid ";
+			$sql .= "and call_center_agent_uuid in (select call_center_agent_uuid from v_call_center_agents where domain_uuid = :domain_uuid) ";
+			$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$agent_schedules = $database->select($sql, $parameters, 'all');
+			unset($sql, $parameters, $row);
+		}
 	}
 
 //set default values
@@ -319,6 +615,65 @@
 	if (empty($agent_reject_delay_time)) { $agent_reject_delay_time = "90"; }
 	if (empty($agent_busy_delay_time)) { $agent_busy_delay_time = "90"; }
 	$agent_record = $agent_record ?? false;
+	$agent_enabled = $agent_enabled ?? true;
+	$agent_confirm_prompt = $agent_confirm_prompt ?? true;
+	$agent_use_system_caller_id = $agent_use_system_caller_id ?? false;
+	if (!isset($agent_schedule_groups)) {
+		$agent_schedule_groups = [];
+		foreach ($agent_schedules ?: [] as $schedule_row) {
+			$schedule_row['enabled'] = in_array($schedule_row['enabled'], [true, 1, '1', 'true', 't'], true);
+			$group_key = json_encode([$schedule_row['days_of_week'], $schedule_row['login_time'], $schedule_row['logout_time'], $schedule_row['tier'], $schedule_row['enabled']]);
+			if (!isset($agent_schedule_groups[$group_key])) {
+				$agent_schedule_groups[$group_key] = $schedule_row;
+				$agent_schedule_groups[$group_key]['queue_uuids'] = [];
+				$agent_schedule_groups[$group_key]['records'] = [];
+			}
+			$agent_schedule_groups[$group_key]['queue_uuids'][] = $schedule_row['call_center_queue_uuid'];
+			$agent_schedule_groups[$group_key]['records'][] = $schedule_row['call_center_agent_schedule_uuid'];
+		}
+		$agent_schedule_groups = array_values($agent_schedule_groups);
+	}
+	$agent_schedule_groups[] = ['queue_uuids' => [], 'records' => [], 'tier' => '1', 'days_of_week' => 0, 'login_time' => '', 'logout_time' => '', 'enabled' => true, 'delete' => false];
+
+//get the tiers
+	$sql = "select t.call_center_tier_uuid, t.call_center_agent_uuid, t.call_center_queue_uuid, t.tier_level, t.tier_position, q.queue_name ";
+	$sql .= "from v_call_center_tiers as t, v_call_center_queues as q ";
+	$sql .= "where t.call_center_agent_uuid = :call_center_agent_uuid ";
+	$sql .= "and t.call_center_queue_uuid = q.call_center_queue_uuid ";
+	$sql .= "and t.domain_uuid = :domain_uuid ";
+	$sql .= "order by tier_level asc, tier_position asc, q.queue_name asc";
+	$parameters['domain_uuid'] = $domain_uuid;
+	$parameters['call_center_agent_uuid'] = $call_center_agent_uuid ?? null;
+	$tiers = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
+//add an empty row to the tiers array
+	if (count($tiers) == 0) {
+		$rows = $settings->get('call_center','agent_add_rows', null);
+		$id = 0;
+	}
+	if (count($tiers) > 0) {
+		$rows = $settings->get('call_center','agent_edit_rows', null);
+		$id = count($tiers)+1;
+	}
+	for ($x = 0; $x < $rows; $x++) {
+		$tiers[$id]['call_center_tier_uuid'] = uuid();
+		$tiers[$id]['call_center_agent_uuid'] = $call_center_agent_uuid ?? null;
+		$tiers[$id]['call_center_queue_uuid'] = '';
+		$tiers[$id]['tier_level'] = '';
+		$tiers[$id]['tier_position'] = '';
+		$tiers[$id]['agent_name'] = '';
+		$id++;
+	}
+
+//get the queues
+	$sql = "select call_center_queue_uuid, queue_name from v_call_center_queues ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "order by queue_name asc";
+	$parameters['domain_uuid'] = $domain_uuid;
+	$queues = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
 
 //create token
 	$object = new token;
@@ -335,6 +690,62 @@
 //include the header
 	require_once "resources/header.php";
 
+	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+		$sql = "select s.days_of_week, s.login_time, s.logout_time, s.tier, s.call_center_queue_uuid, q.queue_name ";
+		$sql .= "from v_call_center_agent_schedules as s ";
+		$sql .= "join v_call_center_queues as q on s.call_center_queue_uuid = q.call_center_queue_uuid ";
+		$sql .= "where s.call_center_agent_uuid = :call_center_agent_uuid ";
+		$parameters['call_center_agent_uuid'] = $call_center_agent_uuid ?? null;
+		$schedule = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+
+		echo "<script src='/resources/chartjs/chart.min.js'></script>";
+		echo "<script src='./chart.js'></script>";
+		$modal = "<div id='modal-coverage' class='modal-window'>\n";
+		$modal .= "	<div>\n";
+		$modal .= "		<span title=\"" . $text['button-close'] . "\" class='modal-close' onclick=\"modal_close();\">&times</span>\n";
+		$modal .= "		<span class='modal-title'>Coverage</span>\n";
+		$modal .= "		<span class='modal-message'><div style='width: 100%; height: 100%'><canvas id='coverage_chart'></canvas></div></span>\n";
+		$modal .= "		<span class='modal-actions'>" . button::create(['type'=>'button','label'=>$text['button-close'],'style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close()"]) . "</span>\n";
+		$modal .= "	</div>\n";
+		$modal .= "</div>";
+		echo $modal;
+
+		?>
+		<script>
+			{
+				const datasets = {}
+
+				const schedules = JSON.parse('<?php echo json_encode($schedule); ?>')
+				for (let schedule of schedules) {
+					let dataset = datasets[schedule.call_center_queue_uuid]
+					if (!dataset) {
+						dataset = datasets[schedule.call_center_queue_uuid] = {}
+						dataset.label = schedule.queue_name
+						dataset.data = []
+					}
+
+					for (let day = 0; day < 7; day++) {
+						if (schedule.days_of_week & (1 << day)) {
+							dataset.data.push({
+								y: coverage_chart_labels[day],
+								x: [coverage_chart_time_to_num(schedule.login_time), coverage_chart_time_to_num(schedule.logout_time)],
+								tier: schedule.tier
+							})
+						}
+					}
+				}
+
+				window.coverage_chart = new Chart(document.getElementById('coverage_chart'), {
+					type: 'bar',
+					data: { labels: coverage_chart_labels, datasets: Object.values(datasets) },
+					options: coverage_chart_options
+				})
+			}
+		</script>
+		<?php
+	}
+
 //show the content
 	echo "<form method='post' name='frm' id='frm' onsubmit=''>\n";
 
@@ -349,6 +760,9 @@
 	echo 	"</div>\n";
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','link'=>'call_center_agents.php']);
+	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+		echo button::create(['type'=>'button','label'=>'Coverage','icon'=>$settings->get('theme','button_icon_view', ''),'onclick'=>"modal_open('modal-coverage')"]);
+	}
 	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
@@ -367,16 +781,18 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-type']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='agent_type' maxlength='255' value=\"".escape($agent_type)."\" pattern='^(callback|uuid-standby)$'>\n";
-	echo "<br />\n";
-	echo $text['description-type']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "	".$text['label-type']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "	<input class='formfld' type='text' name='agent_type' maxlength='255' value=\"".escape($agent_type)."\" pattern='^(callback|uuid-standby)$'>\n";
+		echo "<br />\n";
+		echo $text['description-type']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
@@ -415,44 +831,51 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-agent_password']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld password' type='password' name='agent_password' autocomplete='off' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!\$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='255' min='1' step='1' value='".escape($agent_password)."'>\n";
-	echo "<br />\n";
-	echo $text['description-agent_password']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "	".$text['label-agent_password']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld password' type='password' name='agent_password' autocomplete='off' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!\$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='255' min='1' step='1' value='".escape($agent_password)."'>\n";
+		echo "<br />\n";
+		echo $text['description-agent_password']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-contact']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo $destination->select('user_contact', 'agent_contact', ($agent_contact ?? null));
+	if ($settings->get('call_center', 'use_modern_call_center', null))
+		echo "<input class='formfld' type='text' name='agent_contact' id='agent_contact' onkeyup='this.value = this.value.replace(/[^\d]/g, \"\")' value='".escape($agent_contact)."'>\n";
+	else
+		echo $destination->select('user_contact', 'agent_contact', ($agent_contact ?? null));
 	echo "<br />\n";
 	echo $text['description-contact']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-status']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='agent_status'>\n";
-	echo "		<option value=''></option>\n";
-	echo "		<option value='Logged Out' ".(!empty($agent_status) && $agent_status == "Logged Out" ? "selected='selected'" : null).">".$text['option-logged_out']."</option>\n";
-	echo "		<option value='Available' ".(!empty($agent_status) && $agent_status == "Available" ? "selected='selected'" : null).">".$text['option-available']."</option>\n";
-	echo "		<option value='Available (On Demand)' ".(!empty($agent_status) && $agent_status == "Available (On Demand)" ? "selected='selected'" : null).">".$text['option-available_on_demand']."</option>\n";
-	echo "		<option value='On Break' ".(!empty($agent_status) && $agent_status == "On Break" ? "selected='selected'" : null).">".$text['option-on_break']."</option>\n";
-	echo "	</select>\n";
-	echo "<br />\n";
-	echo $text['description-status']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "	".$text['label-status']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "	<select class='formfld' name='agent_status'>\n";
+		echo "		<option value=''></option>\n";
+		echo "		<option value='Logged Out' ".(!empty($agent_status) && $agent_status == "Logged Out" ? "selected='selected'" : null).">".$text['option-logged_out']."</option>\n";
+		echo "		<option value='Available' ".(!empty($agent_status) && $agent_status == "Available" ? "selected='selected'" : null).">".$text['option-available']."</option>\n";
+		echo "		<option value='Available (On Demand)' ".(!empty($agent_status) && $agent_status == "Available (On Demand)" ? "selected='selected'" : null).">".$text['option-available_on_demand']."</option>\n";
+		echo "		<option value='On Break' ".(!empty($agent_status) && $agent_status == "On Break" ? "selected='selected'" : null).">".$text['option-on_break']."</option>\n";
+		echo "	</select>\n";
+		echo "<br />\n";
+		echo $text['description-status']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
@@ -465,16 +888,18 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-max_no_answer']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='agent_max_no_answer' maxlength='255' min='0' step='1' value='".escape($agent_max_no_answer)."'>\n";
-	echo "<br />\n";
-	echo $text['description-max_no_answer']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+		echo "	".$text['label-max_no_answer']."\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		echo "  <input class='formfld' type='number' name='agent_max_no_answer' maxlength='255' min='0' step='1' value='".escape($agent_max_no_answer)."'>\n";
+		echo "<br />\n";
+		echo $text['description-max_no_answer']."\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
@@ -530,6 +955,71 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	Use system caller ID\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='agent_use_system_caller_id' name='agent_use_system_caller_id'>\n";
+		echo "			<option value='true' ".($agent_use_system_caller_id == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($agent_use_system_caller_id == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "<br />\n";
+		echo "Use the default outbound caller ID instead of the caller's\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
+
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	Play confirm prompt\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='agent_confirm_prompt' name='agent_confirm_prompt'>\n";
+		echo "			<option value='true' ".($agent_confirm_prompt == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($agent_confirm_prompt == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "<br />\n";
+		echo "Play a confirmation prompt with queue recording when agent picks up before connecting the call\n";
+		echo "</td>\n";
+		echo "</tr>\n";
+
+		echo "<tr>\n";
+		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		echo "	Enabled\n";
+		echo "</td>\n";
+		echo "<td class='vtable' align='left'>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='agent_enabled' name='agent_enabled'>\n";
+		echo "			<option value='true' ".($agent_enabled == true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+		echo "			<option value='false' ".($agent_enabled == false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
+		echo "</td>\n";
+		echo "</tr>\n";
+	}
+
 	/*
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
@@ -543,9 +1033,257 @@
 	echo "</tr>\n";
 	*/
 
+	echo "<tr>";
+	echo "	<td class='vncell' valign='top'>".$text['label-queues']."</td>";
+	echo "	<td class='vtable' align='left'>";
+	echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
+	echo "			<tr>\n";
+	echo "				<td class='vtable'>".$text['label-queue_name']."</td>\n";
+	echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_level']."</td>\n";
+	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+		echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_position']."</td>\n";
+	}
+	echo "				<td></td>\n";
+	echo "			</tr>\n";
+	$x = 0;
+	if (is_array($tiers)) {
+		foreach($tiers as $field) {
+			echo "	<tr>\n";
+			echo "		<td class=''>";
+			if (!empty($field['call_center_tier_uuid'])) {
+				echo "				<input name='call_center_tiers[".$x."][call_center_tier_uuid]' type='hidden' value=\"".escape($field['call_center_tier_uuid'])."\">\n";
+			}
+			echo "				<select name=\"call_center_tiers[$x][call_center_queue_uuid]\" class=\"formfld\" style=\"width: 200px\">\n";
+			if (is_uuid($field['call_center_queue_uuid'])) {
+				echo "				<option value=\"".escape($field['call_center_queue_uuid'])."\">".escape($field['queue_name'])."</option>\n";
+			}
+			else {
+				echo "					<option value=\"\"></option>\n";
+				foreach($queues as $row) {
+					echo "				<option value=\"".escape($row['call_center_queue_uuid'])."\">".escape($row['queue_name'])."</option>\n";
+				}
+			}
+			echo "				</select>";
+			echo "		</td>\n";
+			echo "		<td class='' style='text-align: center;'>";
+			echo "				 <select name=\"call_center_tiers[$x][tier_level]\" class=\"formfld\">\n";
+			$i=1;
+			while($i<=9) {
+				$selected = ($i == $field['tier_level']) ? "selected" : null;
+				echo "				<option value=\"$i\" $selected>$i</option>\n";
+				$i++;
+			}
+			echo "				</select>\n";
+			echo "		</td>\n";
+
+			if (!$settings->get('call_center', 'use_modern_call_center', null)) {
+				echo "		<td class='' style='text-align: center;'>\n";
+				echo "				<select name=\"call_center_tiers[$x][tier_position]\" class=\"formfld\">\n";
+				$i=0;
+				while($i<=9) {
+					$selected = ($i == $field['tier_position']) ? "selected" : null;
+					echo "				<option value=\"$i\" $selected>$i</option>\n";
+					$i++;
+				}
+				echo "				</select>\n";
+				echo "		</td>\n";
+			}
+			echo "		<td class=''>";
+			if (permission_exists('call_center_tier_delete')) {
+				echo "			<a href=\"call_center_queue_edit.php?id=".escape($field['call_center_queue_uuid'])."&call_center_tier_uuid=".escape($field['call_center_tier_uuid'])."&a=delete\" alt=\"".$text['button-delete']."\" onclick=\"return confirm('".$text['confirm-delete']."');\">$v_link_label_delete</a>";
+				}
+			echo "		</td>\n";
+			echo "	</tr>\n";
+			$assigned_agents[] = $field['agent_name'];
+			$x++;
+		}
+		unset ($tiers);
+		echo "		</table>\n";
+		echo "		<br>\n";
+		if ($settings->get("call_center", "use_modern_call_center", null)) {
+			echo "		This agent can login to these queues at the assigned tier level\n";
+		} else {
+			echo "		".$text['description-tiers']."\n";
+		}
+		echo "		<br />\n";
+		echo "	</td>";
+		echo "</tr>";
+	}
+
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		echo "	<tr>";
+		echo "		<td class='vncell' valign='top'>Agent schedule</td>";
+		echo "		<td class='vtable' align='left'>";
+		echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
+		echo "				<tr>\n";
+		echo "					<td class='vtable'>Queue</td>\n";
+		echo "					<td class='vtable'>Tier</td>\n";
+		echo "					<td class='vtable'>Days of week</td>\n";
+		echo "					<td class='vtable'>Login time</td>\n";
+		echo "					<td class='vtable'>Logout time</td>\n";
+		echo "					<td class='vtable'>Enabled</td>\n";
+		echo "					<td class='vtable edit_delete_checkbox_all' onmouseover=\"swap_display('delete_label_options', 'delete_toggle_options');\" onmouseout=\"swap_display('delete_label_options', 'delete_toggle_options');\">\n";
+		echo "						<span id='delete_label_options'>".$text['label-delete']."</span>\n";
+		echo "						<span id='delete_toggle_options'><input type='checkbox' id='checkbox_all_options' name='checkbox_all' onclick=\"edit_all_toggle('options');\"></span>\n";
+		echo "					</td>\n";
+		echo "				</tr>\n";
+
+		$x = 0;
+		foreach($agent_schedule_groups as $field) {
+
+			echo "<tr>\n";
+			echo "<td class='formfld' align='left' style='padding-right: 16px;'>\n";
+			foreach ($field['records'] as $schedule_uuid) {
+				echo "<input name='agent_schedules[".$x."][records][]' type='hidden' value='".escape($schedule_uuid)."'>\n";
+			}
+			echo "<div class='schedule-queues'>\n";
+			echo "<button type='button' class='formfld schedule-queue-toggle' aria-expanded='false' aria-controls='schedule_queue_menu_".$x."' aria-label='Queues'><span class='schedule-queue-selected'>Select queues</span><i class='fas fa-chevron-down schedule-queue-arrow' aria-hidden='true'></i></button>\n";
+			echo "<div class='formfld schedule-queue-menu' id='schedule_queue_menu_".$x."' role='group' aria-label='Queue options' hidden>\n";
+			echo "<input type='text' class='formfld schedule-queue-search' placeholder='Search queues...' aria-label='Search queues'>\n";
+			echo "<div class='schedule-queue-list'>\n";
+			if (is_array($call_center_queues) && @sizeof($call_center_queues) != 0) {
+				$checked_queue_options = [];
+				$unchecked_queue_options = [];
+				foreach ($call_center_queues as $queue_option) {
+					if (in_array($queue_option['call_center_queue_uuid'], $field['queue_uuids'], true)) {
+						$checked_queue_options[] = $queue_option;
+					}
+					else {
+						$unchecked_queue_options[] = $queue_option;
+					}
+				}
+				foreach (array_merge($checked_queue_options, $unchecked_queue_options) as $row) {
+					$selected = in_array($row['call_center_queue_uuid'], $field['queue_uuids'], true) ? 'checked' : '';
+					echo "<label class='schedule-queue-option'><input type='checkbox' name='agent_schedules[".$x."][queue_uuids][]' value='".escape($row['call_center_queue_uuid'])."' ".$selected."> <span>".escape($row['queue_extension'])." - ".escape($row['queue_name'])."</span></label>\n";
+				}
+			}
+			echo "</div><div class='schedule-queue-no-results' role='status' hidden>No matching queues found.</div></div></div>\n";
+			echo "</td>";
+
+			echo "<td class='formfld' align='left'>\n";
+			echo "	<input class='formfld' type='number' min='1' max='100' name='agent_schedules[".$x."][tier]' value=\"".escape($field['tier'] ?? "1")."\">\n";
+			echo "</td>\n";
+
+			echo "<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
+			foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $weekday_index => $weekday_label) {
+				echo "<label><input type='checkbox' name='agent_schedules[".$x."][dow][".strtolower($weekday_label)."]' value='1' ".($field['days_of_week'] & (1 << $weekday_index) ? 'checked' : '')."> ".$weekday_label."</label>";
+			}
+			echo "</td>";
+
+			echo "<td class='formfld' align='left'>\n";
+			echo "	<input class='formfld' type='time' name='agent_schedules[".$x."][login_time]' value=\"".escape($field['login_time'])."\">\n";
+			echo "</td>\n";
+
+			echo "<td class='formfld' align='left'>\n";
+			echo "	<input class='formfld' type='time' name='agent_schedules[".$x."][logout_time]' value=\"".escape($field['logout_time'])."\">\n";
+			echo "</td>\n";
+
+			echo "<td class='formfld'>\n";
+			if ($input_toggle_style_switch) {
+				echo "	<span class='switch'>\n";
+			}
+			echo "	<select class='formfld' id='agent_schedules_".$x."_enabled' name='agent_schedules[".$x."][enabled]'>\n";
+			echo "		<option value='false' ".($field['enabled'] == false ? 'selected' : null).">".$text['option-false']."</option>\n";
+			echo "		<option value='true' ".($field['enabled'] == false ? null : 'selected').">".$text['option-true']."</option>\n";
+			echo "	</select>\n";
+			if ($input_toggle_style_switch) {
+				echo "		<span class='slider'></span>\n";
+				echo "	</span>\n";
+			}
+			echo "</td>\n";
+
+			if (!empty($field['records'])) {
+				echo "<td class='vtable' style='text-align: center; padding-bottom: 3px;'>";
+				echo "	<input type='checkbox' name='agent_schedules[".$x."][delete]' value='true' ".(!empty($field['delete']) ? 'checked' : null)." class='chk_delete checkbox_options' onclick=\"edit_delete_action('options');\">\n";
+			}
+			else {
+				echo "<td>";
+			}
+			echo "</td>\n";
+
+			echo "</tr>\n";
+
+			$x++;
+		}
+
+		echo "</table></td></tr>";
+		?>
+		<style>
+			.schedule-queues { position: relative; width: 200px; max-width: calc(100vw - 32px); }
+			.schedule-queues * { box-sizing: border-box; }
+			.schedule-queue-toggle { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; cursor: pointer; }
+			.schedule-queue-selected { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+			.schedule-queue-arrow { flex-shrink: 0; font-size: 12px; transition: transform 0.2s; }
+			.schedule-queues.is-open .schedule-queue-arrow { transform: rotate(180deg); }
+			.schedule-queues .schedule-queue-menu.formfld { position: absolute; z-index: 100; top: 100%; left: 0; right: auto; width: max-content; min-width: 100%; max-width: calc(100vw - 32px); height: auto; padding: 6px; }
+			.schedule-queue-search { width: 100%; margin-bottom: 10px !important; }
+			.schedule-queue-list { --schedule-queue-row-height: max(2.5em, 28px); max-height: calc(6 * var(--schedule-queue-row-height) + 6px); overflow-y: auto; border-top: 1px solid; border-color: inherit; padding-top: 5px; }
+			.schedule-queue-option { display: flex; align-items: center; gap: 6px; min-height: var(--schedule-queue-row-height); padding: 6px; cursor: pointer; text-align: left; }
+			.schedule-queue-option input[type='checkbox'] { margin: 0; cursor: pointer; flex-shrink: 0; }
+			.schedule-queue-option span { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+			.schedule-queue-no-results { padding: 10px 6px; text-align: center; }
+			.schedule-queues [hidden] { display: none; }
+		</style>
+		<script>
+			function setScheduleQueuesOpen(dropdown, isOpen) {
+				dropdown.classList.toggle('is-open', isOpen);
+				dropdown.querySelector('.schedule-queue-menu').hidden = !isOpen;
+				dropdown.querySelector('.schedule-queue-toggle').setAttribute('aria-expanded', String(isOpen));
+				if (isOpen) dropdown.querySelector('.schedule-queue-search').focus();
+			}
+			document.querySelectorAll('.schedule-queues').forEach(function (dropdown) {
+				const toggleButton = dropdown.querySelector('.schedule-queue-toggle');
+				const searchInput = dropdown.querySelector('.schedule-queue-search');
+				const checkboxes = Array.from(dropdown.querySelectorAll('.schedule-queue-option input[type="checkbox"]'));
+				function updateQueueSummary() {
+					const selected = checkboxes.filter(function (checkbox) { return checkbox.checked; });
+					dropdown.querySelector('.schedule-queue-selected').textContent = selected.length > 1
+						? selected.length + ' queues selected'
+						: selected.length === 1 ? selected[0].closest('label').querySelector('span').textContent.trim() : 'Select queues';
+				}
+				dropdown.addEventListener('change', updateQueueSummary);
+				toggleButton.addEventListener('click', function () {
+					const isOpen = dropdown.classList.contains('is-open');
+					document.querySelectorAll('.schedule-queues.is-open').forEach(function (other) {
+						if (other !== dropdown) setScheduleQueuesOpen(other, false);
+					});
+					setScheduleQueuesOpen(dropdown, !isOpen);
+				});
+				searchInput.addEventListener('input', function () {
+					const searchTerm = searchInput.value.trim().toLowerCase();
+					let visibleCount = 0;
+					checkboxes.forEach(function (checkbox) {
+						const option = checkbox.closest('.schedule-queue-option');
+						option.hidden = !option.textContent.trim().toLowerCase().includes(searchTerm);
+						if (!option.hidden) visibleCount++;
+					});
+					dropdown.querySelector('.schedule-queue-no-results').hidden = visibleCount !== 0;
+				});
+				searchInput.addEventListener('keydown', function (event) {
+					if (event.key === 'Enter') event.preventDefault();
+				});
+				dropdown.querySelector('.schedule-queue-no-results').hidden = checkboxes.length !== 0;
+				updateQueueSummary();
+			});
+			document.addEventListener('click', function (event) {
+				document.querySelectorAll('.schedule-queues.is-open').forEach(function (dropdown) {
+					if (!dropdown.contains(event.target)) setScheduleQueuesOpen(dropdown, false);
+				});
+			});
+			document.addEventListener('keydown', function (event) {
+				if (event.key === 'Escape') {
+					document.querySelectorAll('.schedule-queues.is-open').forEach(function (dropdown) {
+						setScheduleQueuesOpen(dropdown, false);
+						dropdown.querySelector('.schedule-queue-toggle').focus();
+					});
+				}
+			});
+		</script>
+		<?php
+	}
 	echo "</table>";
 	echo "</div>\n";
-	echo "<br /><br />";
+	echo "<br />";
 
 	if ($action == "update") {
 		echo "<input type='hidden' name='call_center_agent_uuid' value='".escape($call_center_agent_uuid)."'>\n";

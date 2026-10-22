@@ -1,0 +1,6 @@
+<extension name="agent_management" number="*26" destination="true" context="${domain_name}" continue="false" app_uuid="7ec4aa4d-886b-4cdf-81f4-da9eb4682d9c" enabled="false" order="205">
+	<condition field="destination_number" expression="^\*26$">
+		<action application="event" data="Event-Name=CUSTOM,Event-Subclass=callcenter::manage_agent"/>
+		<action application="park" data=""/>
+	</condition>
+</extension>

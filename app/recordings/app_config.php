@@ -42,6 +42,7 @@
 		$apps[$x]['destinations'][$y]['field']['name'] = "recording_name";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "recording_filename";
 		$apps[$x]['destinations'][$y]['field']['description'] = "recording_description";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "playback:\$\${recordings_dir}/\${domain_name}/\${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "lua:streamfile.lua \${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:lua streamfile.lua \${destination}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${name}";

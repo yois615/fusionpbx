@@ -54,6 +54,7 @@
 		$apps[$x]['destinations'][$y]['field']['description'] = "bridge_description";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "bridge_destination";
 		$apps[$x]['destinations'][$y]['select_value']['user_contact'] = "\${destination}";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:'bridge \${destination}' inline";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "bridge:\${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:bridge \${destination}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${name} \${description} ";

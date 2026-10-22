@@ -26,23 +26,30 @@
 
 function persistformvar($form_array) {
 	// Remember Form Input Values
-	$content = '';
 	if (!empty($form_array)) {
-		$content .= "<form method='post' action='".escape($_SERVER["HTTP_REFERER"] ?? '')."' target='_self'>\n";
+		echo "<form method='post' action='".escape($_SERVER["HTTP_REFERER"] ?? '')."' target='_self'>\n";
 		foreach ($form_array as $key => $val) {
-			if ($key == "XID" || $key == "ACT" || $key == "RET") continue;
-			if ($key != "persistform") { //clears the persistform value
-				$content .= "	<input type='hidden' name='".escape($key ?? '')."' value='".(!is_array($val) ? escape($val ?? '') : null)."' />\n";
-			}
+			if ($key == "XID" || $key == "ACT" || $key == "RET" || $key == "persistform") continue;
+			if (is_array($val))
+				persistformarray($key, $val);
+			else
+				echo "	<input type='hidden' name='".escape($key)."' value='".escape($val ?? '')."' />\n";
 		}
-		$content .= "	<input type='hidden' name='persistformvar' value='true' />\n"; //sets persistform to yes
-		$content .= "	<input class='btn' type='submit' value='Back' />\n";
-		$content .= "</form>\n";
+		echo "	<input type='hidden' name='persistformvar' value='true' />\n"; //sets persistform to yes
+		echo "	<input class='btn' type='submit' value='Back' />\n";
+		echo "</form>\n";
 	}
-	echo $content;
-	//return $content;
 }
 //persistformvar($_POST);
 //persistformvar($_GET);
+
+function persistformarray($path, $array) {
+	foreach ($array as $key => $val) {
+		if (is_array($val))
+			persistformarray($path . "[".$key."]", $val);
+		else
+			echo "	<input type='hidden' name='".escape($path . "[".$key."]")."' value='".escape($val ?? '')."' />\n";
+	}
+}
 
 ?>

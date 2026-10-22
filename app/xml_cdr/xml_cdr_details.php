@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2025
+	Portions created by the Initial Developer are Copyright (C) 2008-2026
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -210,7 +210,7 @@
 	}
 
 //format the call recording transcript text
-	$transcription_array = json_decode($transcript_json, true);
+	$transcription_array = json_decode($transcript_json ?? '', true) ?? [];
 	$call_transcript = conversational_html($transcription_array['segments']);
 
 //format the call recording transcript summary
@@ -218,7 +218,7 @@
 	$parsedown = new Parsedown();
 	$parsedown->setSafeMode(true);
 	$parsedown->setMarkupEscaped(true);
-	$call_summary = str_replace('###', '', $transcript_summary);
+	$call_summary = str_replace('###', '', $transcript_summary ?? '');
 	$call_summary = str_replace('&amp;', '&', $parsedown->text($call_summary));
 
 //get the format
@@ -308,6 +308,33 @@
 	}
 	//prepares the raw call flow data to be displayed
 	$call_flow_summary = $xml_cdr->call_flow_summary($call_flow_array);
+
+	if ($settings->get("call_center", "use_modern_call_center", null)) {
+		$sql = "select to_char(cdr.bridge_time, 'YYYY-MM-DD HH24:MI:SS') as start_stamp, 
+				to_char(me.leave_time, 'YYYY-MM-DD HH24:MI:SS') as end_stamp,
+				to_char(me.leave_time - cdr.bridge_time, 'HH24:MI:SS') as duration_formatted,
+				a.agent_contact as destination_number, a.agent_name as destination_label,
+				'/app/call_centers/call_center_agent_edit.php?id=' || a.call_center_agent_uuid as destination_url,
+				'/app/call_centers/call_center_agent_edit.php?id=' || a.call_center_agent_uuid as application_url,
+				me.caller_id_name || ' ' || me.caller_id_number as source_number,
+				'answered' as destination_status ";
+		$sql .= "from v_call_center_cdr as cdr ";
+		$sql .= "inner join v_call_center_member_events as me on cdr.member_id = me.id ";
+		$sql .= "inner join v_call_center_agents as a on cdr.agent_id = a.call_center_agent_uuid ";
+		$sql .= "where me.call_uuid = :uuid and cdr.reason = 'bridged' ";
+		$parameters['uuid'] = $uuid;
+		$cc_events = $database->select($sql, $parameters);
+		unset($sql, $parameters, $row);
+
+		for ($i = 0; $i < count($cc_events); $i++) {
+			$cc_events[$i]['application_name'] = 'agent';
+			$cc_events[$i]['application_icon'] = ['agent' => 'fa-headset'];
+			$cc_events[$i]['application_label'] = 'Agent';
+		}
+
+		$call_flow_summary = array_merge($call_flow_summary, $cc_events);
+		usort($call_flow_summary, function($a, $b) {return $a['start_time'] - $b['start_time'];});
+	}
 
 //debug information
 	if (isset($_REQUEST['debug']) && $_REQUEST['debug'] == 'true') {
@@ -441,6 +468,7 @@
 	}
 
 //get the header
+	$document['title'] = $text['title2'];
 	require_once "resources/header.php";
 
 //page title and description
@@ -448,11 +476,11 @@
 	echo "<tr>\n";
 	echo "<td width='30%' align='left' valign='top' nowrap='nowrap'><b>".$text['title2']."</b><br><br></td>\n";
 	echo "<td width='70%' align='right' valign='top'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'link'=>'xml_cdr.php'.(!empty($_SESSION['xml_cdr']['last_query']) ? '?'.urlencode($_SESSION['xml_cdr']['last_query']) : null)]);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'link'=>'xml_cdr.php'.(!empty($_SESSION['xml_cdr']['last_query']) ? '?'.$_SESSION['xml_cdr']['last_query'] : null)]);
 	if (permission_exists('xml_cdr_call_log') && $call_log_enabled && isset($log_content) && !empty($log_content)) {
 		echo button::create(['type'=>'button','label'=>$text['button-call_log'],'icon'=>$settings->get('theme', 'button_icon_search'),'style'=>'margin-left: 15px;','link'=>'xml_cdr_log.php?id='.$uuid]);
 	}
-	if ($transcribe_enabled && !empty($transcribe_engine) && !empty($record_path) && !empty($record_name) && file_exists($record_path.'/'.$record_name)) {
+	if ($transcribe_enabled && !empty($transcribe_engine) && !empty($record_path) && !empty($record_name) && file_exists($record_path.'/'.$record_name) && $duration > 1) {
 		echo button::create(['type'=>'button','label'=>$text['button-transcribe'],'icon'=>'quote-right','id'=>'btn_transcribe','name'=>'btn_transcribe','collapse'=>'hide-xs','style'=>'margin-left: 15px;','onclick'=>"window.location.href='?id=".$uuid."&action=transcribe';"]);
 	}
 	echo "</td>\n";
@@ -615,7 +643,7 @@
 	echo "<br /><br />\n";
 
 //call recording
-	if (permission_exists('xml_cdr_recording') && !empty($record_path)) {
+	if (permission_exists('xml_cdr_recording') && !empty($record_path) && $duration > 1) {
 		//recording properties
 		if (!empty($record_name) && permission_exists('xml_cdr_recording') && (permission_exists('xml_cdr_recording_play') || permission_exists('xml_cdr_recording_download'))) {
 			$record_extension = pathinfo($record_name, PATHINFO_EXTENSION);
@@ -632,7 +660,7 @@
 		echo "	<td align='right'>\n";
 		//controls
 		if (!empty($record_path) || !empty($record_name)) {
-			echo "<audio id='recording_audio_".escape($xml_cdr_uuid)."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($xml_cdr_uuid)."')\" onended=\"recording_reset('".escape($xml_cdr_uuid)."');\" src=\"download.php?id=".escape($xml_cdr_uuid)."\" type='".escape($record_type)."'></audio>";
+			echo "<audio id='recording_audio_".escape($xml_cdr_uuid)."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".escape($xml_cdr_uuid)."')\" onended=\"recording_reset('".escape($xml_cdr_uuid)."');\" src=\"download.php?id=".urlencode($xml_cdr_uuid)."\" type='".escape($record_type)."'></audio>";
 			echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$settings->get('theme', 'button_icon_play'),'label'=>$text['label-play'],'id'=>'recording_button_'.escape($xml_cdr_uuid),'onclick'=>"recording_play('".escape($xml_cdr_uuid)."', null, null, '".$text['label-play']."')",'style'=>'margin-bottom: 8px; margin-top: -8px;']);
 			if (permission_exists('xml_cdr_recording_download')) {
 				echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$settings->get('theme', 'button_icon_download'),'label'=>$text['label-download'],'onclick'=>"window.location.href='download.php?id=".urlencode($xml_cdr_uuid)."&t=bin';",'style'=>'margin-bottom: 8px; margin-top: -8px;']);
@@ -693,7 +721,7 @@
 	echo "</style>\n";
 
 //transcription, if enabled
-	if ($transcribe_enabled && !empty($transcribe_engine) && !empty($call_transcript)) {
+	if ($transcribe_enabled && !empty($transcribe_engine) && !empty($call_transcript) && $duration > 1) {
 		echo "<b>".$text['label-transcription']."</b><br>\n";
 		echo "<div class='card'>\n";
 		echo "	<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";

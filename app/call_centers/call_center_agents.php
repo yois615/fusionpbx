@@ -55,6 +55,7 @@
 			case 'delete':
 				if (permission_exists('call_center_agent_delete')) {
 					$obj = new call_center;
+					$obj->settings = $settings;
 					$obj->delete_agents($call_center_agents);
 				}
 				break;

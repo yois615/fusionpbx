@@ -1138,9 +1138,7 @@ else { //default: white
 		z-index: 6;
 		display: none;
 		position: absolute;
-		<?php if ($menu_style != 'inline') { ?>
-			top: 50px;
-		<?php } ?>
+		/* top: specified in /resources/classes/menu.php */
 		/* right: specified in /resources/classes/menu.php */
 		padding: 15px;
 		background-color: <?=$body_header_background_color?>;
@@ -1158,7 +1156,7 @@ else { //default: white
 	@media (max-width: 575.98px) {
 		div#body_header_user_menu {
 			width: calc(100% - 20px);
-			/* right: specified in /resources/classes/menu.php */
+			right: 10px !important;
 			}
 		}
 
@@ -1837,6 +1835,8 @@ else { //default: white
 	input[type=url].formfld,
 	input[type=password].formfld,
 	input[type=email].formfld,
+	button.formfld.schedule-queue-toggle,
+	div.formfld.schedule-queue-menu,
 	label.formfld {
 		font-family: <?=$input_text_font?>;
 		font-size: <?=$input_text_size?>;
@@ -1892,6 +1892,7 @@ else { //default: white
 	input[type=number].formfld,
 	input[type=url].formfld,
 	input[type=password].formfld,
+	button.formfld.schedule-queue-toggle,
 	input[type=email].formfld {
 		transition: all 0.25s ease;
 		-moz-transition: all 0.25s ease;
@@ -1931,6 +1932,7 @@ else { //default: white
 	input[type=url].formfld:hover,
 	input[type=password].formfld:hover,
 	input[type=email].formfld:hover,
+	button.formfld.schedule-queue-toggle:hover,
 	label.formfld:hover {
 		border: none !important;
 		border-width: <?=$input_border_size?> !important;
@@ -1961,6 +1963,7 @@ else { //default: white
 	input[type=url].formfld:focus,
 	input[type=password].formfld:focus,
 	input[type=email].formfld:focus,
+	button.formfld.schedule-queue-toggle:focus,
 	label.formfld:focus {
 		border: none !important;
 		border-width: <?=$input_border_size?> !important;
@@ -1999,6 +2002,7 @@ else { //default: white
 	input[type=url].formfld:focus-visible,
 	input[type=password].formfld:focus-visible,
 	input[type=email].formfld:focus-visible,
+	button.formfld.schedule-queue-toggle:focus-visible,
 	label.formfld:focus-visible {
 		<?php if (!empty($input_outline_size_focus)) { ?>
 			outline-width: <?=$input_outline_size_focus?> !important;
@@ -2339,6 +2343,7 @@ else { //default: white
 		-khtml-border-radius: <?php echo $br['tl']['n'].$br['tl']['u']; ?> <?php echo $br['tr']['n'].$br['tr']['u']; ?> <?php echo $br['br']['n'].$br['br']['u']; ?> <?php echo $br['bl']['n'].$br['bl']['u']; ?>;
 		border-radius: <?php echo $br['tl']['n'].$br['tl']['u']; ?> <?php echo $br['tr']['n'].$br['tr']['u']; ?> <?php echo $br['br']['n'].$br['br']['u']; ?> <?php echo $br['bl']['n'].$br['bl']['u']; ?>;
 		<?php unset($br); ?>
+		vertical-align: middle;
 		}
 
 	.switch > select {
@@ -3864,6 +3869,19 @@ else { //default: white
 		background: <?=$modal_background_color?>;
 		overflow: auto;
 		}
+
+	#modal-coverage > div {
+		width: 90%;
+		height: 90%;
+		display: flex;
+		flex-direction: column;
+		max-width: 900px;
+		max-height: 600px;
+	}
+
+	#modal-coverage .modal-message {
+		flex-grow: 1;
+	}
 
 	@media(min-width: 0px) and (max-width: 699px) {
 		.modal-window > div {

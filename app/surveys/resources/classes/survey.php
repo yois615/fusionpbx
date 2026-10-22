@@ -24,9 +24,9 @@
  Mark J Crane <markjcrane@fusionpbx.com>
 */
 
-//define the announcements class
-if (!class_exists('announcements')) {
-	class annoucements {
+//define the bridges class
+if (!class_exists('survey')) {
+	class survey {
 
 		/**
 		 * declare private variables
@@ -37,8 +37,6 @@ if (!class_exists('announcements')) {
 		private $list_page;
 		private $table;
 		private $uuid_prefix;
-		private $toggle_field;
-		private $toggle_values;
 
 		/**
 		 * called when the object is created
@@ -46,16 +44,19 @@ if (!class_exists('announcements')) {
 		public function __construct() {
 
 			//assign private variables
-				$this->app_name = 'announcements';
-				$this->app_uuid = '5d2e6675-b359-4feb-80b4-602d0639ff4e';
-				$this->permission_prefix = 'announcement_';
-				$this->list_page = 'announcements.php';
-				$this->table = 'announcements';
-				$this->uuid_prefix = 'announcement_';
-				$this->toggle_field = 'announcement_enabled';
-				$this->toggle_values = ['true','false'];
+				$this->app_name = 'surveys';
+				$this->app_uuid = '32af1175-9f22-4073-9499-33b50bbddad5';
+				$this->permission_prefix = 'survey_';
+				$this->list_page = 'survey.php';
+				$this->table = 'surveys';
+				$this->uuid_prefix = 'survey_';
 
 		}
+
+		/**
+		 * declare public variables
+		 */
+		public $survey_uuid;
 
 		/**
 		 * called when there are no references to a particular object
@@ -93,6 +94,22 @@ if (!class_exists('announcements')) {
 								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+
+									//Clear votes from table
+									$sql = "DELETE FROM v_survey_votes ";
+									$sql .= "WHERE survey_uuid = :survey_uuid";
+									$parameters['survey_uuid'] = $record['uuid'];
+									$database = new database;
+									$database->select($sql, $parameters, 'all');
+									unset($sql, $parameters);
+
+									// Clear questions from table
+									$sql = "DELETE FROM v_survey_questions ";
+									$sql .= "WHERE survey_uuid = :survey_uuid";
+									$parameters['survey_uuid'] = $record['uuid'];
+									$database = new database;
+									$database->select($sql, $parameters, 'all');
+									unset($sql, $parameters);
 								}
 							}
 
@@ -236,9 +253,32 @@ if (!class_exists('announcements')) {
 											$array[$this->table][$x] = $row;
 
 										//overwrite
-											$array[$this->table][$x][$this->uuid_prefix.'uuid'] = uuid();
-											$array[$this->table][$x]['announcement_description'] = trim($row['announcement_description'].' ('.$text['label-copy'].')');
+											$new_survey_uuid = uuid();
+											$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $new_survey_uuid;
+											$array[$this->table][$x]['name'] = trim($row['name'].' ('.$text['label-copy'].')');
 
+											//ivr menu options sub table
+											$sql_2 = "select * from v_survey_questions where survey_uuid = :survey_uuid";
+											$parameters_2['survey_uuid'] = $row['survey_uuid'];
+											$database = new database;
+											$rows_2 = $database->select($sql_2, $parameters_2, 'all');
+											if (is_array($rows_2) && @sizeof($rows_2) != 0) {
+												foreach ($rows_2 as $row_2) {
+
+													//copy data
+														$array['survey_questions'][$y] = $row_2;
+
+													//overwrite
+														$array['survey_questions'][$y]['survey_question_uuid'] = uuid();
+														$array['survey_questions'][$y]['survey_uuid'] = $new_survey_uuid;
+
+													//increment
+														$y++;
+
+												}
+											}
+											unset($sql_2, $parameters_2, $rows_2, $row_2);
+										}
 									}
 								}
 								unset($sql, $parameters, $rows, $row);
@@ -246,6 +286,10 @@ if (!class_exists('announcements')) {
 
 						//save the changes and set the message
 							if (is_array($array) && @sizeof($array) != 0) {
+
+								$p = permissions::new();
+								$p->add('survey_question_add', 'temp');
+								$p->add('survey_add', 'temp');
 
 								//save the array
 									$database = new database;
@@ -257,10 +301,79 @@ if (!class_exists('announcements')) {
 								//set message
 									message::add($text['message-copy']);
 
+								$p->delete('survey_question_add', 'temp');
+								$p->delete('survey_add', 'temp');
+
 							}
 							unset($records);
 					}
 
+			}
+		
+
+		public function delete_questions($records) {
+
+			//assign private variables
+				$this->permission_prefix = 'survey_questions_';
+				$this->table = 'survey_questions';
+
+			if (true) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->list_page);
+						exit;
+					}
+
+				//delete multiple records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//filter out unchecked ring groups, build where clause for below
+							foreach ($records as $record) {
+								if ($record['checked'] == 'true' && !empty($record['survey_question_uuid'])) {
+									$record_uuids[] = $record['survey_question_uuid'];
+								}
+							}
+
+						
+
+						//build the delete array
+							if (is_array($record_uuids) && @sizeof($record_uuids) != 0) {
+								$x = 0;
+								foreach ($record_uuids as $uuid) {
+									$array[$this->table][$x]['survey_question_uuid'] = $uuid;
+									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array[$this->table][$x]['survey_uuid'] = $this->survey_uuid;
+									$x++;
+								}
+							}
+
+						//delete the checked rows
+							if (is_array($array) && @sizeof($array) != 0) {
+
+								//grant temporary permissions
+									$p = permissions::new();
+									$p->add('survey_question_delete', 'temp');
+
+								//execute delete
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->delete($array);
+									unset($array);
+
+									$p->delete('survey_question_delete', 'temp');
+
+
+							}
+							unset($records);
+					}
 			}
 		}
 

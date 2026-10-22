@@ -42,6 +42,7 @@
 		$apps[$x]['destinations'][$y]['field']['destination_number'] = "destination_number";
 		$apps[$x]['destinations'][$y]['field']['destination_context'] = "destination_context";
 		$apps[$x]['destinations'][$y]['field']['destination_description'] = "destination_description";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:\${destination_number} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination_number} XML \${destination_context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination_number} XML \${destination_context}";
 		$apps[$x]['destinations'][$y]['select_value']['user_contact'] = "loopback/\${destination_number}";
@@ -52,6 +53,7 @@
 		$apps[$x]['destinations'][$y]['name'] = 'dialplans';
 		$apps[$x]['destinations'][$y]['field']['name']  = 'name';
 		$apps[$x]['destinations'][$y]['field']['destination'] = 'destination';
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:\${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${name}";

@@ -40,6 +40,7 @@
 		$apps[$x]['destinations'][$y]['field']['uuid'] = "phrase_uuid";
 		$apps[$x]['destinations'][$y]['field']['name'] = "phrase_name";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "phrase_name";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "phrase:\${uuid}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "phrase:\${uuid}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:phrase \${uuid}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${name}";

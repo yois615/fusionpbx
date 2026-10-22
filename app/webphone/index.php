@@ -28,8 +28,13 @@
     height: 100%;
   }
 
+  #content_container {
+	height: 100%;
+  }
+
   #main_content {
     flex-grow: 1;
+	height: 100%;
   }
 </style>
 <?php

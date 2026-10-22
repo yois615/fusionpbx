@@ -43,6 +43,7 @@
 		$apps[$x]['destinations'][$y]['field']['destination'] = "dialplan_number";
 		$apps[$x]['destinations'][$y]['field']['extension'] = "dialplan_number";
 		$apps[$x]['destinations'][$y]['field']['description'] = "dialplan_description";
+		$apps[$x]['destinations'][$y]['select_value']['broadcast'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${name} \${description}";

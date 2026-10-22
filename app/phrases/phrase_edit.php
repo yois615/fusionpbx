@@ -40,7 +40,7 @@
 
 //add the defaults
 	$phrase_name = '';
-	$phrase_language = '';
+	$phrase_language = 'en';
 	$phrase_description = '';
 
 //set the action as an add or an update
@@ -299,6 +299,7 @@
 
 //set the defaults
 	$phrase_enabled = $phrase_enabled ?? true;
+	$phrase_language = $phrase_language ?? 'en';
 
 //create token
 	$object = new token;

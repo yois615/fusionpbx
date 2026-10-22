@@ -133,11 +133,11 @@ if ( session:ready() ) then
 
 		--set sip header Alert-Info
 			alert_info = session:getVariable("alert_info");
-			if (not alert_info) then alert_info = 'ring_answer'; end
+			if (not alert_info) then alert_info = 'auto_answer'; end
 			if (alert_info == 'auto_answer') then
-				alert_info = "sip_h_Alert-Info='Auto Answer'";
+				alert_info = "sip_h_Alert-Info=<sip:"..domain_name..">;type=answer";
 			elseif (alert_info == 'ring_answer') then
-				alert_info = "sip_h_Alert-Info='Ring Answer'";
+				alert_info = "sip_h_Alert-Info=<sip:"..domain_name..">;type=ringAnswer";
 			else
 				alert_info = "sip_h_Alert-Info='"..alert_info.."'";
 			end
