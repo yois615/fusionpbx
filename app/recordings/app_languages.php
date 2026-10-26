@@ -864,4 +864,22 @@ $text['description-with_password']['zh-cn'] = "拨打 *732 并输入密码 ||REC
 $text['description-with_password']['ja-jp'] = "*732 にダイヤルし、パスワード ||RECORDING_PASSWORD|| を入力し、その後に作成する録音の番号を入力します。 または、最良の結果を得るには、16 ビット 8khz/16khz モノラル WAV ファイルをアップロードします。";
 $text['description-with_password']['ko-kr'] = "*732를 다이얼하고 비밀번호 ||RECORDING_PASSWORD||를 입력한 다음 생성할 녹음 번호를 입력합니다. 또는 최상의 결과를 얻으려면 16비트 8khz/16khz 모노 WAV 파일을 업로드하십시오.";
 
+$text['button-add-tts']['en-us'] = "Add TTS";
+$text['button-add-tts']['en-gb'] = "Add TTS";
+$text['button-add-tts']['de-de'] = "TTS hinzufügen";
+$text['button-add-tts']['fr-fr'] = "Ajouter TTS";
+$text['button-add-tts']['es-es'] = "Agregar TTS";
+$text['button-add-tts']['it-it'] = "Aggiungi TTS";
+$text['button-add-tts']['nl-nl'] = "Voeg TTS toe";
+$text['button-add-tts']['pl-pl'] = "Dodaj TTS";
+$text['button-add-tts']['pt-br'] = "Adicionar TTS";
+$text['button-add-tts']['pt-pt'] = "Adicionar TTS";
+$text['button-add-tts']['ro-ro'] = "Adăugați TTS";
+$text['button-add-tts']['ru-ru'] = "Добавить TTS";
+$text['button-add-tts']['sv-se'] = "Lägg till TTS";
+$text['button-add-tts']['uk-ua'] = "Додати TTS";
+$text['button-add-tts']['tr-tr'] = "TTS Ekle";
+$text['button-add-tts']['zh-cn'] = "添加 TTS";
+$text['button-add-tts']['ja-jp'] = "TTS を追加";
+$text['button-add-tts']['ko-kr'] = "TTS 추가";
 ?>
