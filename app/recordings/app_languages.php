@@ -675,8 +675,8 @@ $text['label-message']['zh-cn'] = "信息";
 $text['label-message']['ja-jp'] = "メッセージ";
 $text['label-message']['ko-kr'] = "메시지";
 
-$text['description-message']['en-us'] = "The recording message.";
-$text['description-message']['en-gb'] = "The recording message.";
+$text['description-message']['en-us'] = "The recording message (max 2000 chars).";
+$text['description-message']['en-gb'] = "The recording message (max 2000 chars).";
 $text['description-message']['ar-eg'] = "رسالة التسجيل.";
 $text['description-message']['de-at'] = "Die Aufnahmenachricht.";
 $text['description-message']['de-ch'] = "Die Aufnahmenachricht.";

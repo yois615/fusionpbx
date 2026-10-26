@@ -504,7 +504,7 @@
 		echo "    ".$text['label-message']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <textarea class='formfld' name='recording_message' style='width: 300px; height: 150px;'>".escape_textarea($recording_message)."</textarea>\n";
+		echo "    <textarea class='formfld' name='recording_message' maxlength='2000' style='width: 300px; height: 150px;'>".escape_textarea($recording_message)."</textarea>\n";
 		echo "<br />\n";
 		echo $text['description-message']."\n";
 		echo "</td>\n";
