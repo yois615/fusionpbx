@@ -321,6 +321,9 @@
 	echo "	<div class='heading'><b>".$text['title-voicemail_messages']."</b><div class='count'>".number_format($total_rows)."</div></div>\n";
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','link'=>$_SESSION['back'][$_SERVER['PHP_SELF']]]);
+	if ($settings->get('voicemail', 'storage_type') != 'base64') {
+		echo button::create(['type'=>'button','label'=>$text['button-export_wavs'],'icon'=>$settings->get('theme', 'button_icon_download'),'id'=>'btn_export_wavs','disabled'=>!$total_rows,'style'=>'margin-left: 15px;']);
+	}
 	$margin_left = false;
 	if (permission_exists('voicemail_message_transcribe') && $transcribe_enabled && !empty($transcribe_engine) && $num_rows) {
 		echo button::create(['type'=>'button','label'=>$text['button-transcribe'],'icon'=>'quote-right','id'=>'btn_transcribe','name'=>'btn_transcribe','collapse'=>'hide-xs','style'=>'display: none; margin-left: 15px;','onclick'=>"list_action_set('transcribe'); list_form_submit('form_list');"]);
@@ -341,6 +344,28 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if ($settings->get('voicemail', 'storage_type') != 'base64') {
+		echo "<div id='voicemail_export_banner' class='card' hidden style='padding: 15px; margin-bottom: 15px;'>\n";
+		echo "<span id='voicemail_export_status' role='status' aria-live='polite'></span> ";
+		echo "<progress id='voicemail_export_progress' hidden aria-label='".escape($text['label-export_progress'])."'></progress> ";
+		echo "<a id='voicemail_export_download' hidden>".escape($text['button-download_zip'])."</a>\n";
+		echo "</div>\n";
+		echo "<script src='resources/javascript/voicemail_message_export.js'></script>\n";
+		echo "<script>voicemail_export_init(".json_encode([
+			'endpoint' => 'voicemail_messages_export.php',
+			'scope' => $_GET['id'] ?? '',
+			'token' => ['name' => $token['name'], 'hash' => $token['hash']],
+			'text' => [
+				'queued' => $text['message-export_queued'],
+				'preparing' => $text['message-export_preparing'],
+				'finalizing' => $text['message-export_finalizing'],
+				'ready' => $text['message-export_ready'],
+				'failed' => $text['message-export_failed'],
+				'skipped' => $text['message-export_skipped']
+			]
+		], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).");</script>\n";
+	}
 
 	if ($num_rows) {
 		echo modal::create([
