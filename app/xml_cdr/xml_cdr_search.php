@@ -353,6 +353,15 @@
 		echo "		</td>";
 		echo "	</tr>";
 
+		if ($settings->get("call_center", "use_modern_call_center", null)) {
+			echo "	<tr>";
+			echo "		<td class='vncell'>Call Center Outbound Only</td>";
+			echo "		<td class='vtable'>";
+			echo "      	<input type='checkbox' name='call_center_outbound_only' id='disa_outbound_only'>\n";
+			echo "		</td>";
+			echo "	</tr>";
+		}
+
 		echo "	<tr>";
 		echo "		<td class='vncell'>DISA Outbound Only</td>";
 		echo "		<td class='vtable'>";

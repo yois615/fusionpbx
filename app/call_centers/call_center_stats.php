@@ -134,9 +134,32 @@ $sql = <<<EOF
 		WHERE q.domain_uuid = :domain_uuid
 		AND (me.join_time AT TIME ZONE :time_zone) BETWEEN :from_stamp::timestamptz AND :to_stamp::timestamptz
 		GROUP BY "cdr"."agent_id"
+	),
+	"disa" AS (
+		SELECT
+			"de"."agent_id",
+			count(nullif("de"."result" = 'bridged', FALSE)) AS "answered",
+			count(nullif("de"."result" = 'canceled', FALSE)) AS "canceled",
+			count(nullif("de"."result" = 'no_answer', FALSE)) AS "no_answer",
+			coalesce(
+				round(
+					sum(
+						extract(epoch FROM "de"."hangup_time" - "de"."bridge_time")
+					)
+				),
+			0) AS "in_call_time"
+		FROM "v_call_center_disa_events" AS "de"
+		INNER JOIN "v_call_center_queues" AS "q" ON "de"."queue_id" = "q"."call_center_queue_uuid"
+		WHERE q.domain_uuid = :domain_uuid
+		AND (de.origination_time AT TIME ZONE :time_zone) BETWEEN :from_stamp::timestamptz AND :to_stamp::timestamptz
+		GROUP BY "de"."agent_id"
 	)
-	SELECT "a"."agent_name", "cte".*
+	SELECT "a"."agent_name", "a"."call_center_agent_uuid" AS "agent_id",
+		coalesce("cte"."answered", 0) AS "answered", coalesce("cte"."missed", 0) AS "missed",
+		coalesce("disa"."answered", 0) AS "disa_answered", coalesce("disa"."canceled", 0) AS "disa_canceled", coalesce("disa"."no_answer", 0) AS "disa_no_answer",
+		coalesce("cte"."in_call_time" + "disa"."in_call_time", 0) AS "in_call_time"
 	FROM "cte"
+	FULL OUTER JOIN "disa" ON "disa"."agent_id" = "cte"."agent_id" 
 	LEFT JOIN "v_call_center_agents" AS "a" ON "a"."call_center_agent_uuid" = "cte"."agent_id"
 EOF;
 
@@ -259,6 +282,7 @@ EOF;
 	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'agent_name', ($agents_order_by == 'agent_name' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Agent name</a></th>";
 	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'answered', ($agents_order_by == 'answered' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Answered calls</a></th>";
 	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'missed', ($agents_order_by == 'missed' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Missed calls</a></th>";
+	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'disa_answered', ($agents_order_by == 'disa_answered' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Outbound calls</a></th>";
 	echo "<th nowrap><a href='".build_href_params($from_stamp, $to_stamp, $calls_order_by, $calls_order, 'in_call_time', ($agents_order_by == 'in_call_time' && $agents_order == 'asc') ? 'desc' : 'asc')."'>Total in-call time</a></th>";
 	echo "</tr>\n";
 
@@ -269,6 +293,7 @@ EOF;
 			echo "	<td>".$row['agent_name']."</td>\n";
 			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_agent_uuid=".$row["agent_id"]."&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."\">".number_format($row['answered'], 0, '.', ',')."</a></td>\n";
 			echo "	<td>".number_format($row['missed'], 0, '.', ',')."</td>\n";
+			echo "	<td><a href=\"/app/xml_cdr/xml_cdr.php?call_center_agent_uuid=".$row["agent_id"]."&call_center_outbound_only=on&start_stamp_begin=".urlencode(normalize_stamp($from_stamp))."&start_stamp_end=".urlencode(normalize_stamp($to_stamp))."\">".number_format($row['disa_answered'], 0, '.', ',')."</a></td>\n";
 			echo "	<td>".secToDuration($row['in_call_time'])."</td>\n";
 			echo "</tr>\n";
 			$x++;

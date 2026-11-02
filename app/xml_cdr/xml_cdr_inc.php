@@ -143,6 +143,7 @@
 		$call_center_queue_uuid = $_REQUEST["call_center_queue_uuid"] ?? '';
 		$call_center_abandoned = $_REQUEST["call_center_abandoned"];
 		$call_center_agent_uuid = $_REQUEST["call_center_agent_uuid"];
+		$call_center_outbound_only = $_REQUEST["call_center_outbound_only"];
 		$ring_group_uuid = $_REQUEST["ring_group_uuid"] ?? '';
 		$ivr_menu_uuid = $_REQUEST["ivr_menu_uuid"] ?? '';
 		if (isset($_SESSION['cdr']['field']) && is_array($_SESSION['cdr']['field'])) {
@@ -408,6 +409,9 @@
 	if ($settings->get("call_center", "use_modern_call_center", null)) {
 		$sql .= "left join v_call_center_member_events as cc_me on c.xml_cdr_uuid = cc_me.call_uuid ";
 		$sql .= "left join v_call_center_cdr as cc_cdr on cc_cdr.member_id = cc_me.id and cc_cdr.reason = 'bridged' ";
+		if ($call_center_outbound_only == 'on') {
+			$sql .= "inner join v_call_center_disa_events as cc_disa on c.xml_cdr_uuid = cc_disa.call_uuid ";
+		}
 	}
 	if (!empty($_REQUEST['show']) && $_REQUEST['show'] == "all" && $permission['xml_cdr_all']) {
 		$sql .= "where true \n";
@@ -649,15 +653,22 @@
 		}
 	} else {
 		if (strlen($call_center_agent_uuid) > 0) {
-			$sql .= "and cc_cdr.reason = 'bridged' and cc_cdr.agent_id = :call_center_agent_uuid ";
+			if ($call_center_outbound_only == 'on')
+				$sql .= "and cc_disa.result = 'bridged' and cc_disa.agent_id = :call_center_agent_uuid ";
+			else
+				$sql .= "and cc_cdr.reason = 'bridged' and cc_cdr.agent_id = :call_center_agent_uuid ";
 			$parameters['call_center_agent_uuid'] = $call_center_agent_uuid;
 		}
 		if (strlen($call_center_queue_uuid) > 0) {
-			$sql .= "and cc_me.queue_id = :call_center_queue_uuid ";
-			if ($call_center_abandoned != 'on') {
-				$sql .= "and cc_me.leave_reason = 'bridged' ";
+			if ($call_center_outbound_only == 'on') {
+				$sql .= "and cc_disa.result = 'bridged' and cc_disa.queue_id = :call_center_queue_uuid ";
 			} else {
-				$sql .= "and cc_me.leave_reason = 'abandoned' ";
+				$sql .= "and cc_me.queue_id = :call_center_queue_uuid ";
+				if ($call_center_abandoned != 'on') {
+					$sql .= "and cc_me.leave_reason = 'bridged' ";
+				} else {
+					$sql .= "and cc_me.leave_reason = 'abandoned' ";
+				}
 			}
 			$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
 		}
