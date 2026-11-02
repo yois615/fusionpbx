@@ -1,5 +1,18 @@
 <?php
 
+$text['button-export_wavs']['en-us'] = "Export WAVs";
+$text['button-download_zip']['en-us'] = "Download ZIP";
+$text['label-export_progress']['en-us'] = "Voicemail export progress";
+$text['message-export_queued']['en-us'] = "Starting voicemail export...";
+$text['message-export_preparing']['en-us'] = "Preparing WAV files: {processed} of {total} recordings checked.";
+$text['message-export_finalizing']['en-us'] = "Finalizing ZIP... Please wait until the download link is ready.";
+$text['message-export_ready']['en-us'] = "ZIP ready: {added} WAV files. The download expires after 24 hours.";
+$text['message-export_skipped']['en-us'] = "{count} recordings skipped (missing, unreadable, or not WAV).";
+$text['message-export_failed']['en-us'] = "Unable to prepare voicemail ZIP. Please retry or contact your administrator. Reload this page to check an existing export.";
+$text['message-export_busy']['en-us'] = "Another voicemail export is running. Please wait for it to finish.";
+$text['message-export_access_denied']['en-us'] = "Access denied.";
+$text['message-export_invalid_request']['en-us'] = "Invalid voicemail export request.";
+
 $text['title-voicemails']['en-us'] = "Voicemails";
 $text['title-voicemails']['en-gb'] = "Voicemails";
 $text['title-voicemails']['ar-eg'] = "رسائل البريد الصوتي";
