@@ -157,10 +157,10 @@ $sql = <<<EOF
 	SELECT "a"."agent_name", "a"."call_center_agent_uuid" AS "agent_id",
 		coalesce("cte"."answered", 0) AS "answered", coalesce("cte"."missed", 0) AS "missed",
 		coalesce("disa"."answered", 0) AS "disa_answered", coalesce("disa"."canceled", 0) AS "disa_canceled", coalesce("disa"."no_answer", 0) AS "disa_no_answer",
-		coalesce("cte"."in_call_time" + "disa"."in_call_time", 0) AS "in_call_time"
+		coalesce("cte"."in_call_time", 0) + coalesce("disa"."in_call_time", 0) AS "in_call_time"
 	FROM "cte"
 	FULL OUTER JOIN "disa" ON "disa"."agent_id" = "cte"."agent_id" 
-	LEFT JOIN "v_call_center_agents" AS "a" ON "a"."call_center_agent_uuid" = "cte"."agent_id"
+	LEFT JOIN "v_call_center_agents" AS "a" ON "a"."call_center_agent_uuid" = coalesce("cte"."agent_id", "disa"."agent_id")
 EOF;
 
 	$parameters['domain_uuid'] = $domain_uuid;
