@@ -248,6 +248,7 @@
 	$param .= "&call_center_abandoned=".urlencode($call_center_abandoned ?? '');
 	$param .= "&disa_outbound_only=".urlencode($disa_outbound_only ?? '');
 	$param .= "&call_center_agent_uuid=".urlencode($call_center_agent_uuid ?? '');
+	$param .= "&call_center_outbound_only=".urlencode($call_center_outbound_only ?? '');
 
 	if (isset($_SESSION['cdr']['field']) && is_array($_SESSION['cdr']['field'])) {
 		foreach ($_SESSION['cdr']['field'] as $field) {
