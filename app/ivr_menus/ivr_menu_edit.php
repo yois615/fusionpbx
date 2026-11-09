@@ -1074,20 +1074,16 @@
 			echo "</td>\n";
 
 			echo "<td class='formfld' align='left'>\n";
-			echo "	<select name='ivr_menu_options[".$x."][ivr_menu_option_order]' class='formfld' style='width:55px'>\n";
-			if (strlen(htmlspecialchars($field['ivr_menu_option_order'])) > 0) {
-				if (strlen($field['ivr_menu_option_order']) == 1) { $ivr_menu_option_order_label = "00".$field['ivr_menu_option_order']; }
-				if (strlen($field['ivr_menu_option_order']) == 2) { $ivr_menu_option_order_label = "0".$field['ivr_menu_option_order']; }
-			}
-			for ($i = 0; $i <= 999; $i++) {
+			echo "	<select name='ivr_menu_options[".$x."][ivr_menu_option_order]' class='formfld' style='width:35px'>\n";
+			for ($i = 0; $i <= 9; $i++) {
 				if ($i == $field['ivr_menu_option_order']) { $selected = "selected='selected' "; } else {$selected = ''; }
-				echo "	<option value='".$i."' $selected>".str_pad($i, 3, '0', STR_PAD_LEFT)."</option>\n";
+				echo "	<option value='".$i."' $selected>".$i."</option>\n";
 			}
 			echo "	</select>\n";
 			echo "</td>\n";
 
 			echo "<td class='formfld' align='left'>\n";
-			echo "	<input class='formfld' style='width:100px' type='text' name='ivr_menu_options[".$x."][ivr_menu_option_description]' maxlength='255' value=\"".escape($field['ivr_menu_option_description'])."\">\n";
+			echo "	<input class='formfld' style='width:350px' type='text' name='ivr_menu_options[".$x."][ivr_menu_option_description]' maxlength='255' value=\"".escape($field['ivr_menu_option_description'])."\">\n";
 			echo "</td>\n";
 			echo "<td class='formfld'>\n";
 			if ($input_toggle_style_switch) {
