@@ -336,7 +336,8 @@
 							$array['ivr_menus'][0]['ivr_menu_options'][$y]["ivr_menu_option_uuid"] = $ivr_menu_option_uuid;
 							$array['ivr_menus'][0]['ivr_menu_options'][$y]["ivr_menu_option_digits"] = $row["ivr_menu_option_digits"];
 							$array['ivr_menus'][0]['ivr_menu_options'][$y]["ivr_menu_option_action"] = $ivr_menu_option_action;
-							if ($destination->valid($ivr_menu_option_action.":".$ivr_menu_option_param, 'ivr')) {
+							if ($destination->valid($ivr_menu_option_action.":".$ivr_menu_option_param, 'ivr') ||
+							(permission_exists('ivr_menu_all') && strstr($ivr_menu_option_param, "set"))) {
 								$array['ivr_menus'][0]['ivr_menu_options'][$y]["ivr_menu_option_param"] = $ivr_menu_option_param;
 							}
 							$array['ivr_menus'][0]['ivr_menu_options'][$y]["ivr_menu_option_order"] = $row["ivr_menu_option_order"];
