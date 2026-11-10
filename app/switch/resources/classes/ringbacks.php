@@ -184,19 +184,19 @@ class ringbacks {
 	 * @return bool True if the value is valid, false otherwise
 	 */
 	public function valid($value) {
-		foreach ($this->ringtones_list as $ringtone_value => $ringtone_name) {
+		foreach (($this->ringtones_list ?: []) as $ringtone_value => $ringtone_name) {
 			if ($value == "\${" . $ringtone_value . "}") {
 				return true;
 			}
 		}
 
-		foreach ($this->tones_list as $tone_value => $tone_name) {
+		foreach (($this->tones_list ?? []) as $tone_value => $tone_name) {
 			if ($value == "\${" . $tone_value . "}") {
 				return true;
 			}
 		}
 
-		foreach ($this->music_list as $row) {
+		foreach (($this->music_list ?? []) as $row) {
 			$name = '';
 			if (!empty($row['domain_uuid'])) {
 				$name = $row['domain_name'] . '/';
@@ -207,13 +207,13 @@ class ringbacks {
 			}
 		}
 
-		foreach ($this->recordings_list as $recording_value => $recording_name) {
+		foreach (($this->recordings_list ?? []) as $recording_value => $recording_name) {
 			if ($value == $recording_value) {
 				return true;
 			}
 		}
 
-		foreach ($this->streams as $row) {
+		foreach (($this->streams ?? []) as $row) {
 			if ($value == $row['stream_location']) {
 				return true;
 			}

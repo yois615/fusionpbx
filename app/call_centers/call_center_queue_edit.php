@@ -43,6 +43,23 @@
 //initialize settings object
 	$settings = new settings(['database' => $database, 'domain_uuid' => $_SESSION['domain_uuid'] ?? '', 'user_uuid' => $_SESSION['user_uuid'] ?? '']);
 
+//keep bulk POST requests out of the single-queue add/update flow
+	$bulk_action = $_POST['action'] ?? '';
+	$request_id = $_POST['id'] ?? $_GET['id'] ?? '';
+	$bulk_edit = in_array($bulk_action, ['bulk_edit', 'bulk_save'], true)
+		|| is_array($request_id)
+		|| (is_string($request_id) && strpos($request_id, ',') !== false);
+	$bulk_fields = [];
+	$bulk_values = [];
+	$bulk_mixed = [];
+	$bulk_queues = [];
+	$modern_queue_strategies = [
+		'ring-all' => $text['option-ring_all'],
+		'ring-all-overflow' => 'Ring All Overflow',
+		'round-robin' => $text['option-round_robin'],
+		'round-robin-overflow' => 'Round Robin Overflow',
+	];
+
 //set the defaults
 	$queue_name = '';
 	$queue_extension = '';
@@ -55,7 +72,10 @@
 	$queue_exit_action = '';
 
 //action add or update
-	if (!empty($_REQUEST["id"]) && is_uuid($_REQUEST["id"])) {
+	if ($bulk_edit) {
+		$action = 'bulk_edit';
+	}
+	elseif (!empty($_REQUEST["id"]) && is_uuid($_REQUEST["id"])) {
 		$action = "update";
 		$call_center_queue_uuid = $_REQUEST["id"];
 	}
@@ -69,6 +89,96 @@
 
 //initialize the destination object
 	$destination = new destinations;
+	$queue_recording_template = function ($enabled) use ($settings, $domain_name) {
+		return $enabled == 'true'
+			? $settings->get('switch', 'recordings', '').'/'.$domain_name.'/archive/'.$settings->get('call_center', 'record_name', '${strftime(%Y)}/${strftime(%b)}/${strftime(%d)}/${uuid}.${record_ext}')
+			: '';
+	};
+
+//validate bulk targets before loading or changing queue data
+	if ($bulk_edit) {
+		$bulk_error = null;
+		if (!$settings->get('call_center', 'use_modern_call_center', false)
+			|| !permission_exists('call_center_queue_edit')
+			|| !permission_exists('call_center_queue_bulk_edit')
+			|| ($_POST['show'] ?? '') == 'all') {
+			$bulk_error = 'message-bulk_queue_denied';
+		}
+		elseif ($_SERVER['REQUEST_METHOD'] != 'POST'
+			|| !in_array($bulk_action, ['bulk_edit', 'bulk_save'], true)
+			|| !is_string($_POST['id'] ?? null)) {
+			$bulk_error = 'message-bulk_queue_invalid_ids';
+		}
+		if ($bulk_error === null) {
+			$queue_ids = array_values(array_unique(array_map('strtolower', array_map('trim', explode(',', $_POST['id'])))));
+			foreach ($queue_ids as $queue_id) {
+				if (!is_uuid($queue_id)) {
+					$bulk_error = 'message-bulk_queue_invalid_ids';
+					break;
+				}
+			}
+			if (count($queue_ids) < 2) {
+				$bulk_error = 'message-bulk_queue_invalid_ids';
+			}
+		}
+		if ($bulk_error !== null) {
+			message::add($text[$bulk_error], 'negative');
+			header('Location: call_center_queues.php');
+			return;
+		}
+
+		$object = new token;
+		$token_path = $bulk_action == 'bulk_save' ? $_SERVER['PHP_SELF'] : dirname($_SERVER['PHP_SELF']).'/call_center_queues.php';
+		if (!$object->validate($token_path)) {
+			message::add($text['message-invalid_token'], 'negative');
+			header('Location: call_center_queues.php');
+			return;
+		}
+
+		$bulk_parameters = ['domain_uuid' => $domain_uuid];
+		$placeholders = [];
+		foreach ($queue_ids as $index => $queue_id) {
+			$placeholders[] = ':queue_'.$index;
+			$bulk_parameters['queue_'.$index] = $queue_id;
+		}
+		$bulk_filter = 'domain_uuid = :domain_uuid and call_center_queue_uuid in ('.implode(', ', $placeholders).')';
+		$bulk_queues = $database->select('select * from v_call_center_queues where '.$bulk_filter.' order by queue_name', $bulk_parameters, 'all');
+		if (!is_array($bulk_queues) || count($bulk_queues) !== count($queue_ids)) {
+			message::add($text['message-bulk_queue_invalid_ids'], 'negative');
+			header('Location: call_center_queues.php');
+			return;
+		}
+
+		$bulk_fields = [
+			'queue_greeting' => 'recording',
+			'queue_audio' => 'sound',
+			'queue_strategy' => 'strategy',
+			'queue_moh_sound' => 'ringback',
+			'queue_record_enabled' => 'boolean',
+			'queue_max_wait_time' => 'number',
+			'queue_max_wait_time_with_no_agent' => 'number',
+			'queue_timeout_action' => 'destination',
+			'queue_exit_action' => 'destination',
+			'queue_tier_rule_wait_second' => 'number',
+			'queue_outbound_caller_id_name' => 'text',
+			'queue_outbound_caller_id_number' => 'caller_id',
+			'queue_announce_position' => 'boolean',
+			'queue_announce_sound' => 'recording',
+			'queue_announce_frequency' => 'number',
+			'queue_email_address' => 'text',
+		];
+		foreach ([
+			'queue_outbound_caller_id_name' => 'call_center_outbound_caller_id_name',
+			'queue_announce_position' => 'call_center_announce_position',
+			'queue_announce_sound' => 'call_center_announce_sound',
+			'queue_announce_frequency' => 'call_center_announce_frequency',
+			'queue_email_address' => 'call_center_email_address',
+		] as $field => $permission) {
+			if (!permission_exists($permission)) {
+				unset($bulk_fields[$field]);
+			}
+		}
+	}
 
 //get installed languages
 	$language_paths = glob($settings->get('switch', 'sounds')."/*/*/*");
@@ -100,7 +210,7 @@
 	}
 
 //get http post variables and set them to php variables
-	if (!empty($_POST)) {
+	if (!$bulk_edit && !empty($_POST)) {
 		//get the post variables a run a security chack on them
 			//$domain_uuid = $_POST["domain_uuid"];
 			$dialplan_uuid = $_POST["dialplan_uuid"] ?? null;
@@ -164,7 +274,7 @@
 	}
 
 //delete the tier (agent from the queue)
-	if (!empty($_REQUEST["a"]) && $_REQUEST["a"] == "delete" && is_uuid($_REQUEST["id"]) && permission_exists("call_center_tier_delete")) {
+	if (!$bulk_edit && !empty($_REQUEST["a"]) && $_REQUEST["a"] == "delete" && is_uuid($_REQUEST["id"]) && permission_exists("call_center_tier_delete")) {
 		//set the variables
 			$call_center_queue_uuid = $_REQUEST["id"];
 			$call_center_tier_uuid = $_REQUEST["call_center_tier_uuid"];
@@ -216,7 +326,7 @@
 	}
 
 //process the user data and save it to the database
-	if (!empty($_POST) && empty($_POST["persistformvar"])) {
+	if (!$bulk_edit && !empty($_POST) && empty($_POST["persistformvar"])) {
 
 		//get the uuid from the POST
 			if ($action == "update") {
@@ -347,13 +457,7 @@
 
 
 		//set the the record_template for mod call center
-			if ($queue_record_enabled == 'true') {
-				$record_template = $settings->get('switch','recordings', '')."/".$domain_name."/archive/";
-				$record_template .= $settings->get('call_center','record_name', "\${strftime(%Y)}/\${strftime(%b)}/\${strftime(%d)}/\${uuid}.\${record_ext}");
-			}
-			else {
-				$record_template = '';
-			}
+			$record_template = $queue_recording_template($queue_record_enabled);
 
 		//prepare the array
 			$array['call_center_queues'][0]['queue_name'] = $queue_name;
@@ -673,7 +777,7 @@
 	} //(count($_POST)>0 && empty($_POST["persistformvar"]))
 
 //pre-populate the form
-	if (!empty($_GET) && is_uuid($_GET["id"]) && empty($_POST["persistformvar"])) {
+	if (!$bulk_edit && !empty($_GET) && is_uuid($_GET["id"]) && empty($_POST["persistformvar"])) {
 		$call_center_queue_uuid = $_GET["id"];
 		$sql = "select ";
 		$sql .= "queue_name, ";
@@ -772,6 +876,12 @@
 	$sql .= "order by tier_level asc, tier_position asc, a.agent_name asc";
 	$parameters['domain_uuid'] = $domain_uuid;
 	$parameters['call_center_queue_uuid'] = $call_center_queue_uuid ?? null;
+	if ($bulk_edit) {
+		$sql = "select t.*, a.agent_name from v_call_center_tiers t ";
+		$sql .= "join v_call_center_agents a on a.call_center_agent_uuid = t.call_center_agent_uuid and a.domain_uuid = t.domain_uuid ";
+		$sql .= "where t.domain_uuid = :domain_uuid and t.call_center_queue_uuid in (".implode(', ', $placeholders).") order by t.tier_level, a.agent_name";
+		$parameters = $bulk_parameters;
+	}
 	$tiers = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
@@ -784,7 +894,7 @@
 		$rows = $settings->get('call_center','agent_edit_rows', null);
 		$id = count($tiers)+1;
 	}
-	for ($x = 0; $x < $rows; $x++) {
+	for ($x = 0; !$bulk_edit && $x < $rows; $x++) {
 		$tiers[$id]['call_center_tier_uuid'] = uuid();
 		$tiers[$id]['call_center_agent_uuid'] = '';
 		$tiers[$id]['call_center_queue_uuid'] = $call_center_queue_uuid ?? null;
@@ -808,12 +918,132 @@
 	unset($sounds);
 
 //get the list of sounds
-	if (permission_exists('call_center_announce_sound')) {
+	if ($bulk_edit || permission_exists('call_center_announce_sound')) {
 		$sounds = new sounds;
 		$sounds->sound_types = ['recordings'];
 		$sounds->full_path = ['recordings'];
 		$audio_files[1] = $sounds->get();
 		unset($sounds);
+	}
+
+//save only explicitly selected scalar settings in bulk mode
+	if ($bulk_edit && $bulk_action == 'bulk_save') {
+		$checked_fields = $_POST['bulk_fields'] ?? [];
+		$changes = [];
+		$ringbacks = new ringbacks;
+		$caller_ids = $settings->get('call_center', 'allowed_outbound_caller_id', []);
+		if (!is_array($checked_fields) || !$checked_fields) {
+			$bulk_error = 'message-bulk_queue_invalid_fields';
+		}
+		else {
+			foreach ($checked_fields as $field => $checked) {
+				if ($checked !== 'true' || !isset($bulk_fields[$field]) || !isset($_POST[$field]) || !is_string($_POST[$field])) {
+					$bulk_error = 'message-bulk_queue_invalid_fields';
+					break;
+				}
+				$value = trim($_POST[$field]);
+				if (strlen($value) > 255 || preg_match('/[\x00-\x1f\x7f]/', $value)) {
+					$bulk_error = 'message-bulk_queue_invalid_fields';
+					break;
+				}
+				switch ($bulk_fields[$field]) {
+					case 'strategy':
+						$valid = array_key_exists($value, $modern_queue_strategies);
+						break;
+					case 'boolean':
+						$valid = in_array($value, ['true', 'false'], true);
+						break;
+					case 'caller_id':
+						$valid = is_array($caller_ids) && in_array($value, array_map('strval', $caller_ids), true);
+						break;
+					case 'number':
+						$valid = $value === '' || (ctype_digit($value) && strlen($value) <= 10 && (float) $value <= 2147483647);
+						break;
+					case 'destination':
+						$valid = $value === '' || $destination->valid($value);
+						break;
+					case 'sound':
+					case 'recording':
+						$valid = $value === '' || if_group('superadmin');
+						$groups = $audio_files[$bulk_fields[$field] == 'sound' ? 0 : 1] ?? [];
+						foreach ($groups as $options) {
+							foreach ($options as $option) {
+								if ($value === (string) $option['value']) {
+									$valid = true;
+								}
+							}
+						}
+						foreach ($bulk_queues as $queue) {
+							if ($value === (string) ($queue[$field] ?? '')) {
+								$valid = true;
+							}
+						}
+						break;
+					case 'ringback':
+						$valid = $value === '' || $value === 'silence' || $value === '$${hold_music}' || $ringbacks->valid($value);
+						foreach ($bulk_queues as $queue) {
+							if ($value === (string) ($queue[$field] ?? '')) {
+								$valid = true;
+							}
+						}
+						break;
+					default:
+						$valid = true;
+				}
+				if (!$valid) {
+					$bulk_error = 'message-bulk_queue_invalid_fields';
+					break;
+				}
+				if ($field == 'queue_record_enabled') {
+					$changes['queue_record_template'] = $queue_recording_template($value);
+				}
+				else {
+					$changes[$field] = $value;
+				}
+			}
+		}
+		if ($bulk_error !== null) {
+			message::add($text[$bulk_error], 'negative');
+			header('Location: call_center_queues.php');
+			return;
+		}
+
+		$array = ['call_center_queues' => []];
+		foreach ($bulk_queues as $queue) {
+			$array['call_center_queues'][] = ['call_center_queue_uuid' => $queue['call_center_queue_uuid']] + $changes;
+		}
+		if (!$database->save($array)) {
+			if ($database->db->inTransaction()) {
+				$database->db->rollBack();
+			}
+			error_log('Call center bulk edit failed: '.json_encode($database->message));
+			message::add($text['message-bulk_queue_save_failed'], 'negative');
+			header('Location: call_center_queues.php');
+			return;
+		}
+		save_call_center_xml();
+		remove_config_from_cache('configuration:callcenter.conf');
+		$cache = new cache;
+		$cache->delete('configuration:callcenter.conf');
+		$failed_queues = [];
+		foreach ($bulk_queues as $queue) {
+			$response = event_socket::command("sendevent CUSTOM\nEvent-Name: CUSTOM\nEvent-Subclass: callcenter::command\nCC-Command: update_queue\nQueue: ".$queue['call_center_queue_uuid']."\n");
+			if (is_array($response)) {
+				$response = $response['Reply-Text'] ?? '';
+			}
+			if (!is_string($response) || strpos(ltrim($response), '+OK') !== 0) {
+				$failed_queues[] = $queue['call_center_queue_uuid'];
+			}
+		}
+		if ($failed_queues) {
+			error_log('Call center bulk edit runtime notification failed for queues: '.implode(', ', $failed_queues));
+			message::add($text['message-bulk_queue_runtime_failed'], 'negative');
+		}
+		else {
+			message::add($text['message-update']);
+		}
+		header('Location: call_center_queues.php');
+		return;
 	}
 
 //get the callback profiles
@@ -831,7 +1061,11 @@
 	$sql .= "and call_center_queue_uuid = :call_center_queue_uuid ";
 	$sql .= "order by natural_sort(digits::text) asc ";
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+	$parameters['call_center_queue_uuid'] = $call_center_queue_uuid ?? null;
+	if ($bulk_edit) {
+		$sql = "select * from v_call_center_menu_options where ".$bulk_filter." order by digits";
+		$parameters = $bulk_parameters;
+	}
 	$call_center_menu_options = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
@@ -855,6 +1089,60 @@
 	$queue_announce_sound = $queue_announce_sound ?? '';
 	$queue_context = $queue_context ?? $domain_name;
 
+//use the existing controls for both single-queue and bulk editing
+	if ($bulk_edit) {
+		foreach ($bulk_fields as $field => $type) {
+			$values = [];
+			foreach ($bulk_queues as $queue) {
+				if ($field == 'queue_record_enabled') {
+					$values[] = !empty($queue['queue_record_template']) ? 'true' : 'false';
+				}
+				elseif ($type == 'boolean') {
+					$values[] = in_array($queue[$field] ?? null, ['true', true], true) ? 'true' : 'false';
+				}
+				else {
+					$values[] = (string) ($queue[$field] ?? '');
+				}
+			}
+			$bulk_mixed[$field] = count(array_unique($values)) > 1;
+			$bulk_values[$field] = $bulk_mixed[$field] ? '' : $values[0];
+			${$field} = $field == 'queue_record_enabled' ? $bulk_values[$field] == 'true' : $bulk_values[$field];
+		}
+	}
+	$bulk_checkbox = function ($field) use ($bulk_edit, $bulk_fields, $text) {
+		if ($bulk_edit && isset($bulk_fields[$field])) {
+			echo "<input type='checkbox' name='bulk_fields[".$field."]' value='true' data-bulk-field='".$field."' aria-label='".escape($text['label-bulk_apply'])."'> ";
+		}
+	};
+	$bulk_control_start = function ($field) use ($bulk_edit, $bulk_values, $bulk_mixed) {
+		if (!$bulk_edit) {
+			return;
+		}
+		echo "<fieldset id='bulk_".$field."' data-bulk-value='".escape($bulk_values[$field] ?? '')."' data-bulk-mixed='".(!empty($bulk_mixed[$field]) ? 'true' : 'false')."' disabled style='border: 0; margin: 0; padding: 0;'>\n";
+	};
+	$bulk_control_end = function ($field) use ($bulk_edit) {
+		if ($bulk_edit) {
+			echo "</fieldset>\n";
+		}
+	};
+	$bulk_readonly_values = [];
+	if ($bulk_edit) {
+		foreach ($tiers as $tier) {
+			$bulk_readonly_values['agents'][$tier['call_center_queue_uuid']][] = $tier['agent_name'].' ('.$tier['tier_level'].')';
+		}
+		foreach ($call_center_menu_options as $option) {
+			$bulk_readonly_values['options'][$option['call_center_queue_uuid']][] = $option['digits'].': '.$option['action'].':'.$option['param'].' ('.($option['enabled'] == 'true' ? $text['option-true'] : $text['option-false']).')';
+		}
+	}
+	$bulk_readonly = function ($field) use ($bulk_queues, $bulk_readonly_values) {
+		foreach ($bulk_queues as $queue) {
+			$value = in_array($field, ['agents', 'options'], true)
+				? implode(', ', $bulk_readonly_values[$field][$queue['call_center_queue_uuid']] ?? [])
+				: (string) ($queue[$field] ?? '');
+			echo "<div>".escape($queue['queue_name']).": ".escape($value)."</div>\n";
+		}
+	};
+
 //add an empty row to the options array
 	if (count($call_center_menu_options) == 0) {
 		$rows = $settings->get('ivr_menu', 'option_add_rows');
@@ -866,7 +1154,7 @@
 		$id = count($call_center_menu_options)+1;
 		$show_option_delete = true;
 	}
-	for ($x = 0; $x < $rows; $x++) {
+	for ($x = 0; !$bulk_edit && $x < $rows; $x++) {
 		$call_center_menu_options[$id]['digits'] = '';
 		$call_center_menu_options[$id]['action'] = '';
 		$call_center_menu_options[$id]['param'] = '';
@@ -881,6 +1169,9 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //show the header
+	if ($bulk_edit) {
+		$document['title'] = $text['button-bulk_edit'];
+	}
 	if ($action == "add") {
 		$document['title'] = $text['title-call_center_queue_add'];
 	}
@@ -965,7 +1256,7 @@
 		echo "</script>\n";
 	}
 
-	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+	if (!$bulk_edit && $settings->get('call_center', 'use_modern_call_center', null)) {
 		$sql = "select s.days_of_week, s.login_time, s.logout_time, s.tier, s.call_center_agent_uuid, a.agent_name ";
 		$sql .= "from v_call_center_agent_schedules as s ";
 		$sql .= "join v_call_center_agents as a on s.call_center_agent_uuid = a.call_center_agent_uuid ";
@@ -1025,6 +1316,9 @@
 
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'>";
+	if ($bulk_edit) {
+		echo "<b>".escape($text['button-bulk_edit'])."</b><div class='count'>".count($bulk_queues)."</div>";
+	}
 	if ($action == "add") {
 		echo "<b>".$text['header-call_center_queue_add']."</b>";
 	}
@@ -1048,11 +1342,16 @@
 			echo button::create(['type'=>'button','label'=>$text['button-view'],'icon'=>$settings->get('theme','button_icon_view', ''),'style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/call_center_active/call_center_active.php?queue_name='.urlencode($call_center_queue_uuid)]);
 		}
 	}
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme','button_icon_save', ''),'id'=>'btn_save']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme','button_icon_save', ''),'id'=>'btn_save','disabled'=>$bulk_edit]);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
+	if ($bulk_edit) {
+		echo "<p>".escape($text['description-queue_bulk_edit'])."</p>\n";
+		echo "<input type='hidden' name='action' value='bulk_save'>\n";
+		echo "<input type='hidden' name='id' value='".escape(implode(',', $queue_ids))."'>\n";
+	}
 	echo "<div class='card'>\n";
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
@@ -1060,7 +1359,12 @@
 	echo "	".$text['label-queue_name']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='queue_name' maxlength='255' value=\"".escape($queue_name)."\" required='required'>\n";
+	if ($bulk_edit) {
+		$bulk_readonly('queue_name');
+	}
+	else {
+		echo "	<input class='formfld' type='text' name='queue_name' maxlength='255' value=\"".escape($queue_name)."\" required='required'>\n";
+	}
 	echo "<br />\n";
 	echo $text['description-queue_name']."\n";
 	echo "</td>\n";
@@ -1071,7 +1375,12 @@
 	echo "	".$text['label-extension']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='number' name='queue_extension' maxlength='255' min='0' step='1' value=\"".escape($queue_extension)."\" required='required' placeholder=\"".$settings->get('call_center','extension_range', '')."\">\n";
+	if ($bulk_edit) {
+		$bulk_readonly('queue_extension');
+	}
+	else {
+		echo "	<input class='formfld' type='number' name='queue_extension' maxlength='255' min='0' step='1' value=\"".escape($queue_extension)."\" required='required' placeholder=\"".$settings->get('call_center','extension_range', '')."\">\n";
+	}
 	echo "<br />\n";
 	echo $text['description-extension']."\n";
 	echo "</td>\n";
@@ -1082,12 +1391,14 @@
 	$instance_value = $queue_greeting;
 	echo "<tr>\n";
 	echo "<td class='vncell' rowspan='2' valign='top' align='left' nowrap='nowrap'>\n";
+	$bulk_checkbox($instance_id);
 	echo "	".$text['label-'.$instance_label]."\n";
 	echo "</td>\n";
 	echo "<td class='vtable playback_progress_bar_background' id='recording_progress_bar_".$instance_id."' onclick=\"recording_play('".$instance_id."', document.getElementById('".$instance_id."').value, document.getElementById('".$instance_id."').options[document.getElementById('".$instance_id."').selectedIndex].parentNode.getAttribute('data-type'));\" style='display: none; border-bottom: none; padding-top: 0 !important; padding-bottom: 0 !important;' align='left'><span class='playback_progress_bar' id='recording_progress_".$instance_id."'></span></td>\n";
 	echo "</tr>\n";
 	echo "<tr>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start($instance_id);
 	echo "<select name='".$instance_id."' id='".$instance_id."' class='formfld' ".(permission_exists('recording_play') || permission_exists('recording_download') ? "onchange=\"recording_reset('".$instance_id."'); set_playable('".$instance_id."', this.value, this.options[this.selectedIndex].parentNode.getAttribute('data-type'));\"" : null).">\n";
 	echo "	<option value=''></option>\n";
 	$found = $playable = false;
@@ -1147,6 +1458,7 @@
 	}
 	echo "<br />\n";
 	echo $text['description-'.$instance_label]."\n";
+	$bulk_control_end($instance_id);
 	echo "</td>\n";
 	echo "</tr>\n";
 	if ($settings->get('call_center', 'use_modern_call_center', null)) {
@@ -1155,12 +1467,14 @@
 		$instance_value = $queue_audio;
 		echo "<tr>\n";
 		echo "<td class='vncell' rowspan='2' valign='top' align='left' nowrap='nowrap'>\n";
+		$bulk_checkbox($instance_id);
 		echo "	Audio recording of Queue name\n";
 		echo "</td>\n";
 		echo "<td class='vtable playback_progress_bar_background' id='recording_progress_bar_".$instance_id."' onclick=\"recording_play('".$instance_id."', document.getElementById('".$instance_id."').value, document.getElementById('".$instance_id."').options[document.getElementById('".$instance_id."').selectedIndex].parentNode.getAttribute('data-type'));\" style='display: none; border-bottom: none; padding-top: 0 !important; padding-bottom: 0 !important;' align='left'><span class='playback_progress_bar' id='recording_progress_".$instance_id."'></span></td>\n";
 		echo "</tr>\n";
 		echo "<tr>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start($instance_id);
 		echo "<select name='".$instance_id."' id='".$instance_id."' class='formfld' ".(permission_exists('recording_play') || permission_exists('recording_download') ? "onchange=\"recording_reset('".$instance_id."'); set_playable('".$instance_id."', this.value, this.options[this.selectedIndex].parentNode.getAttribute('data-type'));\"" : null).">\n";
 		echo "	<option value=''></option>\n";
 		$found = $playable = false;
@@ -1222,6 +1536,7 @@
 		}
 		echo "<br />\n";
 		echo "Audio to be used for confirm prompts and login/out\n";
+		$bulk_control_end($instance_id);
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -1258,9 +1573,11 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_strategy');
 	echo "	".$text['label-strategy']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start('queue_strategy');
 	echo "	<select class='formfld' name='queue_strategy'>\n";
 	if (!$settings->get('call_center', 'use_modern_call_center', null)) {
 		echo "	<option value='ring-all' ".($queue_strategy == 'ring-all' ? "selected" : "").">".$text['option-ring_all']."</option>\n";
@@ -1273,18 +1590,23 @@
 		echo "	<option value='sequentially-by-next-agent-order' ".($queue_strategy == 'sequentially-by-next-agent-order' ? "selected" : "").">".$text['option-sequentially_by_next_agent_order']."</option>\n";
 		echo "	<option value='random' ".($queue_strategy == 'random' ? "selected" : "").">".$text['option-random']."</option>\n";
 	} else {
-		echo "	<option value='ring-all' ".($queue_strategy == 'ring-all' ? "selected" : "").">".$text['option-ring_all']."</option>\n";
-		echo "	<option value='ring-all-overflow' ".($queue_strategy == 'ring-all-overflow' ? "selected" : "").">Ring All Overflow</option>\n";
-		echo "	<option value='round-robin' ".($queue_strategy == 'round-robin' ? "selected" : "").">".$text['option-round_robin']."</option>\n";
-		echo "	<option value='round-robin-overflow' ".($queue_strategy == 'round-robin-overflow' ? "selected" : "").">Round Robin Overflow</option>\n";
+		foreach ($modern_queue_strategies as $value => $label) {
+			echo "	<option value='".escape($value)."' ".($queue_strategy == $value ? "selected" : "").">".escape($label)."</option>\n";
+		}
 	}
 	echo "	</select>\n";
 	echo "<br />\n";
 	echo $text['description-strategy']."\n";
+	$bulk_control_end('queue_strategy');
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if (permission_exists('call_center_tier_view') && !empty($agents) && is_array($agents)) {
+	if ($bulk_edit && permission_exists('call_center_tier_view')) {
+		echo "<tr><td class='vncell'>".escape($text['label-agents'])."</td><td class='vtable'>";
+		$bulk_readonly('agents');
+		echo "</td></tr>\n";
+	}
+	elseif (!$bulk_edit && permission_exists('call_center_tier_view') && !empty($agents) && is_array($agents)) {
 		echo "<tr>";
 		echo "	<td class='vncell' valign='top'>".$text['label-agents']."</td>";
 		echo "	<td class='vtable' align='left'>";
@@ -1361,23 +1683,28 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_moh_sound');
 	echo "	".$text['label-music_on_hold']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 
+	$bulk_control_start('queue_moh_sound');
 	$ringbacks = new ringbacks;
 	echo $ringbacks->select('queue_moh_sound', $queue_moh_sound);
 
 	echo "<br />\n";
 	echo $text['description-music_on_hold']."\n";
+	$bulk_control_end('queue_moh_sound');
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_record_enabled');
 	echo "	".$text['label-record_template']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start('queue_record_enabled');
 	if ($input_toggle_style_switch) {
 		echo "	<span class='switch'>\n";
 	}
@@ -1391,6 +1718,7 @@
 	}
 	echo "<br />\n";
 	echo $text['description-record_template']."\n";
+	$bulk_control_end('queue_record_enabled');
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -1444,23 +1772,29 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_max_wait_time');
 	echo "	".$text['label-max_wait_time']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start('queue_max_wait_time');
 	echo "  <input class='formfld' type='number' name='queue_max_wait_time' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time)."'>\n";
 	echo "<br />\n";
 	echo $text['description-max_wait_time']."\n";
+	$bulk_control_end('queue_max_wait_time');
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_max_wait_time_with_no_agent');
 	echo "	".$text['label-max_wait_time_with_no_agent']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start('queue_max_wait_time_with_no_agent');
 	echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time_with_no_agent)."'>\n";
 	echo "<br />\n";
 	echo $text['description-max_wait_time_with_no_agent']."\n";
+	$bulk_control_end('queue_max_wait_time_with_no_agent');
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -1479,24 +1813,30 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_timeout_action');
 	echo "    ".$text['label-timeout_action']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start('queue_timeout_action');
 	echo $destination->select('dialplan', 'queue_timeout_action', $queue_timeout_action);
 	echo "<br />\n";
 	echo $text['description-timeout_action']."\n";
+	$bulk_control_end('queue_timeout_action');
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	if ($settings->get('call_center', 'use_modern_call_center', null)) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		$bulk_checkbox('queue_exit_action');
 		echo "    Exit Action\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start('queue_exit_action');
 		echo $destination->select('dialplan', 'queue_exit_action', $queue_exit_action);
 		echo "<br />\n";
 		echo "Set the action to perform when * is pressed\n";
+		$bulk_control_end('queue_exit_action');
 		echo "</td>\n";
 		echo "</tr>\n";
 	} else {
@@ -1524,12 +1864,15 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	$bulk_checkbox('queue_tier_rule_wait_second');
 	echo "	".$text['label-tier_rule_wait_second']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
+	$bulk_control_start('queue_tier_rule_wait_second');
 	echo "  <input class='formfld' type='number' name='queue_tier_rule_wait_second' maxlength='255' min='0' step='1' value='".escape($queue_tier_rule_wait_second)."'>\n";
 	echo "<br />\n";
 	echo $text['description-tier_rule_wait_second']."\n";
+	$bulk_control_end('queue_tier_rule_wait_second');
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -1634,12 +1977,15 @@
 	if (permission_exists('call_center_outbound_caller_id_name')) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		$bulk_checkbox('queue_outbound_caller_id_name');
 		echo "	".$text['label-outbound_caller_id_name']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start('queue_outbound_caller_id_name');
 		echo "  <input class='formfld' type='text' name='queue_outbound_caller_id_name' maxlength='255' value='".escape($queue_outbound_caller_id_name ?? '')."'>\n";
 		echo "<br />\n";
 		echo $text['description-outbound_caller_id_name']."\n";
+		$bulk_control_end('queue_outbound_caller_id_name');
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -1647,9 +1993,11 @@
 	if (permission_exists('call_center_outbound_caller_id_number') || $settings->get('call_center', 'use_modern_call_center', null)) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		$bulk_checkbox('queue_outbound_caller_id_number');
 		echo "	".$text['label-outbound_caller_id_number']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start('queue_outbound_caller_id_number');
 		echo "	<select class='formfld' name='queue_outbound_caller_id_number'>\n";
 		$allowed_outbound_caller_id = $settings->get('call_center', 'allowed_outbound_caller_id', null);
 		if (is_array($allowed_outbound_caller_id) && count($allowed_outbound_caller_id) > 0) {
@@ -1660,6 +2008,7 @@
 		echo "	</select>\n";
 		echo "<br />\n";
 		echo "Choose the outbound caller ID number from the list. Populated from Default Settings\n";
+		$bulk_control_end('queue_outbound_caller_id_number');
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -1667,15 +2016,18 @@
 	if (permission_exists('call_center_announce_position')) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		$bulk_checkbox('queue_announce_position');
 		echo "  ".$text['label-queue_announce_position']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start('queue_announce_position');
 		echo "	<select class='formfld' name='queue_announce_position'>\n";
 		echo "		<option value='false'>".$text['option-false']."</option>\n";
 		echo "		<option value='true' ".(!empty($queue_announce_position) && $queue_announce_position == "true" ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
 		echo "	</select>\n";
 		echo "<br />\n";
 		echo ($text['description-queue_announce_position'] ?? '')."\n";
+		$bulk_control_end('queue_announce_position');
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -1686,12 +2038,14 @@
 		$instance_value = $queue_announce_sound;
 		echo "<tr>\n";
 		echo "<td class='vncell' rowspan='2' valign='top' align='left' nowrap='nowrap'>\n";
+		$bulk_checkbox($instance_id);
 		echo "	".$text['label-'.$instance_label]."\n";
 		echo "</td>\n";
 		echo "<td class='vtable playback_progress_bar_background' id='recording_progress_bar_".$instance_id."' onclick=\"recording_play('".$instance_id."', document.getElementById('".$instance_id."').value, document.getElementById('".$instance_id."').options[document.getElementById('".$instance_id."').selectedIndex].parentNode.getAttribute('data-type'));\" style='display: none; border-bottom: none; padding-top: 0 !important; padding-bottom: 0 !important;' align='left'><span class='playback_progress_bar' id='recording_progress_".$instance_id."'></span></td>\n";
 		echo "</tr>\n";
 		echo "<tr>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start($instance_id);
 		echo "<select name='".$instance_id."' id='".$instance_id."' class='formfld' ".(permission_exists('recording_play') || permission_exists('recording_download') ? "onchange=\"recording_reset('".$instance_id."'); set_playable('".$instance_id."', this.value, this.options[this.selectedIndex].parentNode.getAttribute('data-type'));\"" : null).">\n";
 		echo "	<option value=''></option>\n";
 		$found = $playable = false;
@@ -1751,6 +2105,7 @@
 		}
 		echo "<br />\n";
 		echo $text['description-'.$instance_label]."\n";
+		$bulk_control_end($instance_id);
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -1758,17 +2113,25 @@
 	if (permission_exists('call_center_announce_frequency')) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		$bulk_checkbox('queue_announce_frequency');
 		echo "  ".$text['label-caller_announce_frequency']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start('queue_announce_frequency');
 		echo "  <input class='formfld' type='number' name='queue_announce_frequency' maxlength='255' min='0' step='1' value='".escape($queue_announce_frequency)."'>\n";
 		echo "<br />\n";
 		echo $text['description-caller_announce_frequency']."\n";
+		$bulk_control_end('queue_announce_frequency');
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
 
-	if ($settings->get('call_center', 'use_modern_call_center', null)) {
+	if ($bulk_edit) {
+		echo "<tr><td class='vncell'>".escape($text['label-options'])."</td><td class='vtable'>";
+		$bulk_readonly('options');
+		echo "</td></tr>\n";
+	}
+	elseif ($settings->get('call_center', 'use_modern_call_center', null)) {
 
 		echo "	<tr>";
 		echo "		<td class='vncell' valign='top'>Options</td>";
@@ -1892,12 +2255,15 @@
 	if (permission_exists('call_center_email_address') || $settings->get('call_center', 'use_modern_call_center', null)) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+		$bulk_checkbox('queue_email_address');
 		echo "	".$text['label-queue_email_address']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
+		$bulk_control_start('queue_email_address');
 		echo "  <input class='formfld' type='text' name='queue_email_address' maxlength='255' value='".escape($queue_email_address ?? '')."'>\n";
 		echo "<br />\n";
 		echo $text['description-queue_email_address']."\n";
+		$bulk_control_end('queue_email_address');
 		echo "</td>\n";
 		echo "</tr>\n";
 	}
@@ -1908,7 +2274,12 @@
 		echo "	".$text['label-context']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='queue_context' maxlength='255' value=\"".escape($queue_context)."\" required='required'>\n";
+		if ($bulk_edit) {
+			$bulk_readonly('queue_context');
+		}
+		else {
+			echo "	<input class='formfld' type='text' name='queue_context' maxlength='255' value=\"".escape($queue_context)."\" required='required'>\n";
+		}
 		echo "<br />\n";
 		echo $text['description-enter-context']."\n";
 		echo "</td>\n";
@@ -1920,7 +2291,12 @@
 	echo "	".$text['label-description']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='queue_description' maxlength='255' value=\"".escape($queue_description)."\">\n";
+	if ($bulk_edit) {
+		$bulk_readonly('queue_description');
+	}
+	else {
+		echo "	<input class='formfld' type='text' name='queue_description' maxlength='255' value=\"".escape($queue_description)."\">\n";
+	}
 	echo "<br />\n";
 	echo $text['description-description']."\n";
 	echo "</td>\n";
@@ -1937,6 +2313,70 @@
 	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 
 	echo "</form>";
+
+	if ($bulk_edit) {
+		?>
+		<script>
+			(() => {
+				const form = document.getElementById('frm');
+				const checkboxes = Array.from(form.querySelectorAll('[data-bulk-field]'));
+				const save = document.getElementById('btn_save');
+				checkboxes.forEach(checkbox => {
+					const field = checkbox.dataset.bulkField;
+					const fieldset = document.getElementById('bulk_' + field);
+					const control = form.elements[field];
+					if (control instanceof HTMLSelectElement) {
+						if (fieldset.dataset.bulkMixed === 'true') {
+							const option = new Option(<?php echo json_encode($text['label-bulk_multiple_values'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, '', true, true);
+							option.disabled = true;
+							control.prepend(option);
+							control.selectedIndex = 0;
+						}
+						else {
+							const value = fieldset.dataset.bulkValue;
+							if (!Array.from(control.options).some(option => option.value === value)) {
+								control.add(new Option(value, value));
+							}
+							control.value = value;
+						}
+					}
+					if (control instanceof HTMLInputElement && control.type === 'number') {
+						control.max = '2147483647';
+					}
+				});
+				const update = () => {
+					checkboxes.forEach(checkbox => {
+						document.getElementById('bulk_' + checkbox.dataset.bulkField).disabled = !checkbox.checked;
+					});
+					save.disabled = !checkboxes.some(checkbox => checkbox.checked);
+					save.classList.toggle('disabled', save.disabled);
+				};
+				checkboxes.forEach(checkbox => checkbox.addEventListener('change', update));
+				window.submit_form = () => form.requestSubmit();
+				form.addEventListener('submit', event => {
+					const selected = checkboxes.filter(checkbox => checkbox.checked);
+					if (!selected.length) {
+						event.preventDefault();
+						return;
+					}
+					if (selected.some(checkbox => {
+						const control = form.elements[checkbox.dataset.bulkField];
+						return control instanceof HTMLSelectElement && control.selectedOptions[0]?.disabled;
+					})) {
+						event.preventDefault();
+						alert(<?php echo json_encode($text['message-bulk_queue_invalid_fields'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
+						return;
+					}
+					if (!confirm(<?php echo json_encode($text['confirm-queue_bulk_edit'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>)) {
+						event.preventDefault();
+					}
+				});
+				window.addEventListener('pageshow', update);
+				update();
+			})();
+		</script>
+		<?php
+	}
 
 //include the footer
 	require_once "resources/footer.php";

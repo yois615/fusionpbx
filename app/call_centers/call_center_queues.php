@@ -44,6 +44,12 @@
 
 //set additional variables
 	$show = $_GET["show"] ?? '';
+	$modern_call_center = $settings->get('call_center', 'use_modern_call_center', false);
+	$can_bulk_edit = $modern_call_center && $show != 'all'
+		&& permission_exists('call_center_queue_edit')
+		&& permission_exists('call_center_queue_bulk_edit');
+	$can_select_queues = permission_exists('call_center_queue_add')
+		|| permission_exists('call_center_queue_delete') || $can_bulk_edit;
 
 //set from session variables
 	$list_row_edit_button = $settings->get('theme', 'list_row_edit_button', false);
@@ -171,7 +177,7 @@
 		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$settings->get('theme', 'button_icon_add'),'id'=>'btn_add','style'=>$margin_left,'link'=>'call_center_queue_edit.php']);
 		unset($margin_left);
 	}
-	if (permission_exists('call_center_queue_add') && $result) {
+	if ((permission_exists('call_center_queue_add') || $can_bulk_edit) && $result) {
 		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$settings->get('theme', 'button_icon_copy'),'id'=>'btn_copy','name'=>'btn_copy','style'=>'display: none; '.!empty($margin_left),'onclick'=>"modal_open('modal-copy','btn_copy');"]);
 		unset($margin_left);
 	}
@@ -212,11 +218,12 @@
 	echo "<form id='form_list' method='post'>\n";
 	echo "<input type='hidden' id='action' name='action' value=''>\n";
 	echo "<input type='hidden' name='search' value=\"".escape($search)."\">\n";
+	echo "<input type='hidden' name='show' value=\"".escape($show)."\">\n";
 
 	echo "<div class='card'>\n";
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
-	if (permission_exists('call_center_queue_add') || permission_exists('call_center_queue_delete')) {
+	if ($can_select_queues) {
 		echo "	<th class='checkbox'>\n";
 		echo "		<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".(!empty($result) ?: "style='visibility: hidden;'").">\n";
 		echo "	</th>\n";
@@ -256,7 +263,7 @@
 				}
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
-			if (permission_exists('call_center_queue_add') || permission_exists('call_center_queue_delete')) {
+			if ($can_select_queues) {
 				echo "	<td class='checkbox'>\n";
 				echo "		<input type='checkbox' name='call_center_queues[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
 				echo "		<input type='hidden' name='call_center_queues[$x][uuid]' value='".escape($row['call_center_queue_uuid'])."' />\n";
@@ -366,8 +373,58 @@
 
 	echo "</form>\n";
 
+	if ($modern_call_center) {
+		?>
+		<script>
+			(() => {
+				const form = document.getElementById('form_list');
+				const button = document.querySelector('.action_bar #btn_copy');
+				if (!button) return;
+				const canCopy = <?php echo json_encode(permission_exists('call_center_queue_add')); ?>;
+				const canBulkEdit = <?php echo json_encode((bool) $can_bulk_edit); ?>;
+				const copyContents = button.innerHTML;
+				const copyTitle = button.title;
+				const bulkLabel = <?php echo json_encode($text['button-bulk_edit'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+				const selected = () => Array.from(form.querySelectorAll("input[name^='call_center_queues['][name$='[checked]']:checked"));
+				const update = () => {
+					const count = selected().length;
+					button.style.display = (count === 1 && canCopy) || (count > 1 && canBulkEdit) ? 'inline' : 'none';
+					if (count > 1) {
+						button.textContent = bulkLabel;
+						button.title = bulkLabel;
+					}
+					else {
+						button.innerHTML = copyContents;
+						button.title = copyTitle;
+					}
+				};
+				button.onclick = () => {
+					const queues = selected();
+					if (queues.length > 1 && canBulkEdit) {
+						const input = document.createElement('input');
+						input.type = 'hidden';
+						input.name = 'id';
+						input.value = queues.map(checkbox => form.elements[checkbox.name.replace('[checked]', '[uuid]')].value).join(',');
+						form.appendChild(input);
+						form.elements.action.value = 'bulk_edit';
+						form.setAttribute('action', 'call_center_queue_edit.php');
+						form.submit();
+					}
+					else if (queues.length === 1 && canCopy) {
+						modal_open('modal-copy', 'btn_copy');
+					}
+				};
+				form.addEventListener('click', event => {
+					if (event.target.matches("input[type='checkbox']")) update();
+				});
+				window.addEventListener('pageshow', update);
+				update();
+			})();
+		</script>
+		<?php
+	}
+
 //show the footer
 	require_once "resources/footer.php";
 
 ?>
-

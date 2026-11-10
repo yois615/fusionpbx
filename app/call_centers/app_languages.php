@@ -1,5 +1,26 @@
 <?php
 
+$text['button-bulk_edit']['en-us'] = "Queue Bulk Edit";
+$text['button-bulk_edit']['en-gb'] = "Queue Bulk Edit";
+$text['label-bulk_multiple_values']['en-us'] = "Multiple values";
+$text['label-bulk_multiple_values']['en-gb'] = "Multiple values";
+$text['label-bulk_apply']['en-us'] = "Apply to all selected queues";
+$text['label-bulk_apply']['en-gb'] = "Apply to all selected queues";
+$text['description-queue_bulk_edit']['en-us'] = "Only checked settings will be applied to every selected queue. Unchecked settings, queue identities, agents and Options are preserved. Check a setting and leave its value empty to clear it where allowed.";
+$text['description-queue_bulk_edit']['en-gb'] = "Only checked settings will be applied to every selected queue. Unchecked settings, queue identities, agents and Options are preserved. Check a setting and leave its value empty to clear it where allowed.";
+$text['message-bulk_queue_denied']['en-us'] = "Bulk editing requires the modern call center and queue edit/bulk edit permissions, and is unavailable in Show All.";
+$text['message-bulk_queue_denied']['en-gb'] = "Bulk editing requires the modern call center and queue edit/bulk edit permissions, and is unavailable in Show All.";
+$text['message-bulk_queue_invalid_ids']['en-us'] = "Select at least two valid, existing queues in the current domain. No queues were changed.";
+$text['message-bulk_queue_invalid_ids']['en-gb'] = "Select at least two valid, existing queues in the current domain. No queues were changed.";
+$text['message-bulk_queue_invalid_fields']['en-us'] = "Select at least one editable setting and provide valid values. No queues were changed.";
+$text['message-bulk_queue_invalid_fields']['en-gb'] = "Select at least one editable setting and provide valid values. No queues were changed.";
+$text['message-bulk_queue_save_failed']['en-us'] = "Unable to save the queue changes. Check the database error log.";
+$text['message-bulk_queue_save_failed']['en-gb'] = "Unable to save the queue changes. Check the database error log.";
+$text['message-bulk_queue_runtime_failed']['en-us'] = "Queue changes were saved, but some runtime update notifications failed. Reload the affected queues.";
+$text['message-bulk_queue_runtime_failed']['en-gb'] = "Queue changes were saved, but some runtime update notifications failed. Reload the affected queues.";
+$text['confirm-queue_bulk_edit']['en-us'] = "Apply the checked settings to all selected queues?";
+$text['confirm-queue_bulk_edit']['en-gb'] = "Apply the checked settings to all selected queues?";
+
 $text['title-call_centers']['en-us'] = "Call Center";
 $text['title-call_centers']['en-gb'] = "Call Center";
 $text['title-call_centers']['ar-eg'] = "مركز الاتصال";
