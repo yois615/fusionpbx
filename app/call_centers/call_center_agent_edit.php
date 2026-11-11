@@ -370,7 +370,7 @@
 				$array['call_center_agent_schedules'][$i]['days_of_week'] = $v['days_of_week'];
 				$array['call_center_agent_schedules'][$i]['login_time'] = $v['login_time'];
 				$array['call_center_agent_schedules'][$i]['logout_time'] = $v['logout_time'];
-				$array['call_center_agent_schedules'][$i]['enabled'] = $v['enabled'];
+				$array['call_center_agent_schedules'][$i]['enabled'] = $v['enabled'] ? 'true' : 'false';
 
 				if (empty($v['call_center_queue_uuid'])) { $msg .= 'Agent schedule queue cannot be empty<br>'; }
 				if ($v['days_of_week'] == 0) { $msg .= 'Agent schedule must have at least one day selected<br>'; }
@@ -1257,7 +1257,7 @@
 						option.hidden = !option.textContent.trim().toLowerCase().includes(searchTerm);
 						if (!option.hidden) visibleCount++;
 					});
-					dropdown.querySelector('.schedule-queue-no-results').hidden = visibleCount !== 0;
+					dropdown.querySelector('.schedule-queue-no-results').hidden = visibleCount !==  0;
 				});
 				searchInput.addEventListener('keydown', function (event) {
 					if (event.key === 'Enter') event.preventDefault();
