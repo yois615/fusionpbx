@@ -121,6 +121,12 @@ function play_file(teacher_uuid, filename, recording_uuid, daf_teacher_uuid, off
     return save_bookmark(teacher_uuid, filename, recording_uuid)
 end
 
+function play_instructions()
+    session:setInputCallback("cpb_dtmf_input", "");
+    session:streamFile(recordings_dir .. "system_instructions.wav");
+    session:unsetInputCallback();
+end
+
 function check_for_next_recording(recording_uuid)
     local fields, conditions, order
     local result = nil
@@ -398,7 +404,7 @@ if session:ready() and greeting_recording ~= nil and string.len(greeting_recordi
         caller_type = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. greeting_recording, "", "[1280]");
         if tonumber(caller_type) ~= nil then
             if caller_type == "0" then
-                session:streamFile(recordings_dir .. "system_instructions.wav");
+                play_instructions();
             else
                 exit = true;
             end
@@ -425,7 +431,7 @@ end
         -- we want to prompt and play file by uuid
         local play_bookmark = session:playAndGetDigits(1, 1, 3, digit_timeout, "#", recordings_dir .. "play_bookmark.wav", "", "[120]");
         if play_bookmark == "0" then
-            session:streamFile(recordings_dir .. "system_instructions.wav");
+            play_instructions();
             goto start_menu;
         elseif play_bookmark == "1" then
             local sql = [[SELECT recording_filename, chazara_daf_teacher_uuid, chazara_teacher_uuid
@@ -571,7 +577,7 @@ end
 if session:ready() and chumash_mode == "true" then
     local chumash_type = session:playAndGetDigits(1, 1, 3, 5000, "#", recordings_dir .. "parsha_or_perek.wav", "", "[1230]");
     if chumash_type == "0" then
-        session:streamFile(recordings_dir .. "system_instructions.wav");
+        play_instructions();
         goto start_menu;
     elseif chumash_type == "1" then
         chumash_by_parsha(os.time())
