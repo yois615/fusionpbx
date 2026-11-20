@@ -73,3 +73,5 @@
         $text['description-exit_action']['en-us'] = "Destination used when no conditional exit action matches.";
         $text['description-exit_file']['en-us'] = "Recording played before the call is sent to the exit action.";
 
+		$text['label-question_type']['en-us'] = "Question Type";
+

@@ -9,6 +9,7 @@
 -- and Joseph Nadiv <ynadiv@corpit.xyz>
 require "resources.functions.config";
 require "resources.functions.split";
+require "resources.functions.mkdir";
 debug.sql = true;
 json = freeswitch.JSON();
 
@@ -16,29 +17,33 @@ json = freeswitch.JSON();
 local Database = require "resources.functions.database";
 dbh = Database.new('system');
 
--- Get which survey we're doing
+-- Get which survey we're doing and session variables
 circle_survey_uuid = argv[1];
 domain_name = session:getVariable("domain_name");
 domain_uuid = session:getVariable("domain_uuid");
+caller_id_name = session:getVariable("caller_id_name");
+caller_id_number = session:getVariable("caller_id_number");
+uuid = session:getVariable("uuid");
 
 -- set the defaults
 max_tries = 3;
 digit_timeout = 5000;
 max_len_seconds = 15;
 
+--define uuid function
+    local random = math.random;
+    function gen_uuid()
+        local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+        return string.gsub(template, '[xy]', function (c)
+            local v = (c == 'x') and random(0, 0xf) or random(8, 0xb);
+            return string.format('%x', v);
+        end)
+    end
+
 -- Function to save vote
-function save_vote(vote, reason, sequence_id)
+function save_vote(vote, voicemail_message_uuid, reason, sequence_id)
     if (circle_survey_customer_uuid == nil) then
-        --define uuid function
-            local random = math.random;
-            local function uuid()
-                local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
-                return string.gsub(template, '[xy]', function (c)
-                    local v = (c == 'x') and random(0, 0xf) or random(8, 0xb);
-                    return string.format('%x', v);
-                end)
-            end
-        circle_survey_customer_uuid = uuid();
+        circle_survey_customer_uuid = gen_uuid();
         local sql = "INSERT INTO v_circle_survey_customer (circle_survey_customer_uuid, caller_id_number, ";
         sql = sql .. " caller_id_name, domain_uuid, gender, age, zip_code)";
         sql = sql .. " values (:circle_survey_customer_uuid, :caller_id_number, :caller_id_name, :domain_uuid, :gender, :age, :zip_code); ";
@@ -57,19 +62,20 @@ function save_vote(vote, reason, sequence_id)
         dbh:query(sql, params);
     end
     -- save the vote
-    local sql = "INSERT INTO v_circle_survey_votes (circle_survey_customer_uuid, vote, call_uuid, circle_survey_uuid, sequence_id, domain_uuid";
+    local sql = "INSERT INTO v_circle_survey_votes (circle_survey_customer_uuid, vote, voicemail_message_uuid, call_uuid, circle_survey_uuid, sequence_id, domain_uuid";
     if reason ~= nil then
         sql = sql .. ", reason";
     end
     sql = sql .. ")";
-    sql = sql .. " values (:circle_survey_customer_uuid, :vote, :uuid, :circle_survey_uuid, :sequence_id, :domain_uuid"
+    sql = sql .. " values (:circle_survey_customer_uuid, :vote, :voicemail_message_uuid, :uuid, :circle_survey_uuid, :sequence_id, :domain_uuid";
     if reason ~= nil then
         sql = sql .. ", :reason";
     end
     sql = sql .. ")";
     local params = {
         circle_survey_customer_uuid = circle_survey_customer_uuid,
-        vote = vote,
+        vote = vote or 0,
+        voicemail_message_uuid = voicemail_message_uuid or 'NULL',
         uuid = uuid,
         circle_survey_uuid = circle_survey_uuid,
         sequence_id = sequence_id,
@@ -79,14 +85,9 @@ function save_vote(vote, reason, sequence_id)
     dbh:query(sql, params);
 end
 
-
 -- set the recordings directory
 local recordings_dir = recordings_dir .. "/" .. domain_name .. "/";
 
--- get session variables
-caller_id_name = session:getVariable("caller_id_name");
-caller_id_number = session:getVariable("caller_id_number");
-uuid = session:getVariable("uuid");
 survey_questions = {};
 
 -- Strip E.164 plus sign
@@ -295,6 +296,9 @@ if session:ready() then
         local question = {};
         question['recording'] = row['recording'];
         question['highest_number'] = row['highest_number'];
+        question['recording_suffix'] = row['recording_suffix'];
+        question['voicemail_box'] = row['voicemail_box'];
+        question['question_type'] = row['question_type'];
         table.insert(survey_questions, row['sequence_id'], question);
     end);
 end
@@ -305,7 +309,7 @@ if session:ready() then
             -- Question is odd but we ask only even
         elseif ask_only_odd_even == "true" and not even_second and i % 2 == 0 then
             -- Question is even but we ask only odd
-        else
+        elseif question['question_type'] == 'numeric' or question['question_type'] == '' then
             session:flushDigits();
             local exit = false;
             local reason = nil;
@@ -361,10 +365,80 @@ if session:ready() then
                 if question_answered_file ~= nil and string.len(question_answered_file) > 0 then
                     session:streamFile(recordings_dir .. question_answered_file);
                 end
-                save_vote(dtmf_digits, reason, i)
+                save_vote(dtmf_digits, nil, reason, i)
                 if conditional_questions[i] then
                     conditional_exit_answer[i] = tonumber(dtmf_digits);
                 end
+            end
+        elseif question['question_type'] == 'voicemail' and string.len(question['voicemail_box']) > 0 then
+            local sql = [[SELECT * FROM v_voicemails
+                        WHERE domain_uuid = :domain_uuid
+                        AND voicemail_uuid = :voicemail_uuid
+                        AND voicemail_enabled = 'true' ]];
+            local params = {
+                domain_uuid = domain_uuid,
+                voicemail_uuid = question['voicemail_box']
+            };
+            local vm = dbh:first_row(sql, params);
+            if vm.voicemail_id == nil then
+                -- Skip question
+                freeswitch.consoleLog("notice", "Voicemail ID not found, skipping question " .. i .. "\n");
+            else
+                voicemail_message_uuid = gen_uuid();
+                if question['recording_suffix'] ~= nil and string.len(question['recording_suffix']) > 0 then
+                    session:streamFile(recordings_dir .. question['recording'] .. '!' .. recordings_dir .. question['recording_suffix']);
+                else
+                    session:streamFile(recordings_dir .. question['recording']);
+                end
+                session:execute("playback", "silence_stream://200");
+                session:streamFile("tone_stream://L=1;%(500, 0, 640)");
+                start_epoch = os.time();
+                --make sure the voicemail_dir exists
+                voicemail_dir = "/var/lib/freeswitch/storage/voicemail/default/" .. domain_name;
+                mkdir(voicemail_dir .. "/" .. vm.voicemail_id);
+                result = session:recordFile(voicemail_dir .. "/" .. vm.voicemail_id .. "/msg_" .. voicemail_message_uuid .. ".wav", question['highest_number'],
+                    500, 4);
+                message_length = (os.time() - start_epoch);
+                session:unsetInputCallback();
+
+                caller_id_name = string.gsub(caller_id_name, "'", "''");
+                local sql = {}
+                table.insert(sql, "INSERT INTO v_voicemail_messages ");
+                table.insert(sql, "(");
+                table.insert(sql, "voicemail_message_uuid, ");
+                table.insert(sql, "domain_uuid, ");
+                table.insert(sql, "voicemail_uuid, ");
+                table.insert(sql, "created_epoch, ");
+                table.insert(sql, "caller_id_name, ");
+                table.insert(sql, "caller_id_number, ");
+                table.insert(sql, "message_length ");
+                table.insert(sql, ") ");
+                table.insert(sql, "VALUES ");
+                table.insert(sql, "( ");
+                table.insert(sql, ":voicemail_message_uuid, ");
+                table.insert(sql, ":domain_uuid, ");
+                table.insert(sql, ":voicemail_uuid, ");
+                table.insert(sql, ":start_epoch, ");
+                table.insert(sql, ":caller_id_name, ");
+                table.insert(sql, ":caller_id_number, ");
+                table.insert(sql, ":message_length ");
+                table.insert(sql, ") ");
+                sql = table.concat(sql, "\n");
+                local params = {
+                    voicemail_message_uuid = voicemail_message_uuid,
+                    domain_uuid = domain_uuid,
+                    voicemail_uuid = question['voicemail_box'],
+                    start_epoch = start_epoch,
+                    caller_id_name = caller_id_name,
+                    caller_id_number = caller_id_number,
+                    voicemail_id = vm.voicemail_id,
+                    message_length = message_length
+                };
+                if (debug["sql"]) then
+                    freeswitch.consoleLog("notice", "[voicemail] SQL: " .. sql .. "; params:" .. json:encode(params) .. "\n");
+                end
+                dbh:query(sql, params);
+                save_vote(nil, voicemail_message_uuid, reason, i)
             end
         end
     end

@@ -118,8 +118,10 @@
 						}
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['circle_survey_uuid'] = $circle_survey_uuid;
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['circle_survey_question_uuid'] = $circle_survey_question_uuid;
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['question_type'] = $r['question_type'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['domain_uuid'] = $_SESSION["domain_uuid"];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['sequence_id'] = $r['sequence_id'];
+						$array['circle_surveys'][0]['circle_survey_questions'][$i]['voicemail_box'] = $r['voicemail_box'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['recording'] = $r['recording'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['recording_suffix'] = $r['recording_suffix'];
 						$array['circle_surveys'][0]['circle_survey_questions'][$i]['description'] = $r['description'];
@@ -317,7 +319,28 @@
 			}
 	}
 
-
+	echo "<script>\n";
+	echo "	function toggleQuestionTypeFields(questionTypeField) {\n";
+	echo "		var questionType = questionTypeField.value;\n";
+	echo "		var questionRow = questionTypeField.closest('tr');\n";
+	echo "		var recordingSuffixField = questionRow.querySelector('select[name$=\"[recording_suffix]\"]').parentNode;\n";
+	echo "		var voicemailBoxField = questionRow.querySelector('select[name$=\"[voicemail_box]\"]').parentNode;\n";
+	echo "		if (questionType == 'numeric' || questionType == '') {\n";
+	echo "			recordingSuffixField.style.display = '';\n";
+	echo "			voicemailBoxField.style.display = 'none';\n";
+	echo "		} else {\n";
+	echo "			recordingSuffixField.style.display = 'none';\n";
+	echo "			voicemailBoxField.style.display = '';\n";
+	echo "		}\n";
+	echo "	}\n";
+	echo "	document.addEventListener('DOMContentLoaded', function() {\n";
+	echo "		document.querySelectorAll('select[name$=\"[question_type]\"]').forEach(function(questionTypeField) {\n";
+	echo "			toggleQuestionTypeFields(questionTypeField);\n";
+	echo "			questionTypeField.addEventListener('change', function() {\n";
+	echo "				toggleQuestionTypeFields(questionTypeField);\n";
+	echo "			});\n";
+	echo "	});\n";
+	echo "</script>\n";
 
 //initialize the destinations object
 $destination = new destinations;
@@ -739,8 +762,9 @@ for ($x = 0; $x < $rows; $x++) {
 	echo "			<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "				<tr>\n";
 	echo "					<td class='vtable'>".$text['label-circle_survey_sequence']."</td>\n";
+	echo "					<td class='vtable'>".$text['label-survey-question-type']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-recording']."</td>\n";
-	echo "					<td class='vtable'>Recording Suffix</td>\n";
+	echo "					<td class='vtable'>Recording Suffix/Voicemail Box</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-highest-number']."</td>\n";
 	echo "					<td class='vtable'>".$text['label-survey-description']."</td>\n";
 
@@ -764,6 +788,17 @@ for ($x = 0; $x < $rows; $x++) {
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
 		echo "		<input class=\"formfld\" style=\"width: 50px; text-align: center;\" name=\"survey_questions[".$x."][sequence_id]\" value=\"".escape($row['sequence_id'])."\">\n";
 		echo "</td>\n";
+
+		echo "<td class='vtable' style='position: relative;' align='left'>\n";
+		echo "<select name=\"survey_questions[".$x."][question_type]\" class='formfld' style=\"width: 100px;\">\n";
+		$question_types = array('numeric', 'voicemail');
+		foreach ($question_types as $question_type) {
+			$selected = ($row['question_type'] == $question_type) ? "selected='selected'" : "";
+			echo "	<option value='".escape($question_type)."' $selected>".escape(ucwords($question_type))."</option>\n";
+		}
+		echo "	</select>\n";
+		echo "</td>\n";
+
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
 		echo "<select name=\"survey_questions[".$x."][recording]\" class='formfld' style=\"width: 250px;\">\n";
 		echo "	<option></option>\n";
@@ -786,7 +821,7 @@ for ($x = 0; $x < $rows; $x++) {
 		echo "</td>\n";
 
 		echo "<td class='vtable' style='position: relative;' align='left'>\n";
-		echo "<select name=\"survey_questions[".$x."][recording_suffix]\" class='formfld' style=\"width: 250px;\">\n";
+		echo "<select name=\"survey_questions[".$x."][recording_suffix]\" class='formfld' style=\"width: 200px;\">\n";
 		echo "	<option></option>\n";
 			//recordings
 			if (is_array($recordings)) {
@@ -805,6 +840,20 @@ for ($x = 0; $x < $rows; $x++) {
 			}
 		echo "	</select>\n";
 		echo "</td>\n";
+		
+		// if question_type is 'voicemail', show a select box with all the voicemail boxes in the system.  This should default to hidden
+		echo "<td class='vtable' style='position: relative; display: none;' align='left'>\n";
+		echo "		<select name=\"survey_questions[".$x."][voicemail_box]\" class='formfld' style=\"width: 200px;\">\n";
+		$vm_sql = "select voicemail_uuid, voicemail_id from v_voicemails where domain_uuid = :domain_uuid and voicemail_enabled = 'true' ";
+		$vm_params = array('domain_uuid' => $domain_uuid);
+		$vm_result = $database->select($vm_sql, $vm_params, 'all');
+		foreach($vm_result as $vm_row) {
+			$selected = ($vm_row['voicemail_uuid'] == $row['voicemail_box']) ? "selected='selected'" : "";
+			echo "			<option value='".$vm_row['voicemail_uuid']."' $selected>&#9993 ".$vm_row['voicemail_id']."</option>\n";
+		}
+		echo "		</select>\n";
+		echo "</td>\n";
+
 
 		echo "				<td class='formfld'>\n";
 		echo "					<select name=\"survey_questions[".$x."][highest_number]\" class='formfld' style='width:55px'>\n";

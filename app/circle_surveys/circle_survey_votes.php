@@ -178,6 +178,7 @@ function download_send_headers($filename) {
 	}
 	$sql .= "AND v.domain_uuid = :domain_uuid ";
 	$sql .= "GROUP BY v.sequence_id, q.description ";
+	$sql .= "HAVING SUM(v.vote) > 0 ";
 	$sql .= order_by($order_by, $order, 'sequence_id', 'asc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$parameters['circle_survey_uuid'] = $circle_survey_uuid;
