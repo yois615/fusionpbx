@@ -433,7 +433,7 @@
 				end
 
 				--send to user
-				local dial_string_user = "[sip_invite_domain="..domain_name..",call_direction="..call_direction..",";
+				local dial_string_user = "[origination_aleg_uuid="..uuid..",sip_invite_domain="..domain_name..",call_direction="..call_direction..",";
 				dial_string_user = dial_string_user .. group_confirm..","..timeout_name.."="..destination_timeout..",";
 				dial_string_user = dial_string_user .. delay_name.."="..destination_delay..",";
 				dial_string_user = dial_string_user .. "dialed_extension=" .. row.destination_number .. ",";
@@ -448,7 +448,7 @@
 				end
 			elseif (tonumber(destination_number) == nil) then
 				--sip uri
-				dial_string = "[sip_invite_domain="..domain_name..",call_direction="..call_direction..","..group_confirm..","..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay.."]" .. row.destination_number;
+				dial_string = "[origination_aleg_uuid="..uuid..",sip_invite_domain="..domain_name..",call_direction="..call_direction..","..group_confirm..","..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay.."]" .. row.destination_number;
 			else
 				--external number
 					route_bridge = 'loopback/'..destination_number;
@@ -495,7 +495,7 @@
 				--set the destination dial string
 					-- have to double destination_delay here due a FS bug requiring a 50% delay value for internal extensions, but not external calls. 
 					--destination_delay = destination_delay * 2;
-					dial_string = "[toll_allow=".. toll_allow ..",accountcode="..accountcode..",".. caller_id ..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm..","..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay.."]"..route_bridge
+					dial_string = "[origination_aleg_uuid="..uuid..",toll_allow=".. toll_allow ..",accountcode="..accountcode..",".. caller_id ..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm..","..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay.."]"..route_bridge
 			end
 
 		--add a delimiter between destinations
