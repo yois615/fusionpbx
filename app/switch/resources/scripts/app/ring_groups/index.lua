@@ -1084,7 +1084,7 @@
 							end
 
 							--send to user
-							local dial_string_user = "[sip_invite_domain="..domain_name..",call_direction="..call_direction..",";
+							local dial_string_user = "[origination_aleg_uuid="..uuid..",sip_invite_domain="..domain_name..",call_direction="..call_direction..",";
 							dial_string_user = dial_string_user .. "domain_name="..domain_name..",domain_uuid="..domain_uuid..",";
 							dial_string_user = dial_string_user .. group_confirm..","..timeout_name.."="..destination_timeout..",";
 							dial_string_user = dial_string_user .. delay_name.."="..destination_delay..",";
@@ -1106,7 +1106,7 @@
 							end
 						elseif (tonumber(destination_number) == nil) then
 							--sip uri
-							dial_string = "[sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm..""..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay.."]" .. row.destination_number;
+							dial_string = "[origination_aleg_uuid="..uuid..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm..""..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay.."]" .. row.destination_number;
 						else
 							--external number
 								-- have to double destination_delay here due a FS bug requiring a 50% delay value for internal externsions, but not external calls.
@@ -1161,7 +1161,7 @@
 								end
 
 							--set the destination dial string
-								dial_string = "["..diversion_header.."toll_allow=".. toll_allow ..",".. caller_id ..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm..""..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay..","..sip_h_caller_destination.."]"..route_bridge
+								dial_string = "[origination_aleg_uuid="..uuid..","..diversion_header.."toll_allow=".. toll_allow ..",".. caller_id ..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm..""..timeout_name.."="..destination_timeout..","..delay_name.."="..destination_delay..","..sip_h_caller_destination.."]"..route_bridge
 						end
 
 					--add a delimiter between destinations
